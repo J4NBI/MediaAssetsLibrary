@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "media-assets-library-client-side-solution",
+    "id": "a61c11cf-d049-438d-93ba-a2f3a695c77a",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.20.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "MediaAssetsLibrary description"
+      },
+      "longDescription": {
+        "default": "MediaAssetsLibrary description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "media-assets-library Feature",
+        "description": "The feature that activates elements of the media-assets-library solution.",
+        "id": "7e558124-228d-4f33-acdc-94b2720a3b10",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/media-assets-library.sppkg"
+  }
+}
