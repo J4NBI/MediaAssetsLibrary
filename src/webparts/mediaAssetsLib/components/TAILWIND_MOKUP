@@ -1,0 +1,247 @@
+import * as React from 'react';
+import { Dialog } from '@headlessui/react';
+import { SPHttpClient } from '@microsoft/sp-http';
+
+interface MediaItem {
+  id: number;
+  name: string;
+  fileRef: string;
+  tags?: string;
+  category?: string;
+  notes?: string;
+  format?: string;
+  published?: string;
+  created?: string;
+  fileType?: string;
+}
+
+interface Props {
+  siteUrl: string;
+  spHttpClient: SPHttpClient;
+}
+
+export default function MediaLibraryPro(props: Props) {
+  const [items, setItems] = React.useState<MediaItem[]>([]);
+  const [visible, setVisible] = React.useState<MediaItem[]>([]);
+  const [search, setSearch] = React.useState('');
+  const [activeTag, setActiveTag] = React.useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = React.useState<string | null>(null);
+  const [selected, setSelected] = React.useState<MediaItem | null>(null);
+
+  const [uploadOpen, setUploadOpen] = React.useState(false);
+  const [file, setFile] = React.useState<File | null>(null);
+  const [customName, setCustomName] = React.useState('');
+  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
+  const [customTag, setCustomTag] = React.useState('');
+  const [selectedCategory, setSelectedCategory] = React.useState<string>('');
+  const [customCategory, setCustomCategory] = React.useState('');
+
+  const rootFolder = '/sites/Medienbibliothek/Videos';
+
+  const getFolderContent = async (folderUrl: string): Promise<MediaItem[]> => {
+    const url = `${props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields`;
+    const res = await props.spHttpClient.get(url, SPHttpClient.configurations.v1);
+    const data = await res.json();
+
+    let results: MediaItem[] = [];
+
+    data.Files.forEach((f: any) => {
+      results.push({
+        id: f.ListItemAllFields.Id,
+        name: f.Name,
+        fileRef: f.ServerRelativeUrl,
+        tags: f.ListItemAllFields?.Tags,
+        category: f.ListItemAllFields?.Kategorie,
+        notes: f.ListItemAllFields?.Notizen,
+        format: f.ListItemAllFields?.Format,
+        published: f.ListItemAllFields?.Veröffentlichungsdatum,
+        created: f.TimeCreated,
+        fileType: f.Name.split('.').pop()?.toLowerCase()
+      });
+    });
+
+    for (const folder of data.Folders) {
+      if (folder.Name !== 'Forms') {
+        const sub = await getFolderContent(folder.ServerRelativeUrl);
+        results = results.concat(sub);
+      }
+    }
+
+    return results;
+  };
+
+  React.useEffect(() => {
+    const load = async () => {
+      let data = await getFolderContent(rootFolder);
+
+      data = data.sort((a, b) => {
+        const d1 = new Date(a.published || a.created || 0).getTime();
+        const d2 = new Date(b.published || b.created || 0).getTime();
+        return d2 - d1;
+      });
+
+      setItems(data);
+      setVisible(data.slice(0, 3));
+    };
+
+    load();
+  }, []);
+
+  React.useEffect(() => {
+    let filtered = [...items];
+
+    if (search) {
+      filtered = filtered.filter(i =>
+        i.name.toLowerCase().includes(search.toLowerCase()) ||
+        i.tags?.toLowerCase().includes(search.toLowerCase()) ||
+        i.notes?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (activeTag) filtered = filtered.filter(i => i.tags === activeTag);
+    if (activeCategory) filtered = filtered.filter(i => i.category === activeCategory);
+
+    setVisible(filtered);
+  }, [search, activeTag, activeCategory, items]);
+
+  const tags = Array.from(new Set(items.map(i => i.tags).filter(Boolean)));
+  const categories = Array.from(new Set(items.map(i => i.category).filter(Boolean)));
+
+  const uploadFile = async () => {
+    if (!file) return;
+
+    const fileName = customName || file.name;
+
+    const uploadUrl = `${props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${rootFolder}')/Files/add(url='${fileName}',overwrite=true)`;
+
+    await props.spHttpClient.post(uploadUrl, SPHttpClient.configurations.v1, {
+      body: file
+    });
+
+    const serverRelativeUrl = `${rootFolder}/${fileName}`;
+
+    const metadataUrl = `${props.siteUrl}/_api/web/GetFileByServerRelativeUrl('${serverRelativeUrl}')/ListItemAllFields`;
+
+    const finalTags = [...selectedTags, customTag].filter(Boolean).join(', ');
+    const finalCategory = customCategory || selectedCategory;
+
+    await props.spHttpClient.post(metadataUrl, SPHttpClient.configurations.v1, {
+      headers: {
+        'IF-MATCH': '*',
+        'X-HTTP-Method': 'MERGE'
+      },
+      body: JSON.stringify({
+        Tags: finalTags,
+        Kategorie: finalCategory
+      })
+    });
+
+    setUploadOpen(false);
+    setFile(null);
+    setCustomName('');
+    setSelectedTags([]);
+    setCustomTag('');
+    setSelectedCategory('');
+    setCustomCategory('');
+  };
+
+  return (
+    <div className="tw-p-6 tw-space-y-4">
+      <h1 className="tw-text-2xl tw-font-bold">Media Library</h1>
+
+      <button
+        onClick={() => setUploadOpen(true)}
+        className="tw-fixed tw-bottom-6 tw-right-6 tw-w-16 tw-h-16 tw-rounded-full tw-bg-blue-600 tw-text-white tw-text-3xl tw-shadow-lg hover:tw-scale-110 tw-transition"
+      >+
+      </button>
+
+      <input
+        className="tw-border tw-p-2 tw-rounded tw-w-80"
+        placeholder="Suche..."
+        onChange={e => setSearch(e.target.value)}
+      />
+
+      <div className="tw-flex tw-gap-2 tw-flex-wrap">
+        {tags.map(tag => (
+          <button
+            key={tag}
+            onClick={() => setActiveTag(tag === activeTag ? null : tag!)}
+            className={`tw-px-3 tw-py-1 tw-rounded-full tw-text-sm ${tag === activeTag ? 'tw-bg-blue-600 tw-text-white' : 'tw-bg-gray-200'}`}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+
+      <div className="tw-flex tw-gap-2 tw-flex-wrap">
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat === activeCategory ? null : cat!)}
+            className={`tw-px-3 tw-py-1 tw-rounded-full tw-text-sm ${cat === activeCategory ? 'tw-bg-green-600 tw-text-white' : 'tw-bg-gray-200'}`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      <div className="tw-grid tw-grid-cols-3 tw-gap-4">
+        {visible.map(item => (
+          <div
+            key={item.id}
+            onClick={() => setSelected(item)}
+            className="tw-border tw-rounded-2xl tw-p-2 tw-shadow hover:tw-shadow-xl tw-cursor-pointer tw-transition"
+          >
+            {item.fileType === 'mp4' ? (
+              <video className="tw-rounded-xl tw-w-full" src={`${window.location.origin}${item.fileRef}`} />
+            ) : (
+              <img className="tw-rounded-xl tw-w-full" src={`${window.location.origin}${item.fileRef}`} />
+            )}
+            <h3 className="tw-font-semibold tw-mt-2">{item.name}</h3>
+          </div>
+        ))}
+      </div>
+
+      <Dialog open={uploadOpen} onClose={() => setUploadOpen(false)}>
+        <div className="tw-fixed tw-inset-0 tw-bg-black/50" />
+        <div className="tw-fixed tw-inset-0 tw-flex tw-items-center tw-justify-center">
+          <Dialog.Panel className="tw-bg-white tw-rounded-2xl tw-p-6 tw-w-[500px] tw-space-y-4">
+            <h2 className="tw-text-xl tw-font-bold">Upload</h2>
+
+            <input type="file" onChange={e => setFile(e.target.files?.[0] || null)} />
+
+            <input
+              className="tw-border tw-p-2 tw-w-full tw-rounded"
+              placeholder="Name optional"
+              value={customName}
+              onChange={e => setCustomName(e.target.value)}
+            />
+
+            <input
+              className="tw-border tw-p-2 tw-w-full tw-rounded"
+              placeholder="Custom Tag"
+              value={customTag}
+              onChange={e => setCustomTag(e.target.value)}
+            />
+
+            <input
+              className="tw-border tw-p-2 tw-w-full tw-rounded"
+              placeholder="Custom Kategorie"
+              value={customCategory}
+              onChange={e => setCustomCategory(e.target.value)}
+            />
+
+            <button
+              onClick={uploadFile}
+              className="tw-w-full tw-bg-blue-600 tw-text-white tw-py-2 tw-rounded"
+            >
+              Hochladen
+            </button>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+
