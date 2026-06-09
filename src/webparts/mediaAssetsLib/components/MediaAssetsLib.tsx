@@ -40,7 +40,6 @@ export default class MediaAssetsLib extends React.Component<
     await this.loadAllMedia();
   }
 
-  // ✅ rekursiv
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
     const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields`;
 
@@ -50,7 +49,6 @@ export default class MediaAssetsLib extends React.Component<
     );
 
     const data = await response.json();
-
     let results: IMediaItem[] = [];
 
     data.Files.forEach((file: any) => {
@@ -83,16 +81,15 @@ export default class MediaAssetsLib extends React.Component<
 
       let items = await this.getFolderContent(rootFolder);
 
-      // ✅ nach Veröffentlichungsdatum sortieren (fallback: erstellt)
       items = items.sort((a, b) => {
-        const dateA = new Date(a.published || a.created || 0).getTime();
-        const dateB = new Date(b.published || b.created || 0).getTime();
-        return dateB - dateA;
+        const d1 = new Date(a.published || a.created || 0).getTime();
+        const d2 = new Date(b.published || b.created || 0).getTime();
+        return d2 - d1;
       });
 
       this.setState({
         allItems: items,
-        visibleItems: items.slice(0, 3), // ✅ nur 3 neueste
+        visibleItems: items,
       });
     } catch (error) {
       console.error(error);
@@ -103,8 +100,6 @@ export default class MediaAssetsLib extends React.Component<
     const { allItems, searchText, filterTag, filterCategory } = this.state;
 
     let filtered = [...allItems];
-
-    // 🔍 Suche
     const search = searchText.toLowerCase();
 
     if (search) {
@@ -116,28 +111,23 @@ export default class MediaAssetsLib extends React.Component<
       );
     }
 
-    // 🎯 Tags
     if (filterTag) {
       filtered = filtered.filter(
         (item) => item.tags && item.tags.includes(filterTag),
       );
     }
 
-    // 🎯 Kategorie
     if (filterCategory) {
       filtered = filtered.filter((item) => item.category === filterCategory);
     }
 
-    this.setState({
-      visibleItems: filtered,
-    });
+    this.setState({ visibleItems: filtered });
   };
 
   private onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     this.setState({ searchText: e.target.value }, this.applyFilters);
   };
 
-  // ✅ Dynamische Werte für Dropdown
   private getUniqueValues(field: "tags" | "category"): string[] {
     const values = this.state.allItems
       .map((item) => item[field])
@@ -172,9 +162,7 @@ export default class MediaAssetsLib extends React.Component<
           >
             <option value="">Tag</option>
             {tagOptions.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
+              <option key={tag}>{tag}</option>
             ))}
           </select>
 
@@ -188,14 +176,12 @@ export default class MediaAssetsLib extends React.Component<
           >
             <option value="">Kategorie</option>
             {categoryOptions.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
+              <option key={cat}>{cat}</option>
             ))}
           </select>
         </div>
 
-        {/* 📦 Anzeige */}
+        {/* 📦 CARDS */}
         <div
           style={{
             display: "flex",
@@ -204,33 +190,95 @@ export default class MediaAssetsLib extends React.Component<
             marginTop: "20px",
           }}
         >
-          {this.state.visibleItems.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                width: "300px",
-                border: "1px solid #ddd",
-                padding: "10px",
-                borderRadius: "8px",
-              }}
-            >
-              {`${window.location.origin}${item.fileRef}`}
+          {this.state.visibleItems.map((item) => {
+            const previewUrl = `${this.props.siteUrl}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(
+              item.fileRef,
+            )}&resolution=1`;
 
-              <h3>{item.name}</h3>
+            const downloadUrl = `${this.props.siteUrl}${item.fileRef}`;
 
-              <p>
-                <b>Kategorie:</b> {item.category}
-              </p>
-              <p>
-                <b>Tags:</b> {item.tags}
-              </p>
-              <p>
-                <b>Format:</b> {item.format}
-              </p>
-            </div>
-          ))}
+            const fileType = item.name.split(".").pop()?.toLowerCase();
+            const isVideo = fileType === "mp4" || fileType === "mov";
+
+            return (
+              <div
+                key={item.id}
+                style={{
+                  width: "300px",
+                  border: "1px solid #ddd",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                }}
+              >
+                {/* ✅ Thumbnail */}
+                <div style={{ position: "relative" }}>
+                  <img
+                    src={previewUrl}
+                    style={{
+                      width: "100%",
+                      height: "180px",
+                      objectFit: "cover",
+                    }}
+                  />
+
+                  {/* ▶ Video Overlay */}
+                  {isVideo && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        fontSize: "40px",
+                        color: "white",
+                        background: "rgba(0,0,0,0.3)",
+                      }}
+                    >
+                      ▶
+                    </div>
+                  )}
+                </div>
+
+                {/* 📄 Inhalt */}
+                <div style={{ padding: "12px" }}>
+                  <h3 style={{ marginBottom: "8px" }}>{item.name}</h3>
+
+                  <p style={{ fontSize: "12px", color: "#666" }}>
+                    Erstellt am:{" "}
+                    {item.created
+                      ? new Date(item.created).toLocaleDateString()
+                      : "-"}
+                  </p>
+
+                  <a
+                    href={downloadUrl}
+                    target="_blank"
+                    style={{
+                      display: "block",
+                      marginTop: "10px",
+                      background: "#0078d4",
+                      color: "white",
+                      textAlign: "center",
+                      padding: "10px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Download
+                  </a>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
   }
 }
+``;
