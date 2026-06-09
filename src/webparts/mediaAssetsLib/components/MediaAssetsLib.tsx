@@ -6,11 +6,8 @@ interface IMediaItem {
   id: number;
   name: string;
   fileRef: string;
-  tags?: string;
   category?: string;
   notes?: string;
-  format?: string;
-  published?: string;
   created?: string;
 }
 
@@ -18,7 +15,6 @@ interface IMediaAssetsLibState {
   allItems: IMediaItem[];
   visibleItems: IMediaItem[];
   searchText: string;
-  filterTag?: string;
   filterCategory?: string;
 }
 
@@ -56,11 +52,8 @@ export default class MediaAssetsLib extends React.Component<
         id: file.ListItemAllFields.Id,
         name: file.Name,
         fileRef: file.ServerRelativeUrl,
-        tags: file.ListItemAllFields?.Tags,
         category: file.ListItemAllFields?.Kategorie,
         notes: file.ListItemAllFields?.Notizen,
-        format: file.ListItemAllFields?.Format,
-        published: file.ListItemAllFields?.Veröffentlichungsdatum,
         created: file.TimeCreated,
       });
     });
@@ -79,13 +72,7 @@ export default class MediaAssetsLib extends React.Component<
     try {
       const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
 
-      let items = await this.getFolderContent(rootFolder);
-
-      items = items.sort((a, b) => {
-        const d1 = new Date(a.published || a.created || 0).getTime();
-        const d2 = new Date(b.published || b.created || 0).getTime();
-        return d2 - d1;
-      });
+      const items = await this.getFolderContent(rootFolder);
 
       this.setState({
         allItems: items,
@@ -97,24 +84,18 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private applyFilters = (): void => {
-    const { allItems, searchText, filterTag, filterCategory } = this.state;
+    const { allItems, searchText, filterCategory } = this.state;
 
     let filtered = [...allItems];
     const search = searchText.toLowerCase();
 
     if (search) {
-      filtered = filtered.filter(
-        (item) =>
-          item.name.toLowerCase().includes(search) ||
-          (item.tags && item.tags.toLowerCase().includes(search)) ||
-          (item.notes && item.notes.toLowerCase().includes(search)),
-      );
-    }
+      filtered = filtered.filter((item) => {
+        const name = item.name?.toLowerCase() || "";
+        const notes = item.notes?.toLowerCase() || "";
 
-    if (filterTag) {
-      filtered = filtered.filter(
-        (item) => item.tags && item.tags.includes(filterTag),
-      );
+        return name.includes(search) || notes.includes(search);
+      });
     }
 
     if (filterCategory) {
@@ -124,21 +105,20 @@ export default class MediaAssetsLib extends React.Component<
     this.setState({ visibleItems: filtered });
   };
 
-  private onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  private onSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     this.setState({ searchText: e.target.value }, this.applyFilters);
   };
 
-  private getUniqueValues(field: "tags" | "category"): string[] {
+  private getUniqueCategories(): string[] {
     const values = this.state.allItems
-      .map((item) => item[field])
+      .map((item) => item.category)
       .filter((v) => v);
 
     return Array.from(new Set(values)) as string[];
   }
 
   public render(): React.ReactElement<IMediaAssetsLibProps> {
-    const tagOptions = this.getUniqueValues("tags");
-    const categoryOptions = this.getUniqueValues("category");
+    const categoryOptions = this.getUniqueCategories();
 
     return (
       <div style={{ padding: "20px" }}>
@@ -153,19 +133,8 @@ export default class MediaAssetsLib extends React.Component<
           style={{ padding: "8px", width: "300px" }}
         />
 
-        {/* 🎯 Filter */}
-        <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
-          <select
-            onChange={(e) =>
-              this.setState({ filterTag: e.target.value }, this.applyFilters)
-            }
-          >
-            <option value="">Tag</option>
-            {tagOptions.map((tag) => (
-              <option key={tag}>{tag}</option>
-            ))}
-          </select>
-
+        {/* 🎯 Kategorie */}
+        <div style={{ marginTop: "10px" }}>
           <select
             onChange={(e) =>
               this.setState(
@@ -191,11 +160,11 @@ export default class MediaAssetsLib extends React.Component<
           }}
         >
           {this.state.visibleItems.map((item) => {
-            const previewUrl = `${this.props.siteUrl}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(
+            // ✅ richtige URLs
+            const videoUrl = `${window.location.origin}${item.fileRef}?web=1`;
+            const imageUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(
               item.fileRef,
             )}&resolution=1`;
-
-            const downloadUrl = `${this.props.siteUrl}${item.fileRef}`;
 
             const fileType = item.name.split(".").pop()?.toLowerCase();
             const isVideo = fileType === "mp4" || fileType === "mov";
@@ -211,42 +180,50 @@ export default class MediaAssetsLib extends React.Component<
                   boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
                 }}
               >
-                {/* ✅ Thumbnail */}
-                <div style={{ position: "relative" }}>
-                  <img
-                    src={previewUrl}
-                    style={{
-                      width: "100%",
-                      height: "180px",
-                      objectFit: "cover",
-                    }}
-                  />
+                {/* ✅ MEDIA */}
+                {isVideo ? (
+                  <div
+                    onClick={() => window.open(videoUrl, "_blank")}
+                    style={{ position: "relative", cursor: "pointer" }}
+                  >
+                    <img
+                      src={imageUrl}
+                      style={{
+                        width: "100%",
+                        height: "200px",
+                        objectFit: "cover",
+                      }}
+                    />
 
-                  {/* ▶ Video Overlay */}
-                  {isVideo && (
                     <div
                       style={{
                         position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
+                        inset: 0,
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
                         fontSize: "40px",
                         color: "white",
-                        background: "rgba(0,0,0,0.3)",
+                        background: "rgba(0,0,0,0.4)",
                       }}
                     >
                       ▶
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <img
+                    src={imageUrl}
+                    style={{
+                      width: "100%",
+                      height: "200px",
+                      objectFit: "cover",
+                    }}
+                  />
+                )}
 
-                {/* 📄 Inhalt */}
+                {/* ✅ INFO */}
                 <div style={{ padding: "12px" }}>
-                  <h3 style={{ marginBottom: "8px" }}>{item.name}</h3>
+                  <h3>{item.name}</h3>
 
                   <p style={{ fontSize: "12px", color: "#666" }}>
                     Erstellt am:{" "}
@@ -256,15 +233,16 @@ export default class MediaAssetsLib extends React.Component<
                   </p>
 
                   <a
-                    href={downloadUrl}
+                    href={videoUrl}
                     target="_blank"
+                    rel="noopener noreferrer"
                     style={{
                       display: "block",
                       marginTop: "10px",
+                      padding: "10px",
                       background: "#0078d4",
                       color: "white",
                       textAlign: "center",
-                      padding: "10px",
                       borderRadius: "6px",
                       textDecoration: "none",
                       fontWeight: "bold",
@@ -281,4 +259,3 @@ export default class MediaAssetsLib extends React.Component<
     );
   }
 }
-``;
