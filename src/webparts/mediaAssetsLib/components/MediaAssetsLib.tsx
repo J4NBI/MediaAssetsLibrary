@@ -11,6 +11,9 @@ interface IMediaItem {
   created?: string;
   uniqueId?: string;
   tags?: string[];
+
+  driveId?: string;
+  driveItemId?: string;
 }
 
 interface IMediaAssetsLibState {
@@ -49,7 +52,9 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
-    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;
+    /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
+
+    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags`;
 
     const response = await this.props.spHttpClient.get(
       url,
@@ -62,6 +67,8 @@ export default class MediaAssetsLib extends React.Component<
 
     data.Files.forEach((file: any) => {
       /*console.log("FIELDS:", file.ListItemAllFields);*/
+      console.log("FILE:", file);
+
       results.push({
         id: file.ListItemAllFields.Id,
         name: file.Name,
@@ -70,6 +77,9 @@ export default class MediaAssetsLib extends React.Component<
         notes: file.ListItemAllFields?.Notizen,
         created: file.TimeCreated,
         tags: file.ListItemAllFields?.Tags || [],
+
+        driveId: file.ListItemAllFields?.File?.VroomDriveID,
+        driveItemId: file.ListItemAllFields?.File?.VroomItemID,
       });
     });
 
@@ -99,9 +109,9 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private applyFilters = (): void => {
-    console.log("FILTER TRIGGERED");
+    /*console.log("FILTER TRIGGERED");
     console.log("Year:", this.state.filterYear);
-    console.log("Month:", this.state.filterMonth);
+    console.log("Month:", this.state.filterMonth);*/
 
     const { allItems, searchText, filterCategory } = this.state;
 
@@ -303,17 +313,26 @@ export default class MediaAssetsLib extends React.Component<
         >
           {this.state.visibleItems.map((item) => {
             /*const videoUrl = `${window.location.origin}${item.fileRef}?web=1`;*/
+            console.log("DRIVE:", item.driveId, item.driveItemId);
             const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
               `${window.location.origin}${item.fileRef}`,
             )}`;
-            const fileType = item.name.split(".").pop()?.toLowerCase();
+            let thumbnailUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
 
+            const fileType = item.name?.split(".").pop()?.toLowerCase();
             const isVideo = fileType === "mp4" || fileType === "mov";
 
-            const thumbnailUrl = isVideo
-              ? undefined
-              : `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
+            // VIDEO FALL → später via canvas erzeugen
+            if (isVideo) {
+              thumbnailUrl = ""; // erstmal leer
+            }
+            ``;
 
+            // VIDEO FALL → später via canvas erzeugen
+            if (isVideo) {
+              thumbnailUrl = ""; // erstmal leer
+            }
+            ``;
             return (
               <div
                 key={item.id}
@@ -340,19 +359,67 @@ export default class MediaAssetsLib extends React.Component<
                   >
                     <img
                       src={thumbnailUrl}
+                      ref={(el) => {
+                        if (el && isVideo && !thumbnailUrl) {
+                          const video = document.createElement("video");
+                          video.src = `${window.location.origin}${item.fileRef}`;
+                          video.crossOrigin = "anonymous";
+                          video.currentTime = 1;
+
+                          video.onloadeddata = () => {
+                            const canvas = document.createElement("canvas");
+
+                            // Zielgröße (wie deine Card)
+                            canvas.width = 300;
+                            canvas.height = 200;
+
+                            const ctx = canvas.getContext("2d");
+
+                            if (ctx) {
+                              const videoRatio =
+                                video.videoWidth / video.videoHeight;
+                              const canvasRatio = canvas.width / canvas.height;
+
+                              let drawWidth, drawHeight, offsetX, offsetY;
+
+                              if (videoRatio > canvasRatio) {
+                                // Video breiter → links/rechts abschneiden
+                                drawHeight = canvas.height;
+                                drawWidth = canvas.height * videoRatio;
+                                offsetX = (canvas.width - drawWidth) / 2;
+                                offsetY = 0;
+                              } else {
+                                // Video höher → oben/unten abschneiden (wichtig für Hochformat!)
+                                drawWidth = canvas.width;
+                                drawHeight = canvas.width / videoRatio;
+                                offsetX = 0;
+                                offsetY = (canvas.height - drawHeight) / 2;
+                              }
+
+                              ctx.drawImage(
+                                video,
+                                offsetX,
+                                offsetY,
+                                drawWidth,
+                                drawHeight,
+                              );
+                              el.src = canvas.toDataURL();
+                            }
+                          };
+                        }
+                      }}
                       onError={(e) => {
                         e.currentTarget.src =
                           "data:image/svg+xml;charset=UTF-8," +
                           encodeURIComponent(`
-      <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#f3f2f1"/>
-        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c" font-size="16">
-          Kein Preview
-        </text>
-      </svg>
-    `);
+        <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#f3f2f1"/>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c" font-size="16">
+            Kein Preview
+          </text>
+        </svg>
+      `);
                       }}
-                      /* IMAGE GRÖSSE CARD*/
                       style={{
                         width: "100%",
                         height: "200px",
