@@ -18,6 +18,8 @@ interface IMediaAssetsLibState {
   visibleItems: IMediaItem[];
   searchText: string;
   filterCategory?: string;
+  filterYear?: number;
+  filterMonth?: number;
 }
 
 export default class MediaAssetsLib extends React.Component<
@@ -31,6 +33,8 @@ export default class MediaAssetsLib extends React.Component<
       allItems: [],
       visibleItems: [],
       searchText: "",
+      filterYear: undefined,
+      filterMonth: undefined,
     };
   }
 
@@ -89,6 +93,10 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private applyFilters = (): void => {
+    console.log("FILTER TRIGGERED");
+    console.log("Year:", this.state.filterYear);
+    console.log("Month:", this.state.filterMonth);
+
     const { allItems, searchText, filterCategory } = this.state;
 
     let filtered = [...allItems];
@@ -111,6 +119,50 @@ export default class MediaAssetsLib extends React.Component<
 
     if (filterCategory) {
       filtered = filtered.filter((item) => item.category === filterCategory);
+    }
+
+    if (this.state.filterYear) {
+      filtered = filtered.filter((item) => {
+        if (!item.created) return false;
+
+        const date = new Date(item.created);
+        return date.getFullYear() === this.state.filterYear;
+      });
+    }
+
+    /*
+    if (this.state.filterYear) {
+      filtered = filtered.filter((item) => {
+        console.log("CREATED RAW:", item.created);
+
+        if (!item.created) return false;
+
+        const date = new Date(item.created);
+
+        console.log("PARSED DATE:", date);
+        console.log("YEAR:", date.getFullYear());
+
+        const itemYear = date.getFullYear();
+        const selectedYear = this.state.filterYear;
+
+        console.log("COMPARE:", itemYear, selectedYear);
+
+        return itemYear == selectedYear;
+      });
+    }
+      */
+
+    if (this.state.filterMonth) {
+      filtered = filtered.filter((item) => {
+        if (!item.created) return false;
+
+        const date = new Date(item.created);
+
+        // Achtung: JS Monate = 0–11
+        const month = date.getMonth() + 1;
+
+        return month === this.state.filterMonth;
+      });
     }
 
     this.setState({ visibleItems: filtered });
@@ -158,6 +210,66 @@ export default class MediaAssetsLib extends React.Component<
             ))}
           </select>
         </div>
+
+        <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
+          {/* Jahr Filter */}
+          <select
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              this.setState(
+                {
+                  filterYear: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                },
+                this.applyFilters,
+              )
+            }
+          >
+            <option value="">Jahr</option>
+            {[2023, 2024, 2025, 2026].map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+
+          {/* Monat Filter */}
+          <select
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              this.setState(
+                {
+                  filterMonth: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                },
+                this.applyFilters,
+              )
+            }
+          >
+            <option value="">Monat</option>
+
+            {[
+              { v: 1, n: "Jan" },
+              { v: 2, n: "Feb" },
+              { v: 3, n: "Mär" },
+              { v: 4, n: "Apr" },
+              { v: 5, n: "Mai" },
+              { v: 6, n: "Jun" },
+              { v: 7, n: "Jul" },
+              { v: 8, n: "Aug" },
+              { v: 9, n: "Sep" },
+              { v: 10, n: "Okt" },
+              { v: 11, n: "Nov" },
+              { v: 12, n: "Dez" },
+            ].map((m) => (
+              <option key={m.v} value={m.v}>
+                {m.n}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <p>Ergebnisse: {this.state.visibleItems.length}</p>
 
         <div
           style={{
