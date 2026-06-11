@@ -341,6 +341,7 @@ export default class MediaAssetsLib extends React.Component<
       </svg>
     `);
                       }}
+                      /* IMAGE GRÖSSE CARD*/
                       style={{
                         width: "100%",
                         height: "200px",
@@ -366,6 +367,7 @@ export default class MediaAssetsLib extends React.Component<
                 ) : (
                   <img
                     src={thumbnailUrl}
+                    style={{ width: "100%" }}
                     onError={(e) => {
                       e.currentTarget.src =
                         "data:image/svg+xml;charset=UTF-8," +
