@@ -180,8 +180,24 @@ export default class MediaAssetsLib extends React.Component<
     return Array.from(new Set(values)) as string[];
   }
 
+  private getUniqueYears(): number[] {
+    const years = this.state.allItems
+      .map((item) => {
+        if (!item.created) return null;
+
+        const date = new Date(item.created);
+        return date.getFullYear();
+      })
+      .filter((y) => y !== null) as number[];
+
+    // Duplikate entfernen + sortieren (neueste zuerst)
+    return Array.from(new Set(years)).sort((a, b) => b - a);
+  }
+
   public render(): React.ReactElement<IMediaAssetsLibProps> {
     const categoryOptions = this.getUniqueCategories();
+
+    const yearOptions = this.getUniqueYears();
 
     return (
       <div style={{ padding: "20px" }}>
@@ -226,7 +242,7 @@ export default class MediaAssetsLib extends React.Component<
             }
           >
             <option value="">Jahr</option>
-            {[2023, 2024, 2025, 2026].map((year) => (
+            {yearOptions.map((year) => (
               <option key={year} value={year}>
                 {year}
               </option>
@@ -281,12 +297,16 @@ export default class MediaAssetsLib extends React.Component<
         >
           {this.state.visibleItems.map((item) => {
             const videoUrl = `${window.location.origin}${item.fileRef}?web=1`;
-
-            const thumbnailUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
-
+            const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
+              `${window.location.origin}${item.fileRef}`,
+            )}`;
             const fileType = item.name.split(".").pop()?.toLowerCase();
 
             const isVideo = fileType === "mp4" || fileType === "mov";
+
+            const thumbnailUrl = isVideo
+              ? undefined
+              : `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
 
             return (
               <div
@@ -311,7 +331,15 @@ export default class MediaAssetsLib extends React.Component<
                       src={thumbnailUrl}
                       onError={(e) => {
                         e.currentTarget.src =
-                          "https://via.placeholder.com/300x200?text=Video";
+                          "data:image/svg+xml;charset=UTF-8," +
+                          encodeURIComponent(`
+      <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#f3f2f1"/>
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c" font-size="16">
+          Kein Preview
+        </text>
+      </svg>
+    `);
                       }}
                       style={{
                         width: "100%",
@@ -338,17 +366,23 @@ export default class MediaAssetsLib extends React.Component<
                 ) : (
                   <img
                     src={thumbnailUrl}
-                    style={{
-                      width: "100%",
-                      height: "200px",
-                      objectFit: "cover",
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "data:image/svg+xml;charset=UTF-8," +
+                        encodeURIComponent(`
+        <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#f3f2f1"/>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c" font-size="16">
+            Kein Preview
+          </text>
+        </svg>
+      `);
                     }}
                   />
                 )}
 
                 <div style={{ padding: "12px" }}>
                   <h3>{item.name}</h3>
-
                   {/* ✅ TAG CHIPS HIER */}
                   <div
                     style={{
@@ -380,18 +414,22 @@ export default class MediaAssetsLib extends React.Component<
                       </span>
                     ))}
                   </div>
-
                   <p style={{ fontSize: "12px", color: "#666" }}>
                     Erstellt am:{" "}
                     {item.created
                       ? new Date(item.created).toLocaleDateString()
                       : "-"}
                   </p>
+                  <button
+                    onClick={() => {
+                      const link = document.createElement("a");
+                      link.href = downloadUrl;
+                      link.setAttribute("download", item.name);
 
-                  <a
-                    href={videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                     style={{
                       display: "block",
                       marginTop: "10px",
@@ -400,12 +438,13 @@ export default class MediaAssetsLib extends React.Component<
                       color: "white",
                       textAlign: "center",
                       borderRadius: "6px",
-                      textDecoration: "none",
+                      border: "none",
+                      cursor: "pointer",
                       fontWeight: "bold",
                     }}
                   >
                     Download
-                  </a>
+                  </button>
                 </div>
               </div>
             );
