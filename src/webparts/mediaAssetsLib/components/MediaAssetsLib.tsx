@@ -26,6 +26,11 @@ interface IMediaAssetsLibState {
 
   isModalOpen: boolean;
   selectedItem?: IMediaItem;
+
+  isEditOpen: boolean;
+  editName: string;
+  editTags: string;
+  editCategory: string;
 }
 
 export default class MediaAssetsLib extends React.Component<
@@ -44,6 +49,11 @@ export default class MediaAssetsLib extends React.Component<
 
       isModalOpen: false,
       selectedItem: undefined,
+
+      isEditOpen: false,
+      editName: "",
+      editTags: "",
+      editCategory: "",
     };
   }
 
@@ -108,6 +118,45 @@ export default class MediaAssetsLib extends React.Component<
       ``;
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  private async updateItem(): Promise<void> {
+    const { selectedItem, editName, editTags, editCategory } = this.state;
+
+    if (!selectedItem) return;
+
+    try {
+      /* BIBLIOTHEK ÄNDERN */
+      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/items(${selectedItem.id})`;
+
+      const tagsArray = editTags
+        ?.split(",")
+        .map((t) => t.trim())
+        .filter((t) => t);
+
+      await this.props.spHttpClient.post(url, SPHttpClient.configurations.v1, {
+        headers: {
+          Accept: "application/json;odata=nometadata",
+          "Content-Type": "application/json;odata=nometadata",
+          "IF-MATCH": "*",
+          "X-HTTP-Method": "MERGE",
+        },
+        body: JSON.stringify({
+          FileLeafRef: editName, // Dateiname-Feld (wichtig!)
+          Kategorie: editCategory, // deine SP-Spalte
+          Tags: tagsArray, // Mehrfachwert möglich
+        }),
+      });
+
+      console.log("Update erfolgreich");
+
+      // neu laden → damit UI sofort aktualisiert wird
+      await this.loadAllMedia();
+
+      this.setState({ isEditOpen: false });
+    } catch (error) {
+      console.error("Update Fehler:", error);
     }
   }
 
@@ -229,7 +278,6 @@ export default class MediaAssetsLib extends React.Component<
     return (
       <div style={{ padding: "20px" }}>
         <h2>Media Library</h2>
-
         <input
           type="text"
           placeholder="Suche..."
@@ -237,7 +285,6 @@ export default class MediaAssetsLib extends React.Component<
           onChange={this.onSearchChange}
           style={{ padding: "8px", width: "300px" }}
         />
-
         <div style={{ marginTop: "10px" }}>
           <select
             onChange={(e) =>
@@ -253,7 +300,6 @@ export default class MediaAssetsLib extends React.Component<
             ))}
           </select>
         </div>
-
         <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
           {/* Jahr Filter */}
           <select
@@ -311,9 +357,7 @@ export default class MediaAssetsLib extends React.Component<
             ))}
           </select>
         </div>
-
         <p>Ergebnisse: {this.state.visibleItems.length}</p>
-
         <div
           style={{
             display: "flex",
@@ -517,31 +561,59 @@ export default class MediaAssetsLib extends React.Component<
                       ? new Date(item.created).toLocaleDateString()
                       : "-"}
                   </p>
-                  <button
-                    onClick={() => {
-                      const link = document.createElement("a");
-                      link.href = downloadUrl;
-                      link.setAttribute("download", item.name);
-
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                    style={{
-                      display: "block",
-                      marginTop: "10px",
-                      padding: "10px",
-                      background: "#e42828",
-                      color: "white",
-                      textAlign: "center",
-                      borderRadius: "6px",
-                      border: "none",
-                      cursor: "pointer",
-                      fontWeight: "bold",
-                    }}
+                  <div
+                    style={{ display: "flex", gap: "8px", marginTop: "10px" }}
                   >
-                    Download
-                  </button>
+                    {/* DOWNLOAD */}
+                    <button
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = downloadUrl;
+                        link.setAttribute("download", item.name);
+
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "10px",
+                        background: "#e42828",
+                        color: "white",
+                        borderRadius: "6px",
+                        border: "none",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Download
+                    </button>
+
+                    {/* EDIT BUTTON (neu) */}
+                    <button
+                      onClick={() => {
+                        this.setState({
+                          isEditOpen: true,
+                          selectedItem: item,
+                          editName: item.name || "",
+                          editTags: (item.tags || []).join(", "),
+                          editCategory: item.category || "",
+                        });
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "10px",
+                        background: "#e1dfdd", // leicht grau
+                        color: "#323130",
+                        borderRadius: "6px",
+                        border: "1px solid #c8c6c4",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Editieren
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -654,6 +726,94 @@ export default class MediaAssetsLib extends React.Component<
               })()}
             </div>
             ``
+          </div>
+        )}
+        {this.state.isEditOpen && this.state.selectedItem && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.7)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                background: "white",
+                padding: "20px",
+                borderRadius: "12px",
+                width: "400px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <h3>Element bearbeiten</h3>
+
+              {/* NAME */}
+              <input
+                type="text"
+                value={this.state.editName}
+                onChange={(e) => this.setState({ editName: e.target.value })}
+                placeholder="Name"
+              />
+
+              {/* TAGS */}
+              <input
+                type="text"
+                value={this.state.editTags}
+                onChange={(e) => this.setState({ editTags: e.target.value })}
+                placeholder="Tags (kommagetrennt)"
+              />
+
+              {/* KATEGORIE */}
+              <select
+                value={this.state.editCategory}
+                onChange={(e) =>
+                  this.setState({ editCategory: e.target.value })
+                }
+              >
+                <option value="">Kategorie wählen</option>
+                <option value="Säugetier">Säugetier</option>
+                <option value="Vogel">Vogel</option>
+              </select>
+
+              {/* BUTTONS */}
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                <button
+                  onClick={() => this.setState({ isEditOpen: false })}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: "#f3f2f1",
+                    border: "1px solid #ccc",
+                    borderRadius: "6px",
+                  }}
+                >
+                  Abbrechen
+                </button>
+
+                <button
+                  onClick={() => this.updateItem()}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: "#0078d4",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                  }}
+                >
+                  Speichern
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
