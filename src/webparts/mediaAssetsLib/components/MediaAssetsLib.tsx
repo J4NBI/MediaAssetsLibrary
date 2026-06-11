@@ -20,6 +20,9 @@ interface IMediaAssetsLibState {
   filterCategory?: string;
   filterYear?: number;
   filterMonth?: number;
+
+  isModalOpen: boolean;
+  selectedItem?: IMediaItem;
 }
 
 export default class MediaAssetsLib extends React.Component<
@@ -35,6 +38,9 @@ export default class MediaAssetsLib extends React.Component<
       searchText: "",
       filterYear: undefined,
       filterMonth: undefined,
+
+      isModalOpen: false,
+      selectedItem: undefined,
     };
   }
 
@@ -296,7 +302,7 @@ export default class MediaAssetsLib extends React.Component<
           }}
         >
           {this.state.visibleItems.map((item) => {
-            const videoUrl = `${window.location.origin}${item.fileRef}?web=1`;
+            /*const videoUrl = `${window.location.origin}${item.fileRef}?web=1`;*/
             const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
               `${window.location.origin}${item.fileRef}`,
             )}`;
@@ -321,7 +327,12 @@ export default class MediaAssetsLib extends React.Component<
               >
                 {isVideo ? (
                   <div
-                    onClick={() => window.open(videoUrl, "_blank")}
+                    onClick={() =>
+                      this.setState({
+                        isModalOpen: true,
+                        selectedItem: item,
+                      })
+                    }
                     style={{
                       position: "relative",
                       cursor: "pointer",
@@ -367,7 +378,13 @@ export default class MediaAssetsLib extends React.Component<
                 ) : (
                   <img
                     src={thumbnailUrl}
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", cursor: "pointer" }}
+                    onClick={() =>
+                      this.setState({
+                        isModalOpen: true,
+                        selectedItem: item,
+                      })
+                    }
                     onError={(e) => {
                       e.currentTarget.src =
                         "data:image/svg+xml;charset=UTF-8," +
@@ -452,6 +469,115 @@ export default class MediaAssetsLib extends React.Component<
             );
           })}
         </div>
+        {this.state.isModalOpen && this.state.selectedItem && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.9)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999,
+            }}
+          >
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() =>
+                this.setState({ isModalOpen: false, selectedItem: undefined })
+              }
+              style={{
+                position: "absolute",
+                top: "20px",
+                right: "20px",
+                fontSize: "24px",
+                background: "transparent",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+            {/* CONTENT MODAL */}
+            <div
+              style={{
+                maxWidth: "90%",
+                maxHeight: "90%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              {(() => {
+                const item = this.state.selectedItem;
+                const fileType = item?.name.split(".").pop()?.toLowerCase();
+                const isVideo = fileType === "mp4" || fileType === "mov";
+
+                const fileUrl = `${window.location.origin}${item?.fileRef}`;
+                const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(fileUrl)}`;
+
+                return (
+                  <>
+                    {/* IMAGE */}
+                    {!isVideo && (
+                      <img
+                        src={fileUrl}
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "80vh",
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
+
+                    {/* VIDEO */}
+                    {isVideo && (
+                      <video
+                        controls
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "80vh",
+                        }}
+                      >
+                        <source src={fileUrl} />
+                      </video>
+                    )}
+
+                    {/* DOWNLOAD BUTTON */}
+                    <button
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = downloadUrl;
+                        link.setAttribute("download", item?.name || "file");
+
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      style={{
+                        padding: "12px 20px",
+                        background: "#e42828",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Download
+                    </button>
+                  </>
+                );
+              })()}
+            </div>
+            ``
+          </div>
+        )}
       </div>
     );
   }
