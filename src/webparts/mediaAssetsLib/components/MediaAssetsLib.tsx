@@ -99,10 +99,13 @@ export default class MediaAssetsLib extends React.Component<
 
       const items = await this.getFolderContent(rootFolder);
 
-      this.setState({
-        allItems: items,
-        visibleItems: items,
-      });
+      this.setState(
+        {
+          allItems: items,
+        },
+        this.applyFilters,
+      );
+      ``;
     } catch (error) {
       console.error(error);
     }
@@ -180,6 +183,14 @@ export default class MediaAssetsLib extends React.Component<
         return month === this.state.filterMonth;
       });
     }
+
+    // SORTIERUNG (neueste zuerst)
+    filtered.sort((a, b) => {
+      const dateA = a.created ? new Date(a.created).getTime() : 0;
+      const dateB = b.created ? new Date(b.created).getTime() : 0;
+
+      return dateB - dateA; // neueste zuerst
+    });
 
     this.setState({ visibleItems: filtered });
   };
