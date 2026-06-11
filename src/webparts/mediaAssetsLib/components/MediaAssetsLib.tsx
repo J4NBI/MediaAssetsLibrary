@@ -9,6 +9,8 @@ interface IMediaItem {
   category?: string;
   notes?: string;
   created?: string;
+  uniqueId?: string;
+  tags?: string[];
 }
 
 interface IMediaAssetsLibState {
@@ -37,7 +39,7 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
-    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields`;
+    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;
 
     const response = await this.props.spHttpClient.get(
       url,
@@ -45,9 +47,11 @@ export default class MediaAssetsLib extends React.Component<
     );
 
     const data = await response.json();
+
     let results: IMediaItem[] = [];
 
     data.Files.forEach((file: any) => {
+      /*console.log("FIELDS:", file.ListItemAllFields);*/
       results.push({
         id: file.ListItemAllFields.Id,
         name: file.Name,
@@ -55,6 +59,7 @@ export default class MediaAssetsLib extends React.Component<
         category: file.ListItemAllFields?.Kategorie,
         notes: file.ListItemAllFields?.Notizen,
         created: file.TimeCreated,
+        tags: file.ListItemAllFields?.Tags || [],
       });
     });
 
@@ -90,11 +95,17 @@ export default class MediaAssetsLib extends React.Component<
     const search = searchText.toLowerCase();
 
     if (search) {
+      const terms = search.split(" ").filter((t) => t);
+
       filtered = filtered.filter((item) => {
         const name = item.name?.toLowerCase() || "";
         const notes = item.notes?.toLowerCase() || "";
+        const tags = (item.tags || []).join(" ").toLowerCase();
 
-        return name.includes(search) || notes.includes(search);
+        return terms.every(
+          (term) =>
+            name.includes(term) || notes.includes(term) || tags.includes(term),
+        );
       });
     }
 
@@ -124,7 +135,6 @@ export default class MediaAssetsLib extends React.Component<
       <div style={{ padding: "20px" }}>
         <h2>Media Library</h2>
 
-        {/* 🔍 Suche */}
         <input
           type="text"
           placeholder="Suche..."
@@ -133,7 +143,6 @@ export default class MediaAssetsLib extends React.Component<
           style={{ padding: "8px", width: "300px" }}
         />
 
-        {/* 🎯 Kategorie */}
         <div style={{ marginTop: "10px" }}>
           <select
             onChange={(e) =>
@@ -150,7 +159,6 @@ export default class MediaAssetsLib extends React.Component<
           </select>
         </div>
 
-        {/* 📦 CARDS */}
         <div
           style={{
             display: "flex",
@@ -160,13 +168,12 @@ export default class MediaAssetsLib extends React.Component<
           }}
         >
           {this.state.visibleItems.map((item) => {
-            // ✅ richtige URLs
             const videoUrl = `${window.location.origin}${item.fileRef}?web=1`;
-            const imageUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(
-              item.fileRef,
-            )}&resolution=1`;
+
+            const thumbnailUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
 
             const fileType = item.name.split(".").pop()?.toLowerCase();
+
             const isVideo = fileType === "mp4" || fileType === "mov";
 
             return (
@@ -180,14 +187,20 @@ export default class MediaAssetsLib extends React.Component<
                   boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
                 }}
               >
-                {/* ✅ MEDIA */}
                 {isVideo ? (
                   <div
                     onClick={() => window.open(videoUrl, "_blank")}
-                    style={{ position: "relative", cursor: "pointer" }}
+                    style={{
+                      position: "relative",
+                      cursor: "pointer",
+                    }}
                   >
                     <img
-                      src={imageUrl}
+                      src={thumbnailUrl}
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/300x200?text=Video";
+                      }}
                       style={{
                         width: "100%",
                         height: "200px",
@@ -212,7 +225,7 @@ export default class MediaAssetsLib extends React.Component<
                   </div>
                 ) : (
                   <img
-                    src={imageUrl}
+                    src={thumbnailUrl}
                     style={{
                       width: "100%",
                       height: "200px",
@@ -221,9 +234,40 @@ export default class MediaAssetsLib extends React.Component<
                   />
                 )}
 
-                {/* ✅ INFO */}
                 <div style={{ padding: "12px" }}>
                   <h3>{item.name}</h3>
+
+                  {/* ✅ TAG CHIPS HIER */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {(item.tags || []).map((tag, i) => (
+                      <span
+                        key={i}
+                        onClick={() =>
+                          this.setState(
+                            { searchText: tag.toLowerCase() },
+                            this.applyFilters,
+                          )
+                        }
+                        style={{
+                          background: "#0078d4",
+                          color: "white",
+                          padding: "4px 8px",
+                          borderRadius: "12px",
+                          fontSize: "11px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
 
                   <p style={{ fontSize: "12px", color: "#666" }}>
                     Erstellt am:{" "}
@@ -240,7 +284,7 @@ export default class MediaAssetsLib extends React.Component<
                       display: "block",
                       marginTop: "10px",
                       padding: "10px",
-                      background: "#0078d4",
+                      background: "#e42828",
                       color: "white",
                       textAlign: "center",
                       borderRadius: "6px",
