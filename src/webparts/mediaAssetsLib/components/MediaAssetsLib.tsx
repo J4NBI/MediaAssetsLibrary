@@ -29,7 +29,7 @@ interface IMediaAssetsLibState {
 
   isEditOpen: boolean;
   editName: string;
-  editTags: string;
+  editTags: string[];
   editCategory: string;
 }
 
@@ -52,7 +52,7 @@ export default class MediaAssetsLib extends React.Component<
 
       isEditOpen: false,
       editName: "",
-      editTags: "",
+      editTags: [],
       editCategory: "",
     };
   }
@@ -86,7 +86,14 @@ export default class MediaAssetsLib extends React.Component<
         category: file.ListItemAllFields?.Kategorie,
         notes: file.ListItemAllFields?.Notizen,
         created: file.TimeCreated,
-        tags: file.ListItemAllFields?.Tags || [],
+        tags: Array.isArray(file.ListItemAllFields?.Tags)
+          ? file.ListItemAllFields.Tags
+          : file.ListItemAllFields?.Tags
+            ? String(file.ListItemAllFields.Tags)
+                .split(/[;,#]+/)
+                .map((t: string) => t.trim())
+                .filter((t: string) => t)
+            : [],
 
         driveId: file.ListItemAllFields?.File?.VroomDriveID,
         driveItemId: file.ListItemAllFields?.File?.VroomItemID,
@@ -130,10 +137,7 @@ export default class MediaAssetsLib extends React.Component<
       /* BIBLIOTHEK ÄNDERN */
       const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/items(${selectedItem.id})`;
 
-      const tagsArray = editTags
-        ?.split(",")
-        .map((t) => t.trim())
-        .filter((t) => t);
+      const tagsArray = editTags;
 
       await this.props.spHttpClient.post(url, SPHttpClient.configurations.v1, {
         headers: {
@@ -596,7 +600,7 @@ export default class MediaAssetsLib extends React.Component<
                           isEditOpen: true,
                           selectedItem: item,
                           editName: item.name || "",
-                          editTags: (item.tags || []).join(", "),
+                          editTags: item.tags || [],
                           editCategory: item.category || "",
                         });
                       }}
@@ -765,12 +769,61 @@ export default class MediaAssetsLib extends React.Component<
               />
 
               {/* TAGS */}
-              <input
-                type="text"
-                value={this.state.editTags}
-                onChange={(e) => this.setState({ editTags: e.target.value })}
-                placeholder="Tags (kommagetrennt)"
-              />
+              <div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {this.state.editTags.map((tag, index) => (
+                    <span
+                      key={index}
+                      style={{
+                        background: "#0078d4",
+                        color: "white",
+                        padding: "4px 8px",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      {tag}
+                      <span
+                        onClick={() => {
+                          const newTags = [...this.state.editTags];
+                          newTags.splice(index, 1);
+                          this.setState({ editTags: newTags });
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        ✕
+                      </span>
+                    </span>
+                  ))}
+                </div>
+
+                {/* neues Tag hinzufügen */}
+                <input
+                  type="text"
+                  placeholder="Tag hinzufügen + Enter"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+
+                      const value = (e.target as HTMLInputElement).value.trim();
+                      if (!value) return;
+
+                      this.setState({
+                        editTags: [...this.state.editTags, value],
+                      });
+
+                      (e.target as HTMLInputElement).value = "";
+                    }
+                  }}
+                  style={{ marginTop: "8px", width: "100%" }}
+                />
+              </div>
 
               {/* KATEGORIE */}
               <select
