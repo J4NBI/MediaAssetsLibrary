@@ -25,6 +25,7 @@ interface IMediaAssetsLibState {
   filterCategory?: string;
   filterYear?: number;
   filterMonth?: number;
+  filterFormat?: string;
 
   isModalOpen: boolean;
   selectedItem?: IMediaItem;
@@ -34,6 +35,17 @@ interface IMediaAssetsLibState {
   editTags: string[];
   editCategory: string;
   editFormat: string;
+
+  isUploadOpen: boolean; // ✅ NEU
+  uploadName: string;
+  uploadTags: string[];
+  uploadCategory: string;
+  uploadFormat: string;
+  uploadBucket: string;
+  uploadFile?: File;
+  uploadPreviewUrl?: string;
+
+  bucketOptions: string[];
 }
 
 export default class MediaAssetsLib extends React.Component<
@@ -58,11 +70,22 @@ export default class MediaAssetsLib extends React.Component<
       editTags: [],
       editCategory: "",
       editFormat: "",
+
+      isUploadOpen: false,
+      uploadName: "",
+      uploadTags: [],
+      uploadCategory: "",
+      uploadFormat: "",
+      uploadBucket: "",
+      uploadFile: undefined,
+
+      bucketOptions: [],
     };
   }
 
   public async componentDidMount(): Promise<void> {
     await this.loadAllMedia();
+    await this.loadBuckets(); // ✅ NEU
   }
 
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
@@ -127,7 +150,6 @@ export default class MediaAssetsLib extends React.Component<
         },
         this.applyFilters,
       );
-      ``;
     } catch (error) {
       console.error(error);
     }
@@ -176,7 +198,7 @@ export default class MediaAssetsLib extends React.Component<
     console.log("Year:", this.state.filterYear);
     console.log("Month:", this.state.filterMonth);*/
 
-    const { allItems, searchText, filterCategory } = this.state;
+    const { allItems, searchText, filterCategory, filterFormat } = this.state;
 
     let filtered = [...allItems];
     const search = searchText.toLowerCase();
@@ -198,6 +220,10 @@ export default class MediaAssetsLib extends React.Component<
 
     if (filterCategory) {
       filtered = filtered.filter((item) => item.category === filterCategory);
+    }
+
+    if (filterFormat) {
+      filtered = filtered.filter((item) => item.format === filterFormat);
     }
 
     if (this.state.filterYear) {
@@ -281,14 +307,62 @@ export default class MediaAssetsLib extends React.Component<
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }
 
+  private async loadBuckets(): Promise<void> {
+    try {
+      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/fields/getbyinternalnameortitle('Bucket')`;
+
+      const response = await this.props.spHttpClient.get(
+        url,
+        SPHttpClient.configurations.v1,
+      );
+
+      const data = await response.json();
+
+      const choices = data.Choices || [];
+
+      // ✅ Neueste zuerst (einfach reverse – SharePoint sortiert alt→neu)
+      const sorted = choices.reverse();
+
+      this.setState({
+        bucketOptions: sorted, // wir brauchen gleich ein neues State Feld
+      });
+    } catch (error) {
+      console.error("Bucket laden Fehler:", error);
+    }
+  }
+
   public render(): React.ReactElement<IMediaAssetsLibProps> {
     const categoryOptions = this.getUniqueCategories();
 
     const yearOptions = this.getUniqueYears();
 
+    /* HEADER */
     return (
       <div style={{ padding: "20px" }}>
-        <h2>Media Library</h2>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <h2>Media Library</h2>
+
+          <button
+            onClick={() => this.setState({ isUploadOpen: true })}
+            style={{
+              padding: "10px 16px",
+              fontSize: "20px",
+              background: "#0078d4",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            ＋
+          </button>
+        </div>
         <input
           type="text"
           placeholder="Suche..."
@@ -392,13 +466,10 @@ export default class MediaAssetsLib extends React.Component<
             if (isVideo) {
               thumbnailUrl = ""; // erstmal leer
             }
-            ``;
-
             // VIDEO FALL → später via canvas erzeugen
             if (isVideo) {
               thumbnailUrl = ""; // erstmal leer
             }
-            ``;
             return (
               <div
                 key={item.id}
@@ -737,9 +808,9 @@ export default class MediaAssetsLib extends React.Component<
                 );
               })()}
             </div>
-            ``
           </div>
         )}
+        // EDIT MODAL //////////
         {this.state.isEditOpen && this.state.selectedItem && (
           <div
             style={{
@@ -768,7 +839,6 @@ export default class MediaAssetsLib extends React.Component<
             >
               <h3>Element bearbeiten</h3>
 
-              {/* NAME */}
               <input
                 type="text"
                 value={this.state.editName}
@@ -780,6 +850,191 @@ export default class MediaAssetsLib extends React.Component<
               <div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {this.state.editTags.map((tag, index) => (
+                    <span key={index}>
+                      {tag}
+                      <span
+                        onClick={() => {
+                          const newTags = [...this.state.editTags];
+                          newTags.splice(index, 1);
+                          this.setState({ editTags: newTags });
+                        }}
+                      >
+                        ✕
+                      </span>
+                    </span>
+                  ))}
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Tag hinzufügen + Enter"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const value = (e.target as HTMLInputElement).value.trim();
+                      if (!value) return;
+
+                      this.setState({
+                        editTags: [...this.state.editTags, value],
+                      });
+
+                      (e.target as HTMLInputElement).value = "";
+                    }
+                  }}
+                />
+              </div>
+
+              <select
+                value={this.state.editCategory}
+                onChange={(e) =>
+                  this.setState({ editCategory: e.target.value })
+                }
+              >
+                <option value="">Kategorie wählen</option>
+                <option value="Säugetier">Säugetier</option>
+                <option value="Vogel">Vogel</option>
+              </select>
+
+              <select
+                value={this.state.editFormat}
+                onChange={(e) => this.setState({ editFormat: e.target.value })}
+              >
+                <option value="">Format wählen</option>
+                <option value="Bild">Bild</option>
+                <option value="Video">Video</option>
+                <option value="Dokument">Dokument</option>
+              </select>
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                <button onClick={() => this.setState({ isEditOpen: false })}>
+                  Abbrechen
+                </button>
+
+                <button onClick={() => this.updateItem()}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* UPLOAD MODAL */}
+        {this.state.isUploadOpen && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.7)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                background: "white",
+                padding: "20px",
+                borderRadius: "12px",
+                width: "400px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <h3>Upload</h3>
+              {/* MODAL PREVIEW */}
+              {this.state.uploadFile && this.state.uploadPreviewUrl && (
+                <div style={{ marginTop: "10px" }}>
+                  {(() => {
+                    const file = this.state.uploadFile!;
+                    const fileType = file.name.split(".").pop()?.toLowerCase();
+
+                    const isImage = [
+                      "jpg",
+                      "jpeg",
+                      "png",
+                      "gif",
+                      "webp",
+                    ].includes(fileType || "");
+                    const isVideo = ["mp4", "mov", "webm"].includes(
+                      fileType || "",
+                    );
+
+                    if (isImage) {
+                      return (
+                        <img
+                          src={this.state.uploadPreviewUrl}
+                          style={{
+                            width: "100%",
+                            maxHeight: "200px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                          }}
+                        />
+                      );
+                    }
+
+                    if (isVideo) {
+                      return (
+                        <video
+                          src={this.state.uploadPreviewUrl}
+                          controls
+                          style={{
+                            width: "100%",
+                            maxHeight: "200px",
+                            borderRadius: "8px",
+                          }}
+                        />
+                      );
+                    }
+
+                    return (
+                      <div
+                        style={{
+                          padding: "20px",
+                          background: "#f3f2f1",
+                          borderRadius: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        📄 {file.name}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+              <input
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  const fileName = file.name;
+                  const baseName = fileName.includes(".")
+                    ? fileName.substring(0, fileName.lastIndexOf("."))
+                    : fileName;
+
+                  const previewUrl = URL.createObjectURL(file); // ✅ NEU
+
+                  this.setState({
+                    uploadFile: file,
+                    uploadName: baseName,
+                    uploadPreviewUrl: previewUrl, // ✅ WICHTIG
+                  });
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Name"
+                value={this.state.uploadName}
+                onChange={(e) => this.setState({ uploadName: e.target.value })}
+              />
+
+              {/* TAGS UPLOAD*/}
+              <div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {this.state.uploadTags.map((tag, index) => (
                     <span
                       key={index}
                       style={{
@@ -796,14 +1051,11 @@ export default class MediaAssetsLib extends React.Component<
                       {tag}
                       <span
                         onClick={() => {
-                          const newTags = [...this.state.editTags];
+                          const newTags = [...this.state.uploadTags];
                           newTags.splice(index, 1);
-                          this.setState({ editTags: newTags });
+                          this.setState({ uploadTags: newTags });
                         }}
-                        style={{
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                        }}
+                        style={{ cursor: "pointer", fontWeight: "bold" }}
                       >
                         ✕
                       </span>
@@ -811,7 +1063,6 @@ export default class MediaAssetsLib extends React.Component<
                   ))}
                 </div>
 
-                {/* neues Tag hinzufügen */}
                 <input
                   type="text"
                   placeholder="Tag hinzufügen + Enter"
@@ -823,7 +1074,7 @@ export default class MediaAssetsLib extends React.Component<
                       if (!value) return;
 
                       this.setState({
-                        editTags: [...this.state.editTags, value],
+                        uploadTags: [...this.state.uploadTags, value],
                       });
 
                       (e.target as HTMLInputElement).value = "";
@@ -833,11 +1084,10 @@ export default class MediaAssetsLib extends React.Component<
                 />
               </div>
 
-              {/* KATEGORIE */}
               <select
-                value={this.state.editCategory}
+                value={this.state.uploadCategory}
                 onChange={(e) =>
-                  this.setState({ editCategory: e.target.value })
+                  this.setState({ uploadCategory: e.target.value })
                 }
               >
                 <option value="">Kategorie wählen</option>
@@ -845,10 +1095,11 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Vogel">Vogel</option>
               </select>
 
-              {/* FORMAT */}
               <select
-                value={this.state.editFormat}
-                onChange={(e) => this.setState({ editFormat: e.target.value })}
+                value={this.state.uploadFormat}
+                onChange={(e) =>
+                  this.setState({ uploadFormat: e.target.value })
+                }
               >
                 <option value="">Format wählen</option>
                 <option value="Bild">Bild</option>
@@ -856,35 +1107,25 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Dokument">Dokument</option>
               </select>
 
-              {/* BUTTONS */}
-              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                <button
-                  onClick={() => this.setState({ isEditOpen: false })}
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    background: "#f3f2f1",
-                    border: "1px solid #ccc",
-                    borderRadius: "6px",
-                  }}
-                >
-                  Abbrechen
-                </button>
+              {/* BUCKET */}
+              <input
+                list="bucket-list"
+                placeholder="Bucket wählen oder neu eingeben"
+                value={this.state.uploadBucket}
+                onChange={(e) =>
+                  this.setState({ uploadBucket: e.target.value })
+                }
+              />
 
-                <button
-                  onClick={() => this.updateItem()}
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    background: "#0078d4",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                  }}
-                >
-                  Speichern
-                </button>
-              </div>
+              <datalist id="bucket-list">
+                {this.state.bucketOptions.map((b, i) => (
+                  <option key={i} value={b} />
+                ))}
+              </datalist>
+
+              <button onClick={() => this.setState({ isUploadOpen: false })}>
+                Schließen
+              </button>
             </div>
           </div>
         )}
