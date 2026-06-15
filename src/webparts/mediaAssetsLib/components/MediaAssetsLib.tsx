@@ -14,6 +14,8 @@ interface IMediaItem {
 
   driveId?: string;
   driveItemId?: string;
+
+  format?: string;
 }
 
 interface IMediaAssetsLibState {
@@ -31,6 +33,7 @@ interface IMediaAssetsLibState {
   editName: string;
   editTags: string[];
   editCategory: string;
+  editFormat: string;
 }
 
 export default class MediaAssetsLib extends React.Component<
@@ -54,6 +57,7 @@ export default class MediaAssetsLib extends React.Component<
       editName: "",
       editTags: [],
       editCategory: "",
+      editFormat: "",
     };
   }
 
@@ -64,7 +68,7 @@ export default class MediaAssetsLib extends React.Component<
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
     /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
 
-    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags`;
+    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format`;
 
     const response = await this.props.spHttpClient.get(
       url,
@@ -97,6 +101,7 @@ export default class MediaAssetsLib extends React.Component<
 
         driveId: file.ListItemAllFields?.File?.VroomDriveID,
         driveItemId: file.ListItemAllFields?.File?.VroomItemID,
+        format: file.ListItemAllFields?.Format,
       });
     });
 
@@ -129,7 +134,8 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private async updateItem(): Promise<void> {
-    const { selectedItem, editName, editTags, editCategory } = this.state;
+    const { selectedItem, editName, editTags, editCategory, editFormat } =
+      this.state;
 
     if (!selectedItem) return;
 
@@ -150,6 +156,7 @@ export default class MediaAssetsLib extends React.Component<
           FileLeafRef: editName, // Dateiname-Feld (wichtig!)
           Kategorie: editCategory, // deine SP-Spalte
           Tags: tagsArray, // Mehrfachwert möglich
+          Format: editFormat,
         }),
       });
 
@@ -602,6 +609,7 @@ export default class MediaAssetsLib extends React.Component<
                           editName: item.name || "",
                           editTags: item.tags || [],
                           editCategory: item.category || "",
+                          editFormat: item.format || "",
                         });
                       }}
                       style={{
@@ -835,6 +843,17 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="">Kategorie wählen</option>
                 <option value="Säugetier">Säugetier</option>
                 <option value="Vogel">Vogel</option>
+              </select>
+
+              {/* FORMAT */}
+              <select
+                value={this.state.editFormat}
+                onChange={(e) => this.setState({ editFormat: e.target.value })}
+              >
+                <option value="">Format wählen</option>
+                <option value="Bild">Bild</option>
+                <option value="Video">Video</option>
+                <option value="Dokument">Dokument</option>
               </select>
 
               {/* BUTTONS */}
