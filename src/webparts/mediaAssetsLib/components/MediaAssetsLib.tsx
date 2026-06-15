@@ -46,6 +46,9 @@ interface IMediaAssetsLibState {
   uploadPreviewUrl?: string;
 
   bucketOptions: string[];
+
+  uploadProgress: number;
+  uploading: boolean;
 }
 
 export default class MediaAssetsLib extends React.Component<
@@ -80,6 +83,9 @@ export default class MediaAssetsLib extends React.Component<
       uploadFile: undefined,
 
       bucketOptions: [],
+
+      uploadProgress: 0,
+      uploading: false,
     };
   }
 
@@ -91,8 +97,7 @@ export default class MediaAssetsLib extends React.Component<
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
     /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
 
-    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format`;
-
+    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format,Files/ListItemAllFields/Bucket`;
     const response = await this.props.spHttpClient.get(
       url,
       SPHttpClient.configurations.v1,
@@ -104,7 +109,7 @@ export default class MediaAssetsLib extends React.Component<
 
     data.Files.forEach((file: any) => {
       /*console.log("FIELDS:", file.ListItemAllFields);*/
-      console.log("FILE:", file);
+      console.log("FIELDS:", file.ListItemAllFields);
 
       results.push({
         id: file.ListItemAllFields.Id,
@@ -177,7 +182,9 @@ export default class MediaAssetsLib extends React.Component<
         body: JSON.stringify({
           FileLeafRef: editName, // Dateiname-Feld (wichtig!)
           Kategorie: editCategory, // deine SP-Spalte
-          Tags: tagsArray, // Mehrfachwert möglich
+          Tags: {
+            results: tagsArray || [],
+          },
           Format: editFormat,
         }),
       });
@@ -190,6 +197,138 @@ export default class MediaAssetsLib extends React.Component<
       this.setState({ isEditOpen: false });
     } catch (error) {
       console.error("Update Fehler:", error);
+    }
+  }
+
+  private async uploadFileToSP(): Promise<void> {
+    this.setState({
+      uploading: true,
+      uploadProgress: 20,
+    });
+
+    const {
+      uploadFile,
+      uploadName,
+      uploadCategory,
+      uploadFormat,
+      uploadTags,
+      uploadBucket,
+    } = this.state;
+
+    if (!uploadFile) {
+      alert("Bitte Datei auswählen");
+
+      this.setState({
+        uploading: false,
+        uploadProgress: 0,
+      });
+
+      return;
+    }
+
+    try {
+      const folderUrl = "/sites/IntranetSpielwiese/Medienbibliothek";
+      const extension = uploadFile.name.split(".").pop();
+      const fileName = `${uploadName}.${extension}`;
+
+      // ✅ 1. Datei hochladen
+      const uploadUrl = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')/Files/add(overwrite=true,url='${fileName}')?$expand=ListItemAllFields`;
+      const uploadResponse = await this.props.spHttpClient.post(
+        uploadUrl,
+        SPHttpClient.configurations.v1,
+        {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+          },
+          body: uploadFile,
+        },
+      );
+
+      const fileData = await uploadResponse.json();
+
+      this.setState({ uploadProgress: 60 });
+
+      const itemId = fileData?.ListItemAllFields?.Id;
+
+      if (!itemId) {
+        console.error("Kein ListItem gefunden:", fileData);
+        throw new Error("Upload fehlgeschlagen: Kein ItemId");
+      }
+      await this.ensureBucketExists(uploadBucket);
+      await this.loadBuckets(); // ✅ WICHTIG
+
+      // ✅ 2. Metadaten setzen
+      const updateUrl = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/items(${itemId})`;
+      // ✅ DEBUG – zeigt dir genau was an SharePoint geht
+      console.log("METADATA:", {
+        FileLeafRef: fileName,
+        Kategorie: uploadCategory,
+        Format: uploadFormat,
+        Tags: { results: uploadTags || [] },
+        Bucket: uploadBucket,
+      });
+      const res = await this.props.spHttpClient.post(
+        updateUrl,
+        SPHttpClient.configurations.v1,
+        {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-Type": "application/json;odata=nometadata",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+          },
+          body: JSON.stringify({
+            FileLeafRef: fileName, // optional später: uploadName einsetzen
+            Kategorie: uploadCategory,
+            Format: uploadFormat,
+
+            Tags: {
+              results: uploadTags || [],
+            },
+
+            Bucket: uploadBucket || null,
+          }),
+        },
+      );
+      console.log("STATUS:", res.status);
+      this.setState({ uploadProgress: 100 });
+      const checkUrl = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/items(${itemId})?$select=Tags`;
+
+      const checkRes = await this.props.spHttpClient.get(
+        checkUrl,
+        SPHttpClient.configurations.v1,
+      );
+
+      const checkData = await checkRes.json();
+
+      console.log("GESPEICHERTE TAGS:", checkData);
+      console.log("Upload Response:", fileData);
+
+      console.log("Upload erfolgreich ✅");
+
+      // ✅ UI reset
+      this.setState({
+        isUploadOpen: false,
+        uploadFile: undefined,
+        uploadName: "",
+        uploadTags: [],
+        uploadCategory: "",
+        uploadFormat: "",
+        uploadBucket: "",
+        uploadPreviewUrl: undefined,
+        uploading: false, // ✅ FEHLT
+        uploadProgress: 0, // ✅ FEHLT
+      });
+
+      // ✅ neu laden
+      await this.loadAllMedia();
+    } catch (error) {
+      console.error("UPLOAD ERROR:", error);
+
+      this.setState({
+        uploading: false,
+        uploadProgress: 0,
+      });
     }
   }
 
@@ -305,6 +444,34 @@ export default class MediaAssetsLib extends React.Component<
 
     // Duplikate entfernen + sortieren (neueste zuerst)
     return Array.from(new Set(years)).sort((a, b) => b - a);
+  }
+
+  private async ensureBucketExists(value: string): Promise<void> {
+    if (!value) return;
+
+    if (this.state.bucketOptions.includes(value)) return;
+
+    try {
+      const newChoices = [...this.state.bucketOptions, value];
+
+      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/fields/getbyinternalnameortitle('Bucket')`;
+
+      await this.props.spHttpClient.post(url, SPHttpClient.configurations.v1, {
+        headers: {
+          Accept: "application/json;odata=nometadata",
+          "Content-Type": "application/json;odata=nometadata",
+          "IF-MATCH": "*",
+          "X-HTTP-Method": "MERGE",
+        },
+        body: JSON.stringify({
+          Choices: newChoices,
+        }),
+      });
+
+      console.log("Neuer Bucket hinzugefügt ✅");
+    } catch (error) {
+      console.error("Bucket erstellen Fehler:", error);
+    }
   }
 
   private async loadBuckets(): Promise<void> {
@@ -453,7 +620,7 @@ export default class MediaAssetsLib extends React.Component<
         >
           {this.state.visibleItems.map((item) => {
             /*const videoUrl = `${window.location.origin}${item.fileRef}?web=1`;*/
-            console.log("DRIVE:", item.driveId, item.driveItemId);
+
             const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
               `${window.location.origin}${item.fileRef}`,
             )}`;
@@ -943,6 +1110,33 @@ export default class MediaAssetsLib extends React.Component<
               }}
             >
               <h3>Upload</h3>
+              {/* UPLOAD BALKEN */}
+              {this.state.uploading && (
+                <div style={{ marginBottom: "10px" }}>
+                  <div
+                    style={{
+                      height: "10px",
+                      background: "#eee",
+                      borderRadius: "5px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${this.state.uploadProgress}%`,
+                        background: "#0078d4",
+                        height: "100%",
+                        transition: "width 0.3s",
+                      }}
+                    />
+                  </div>
+
+                  <p style={{ fontSize: "12px" }}>
+                    Upload: {this.state.uploadProgress}%
+                  </p>
+                </div>
+              )}
+
               {/* MODAL PREVIEW */}
               {this.state.uploadFile && this.state.uploadPreviewUrl && (
                 <div style={{ marginTop: "10px" }}>
@@ -1030,7 +1224,6 @@ export default class MediaAssetsLib extends React.Component<
                 value={this.state.uploadName}
                 onChange={(e) => this.setState({ uploadName: e.target.value })}
               />
-
               {/* TAGS UPLOAD*/}
               <div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -1083,7 +1276,6 @@ export default class MediaAssetsLib extends React.Component<
                   style={{ marginTop: "8px", width: "100%" }}
                 />
               </div>
-
               <select
                 value={this.state.uploadCategory}
                 onChange={(e) =>
@@ -1094,7 +1286,6 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Säugetier">Säugetier</option>
                 <option value="Vogel">Vogel</option>
               </select>
-
               <select
                 value={this.state.uploadFormat}
                 onChange={(e) =>
@@ -1106,7 +1297,6 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Video">Video</option>
                 <option value="Dokument">Dokument</option>
               </select>
-
               {/* BUCKET */}
               <input
                 list="bucket-list"
@@ -1116,16 +1306,34 @@ export default class MediaAssetsLib extends React.Component<
                   this.setState({ uploadBucket: e.target.value })
                 }
               />
-
               <datalist id="bucket-list">
                 {this.state.bucketOptions.map((b, i) => (
                   <option key={i} value={b} />
                 ))}
               </datalist>
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                <button
+                  onClick={() => this.setState({ isUploadOpen: false })}
+                  style={{ flex: 1 }}
+                >
+                  Abbrechen
+                </button>
 
-              <button onClick={() => this.setState({ isUploadOpen: false })}>
-                Schließen
-              </button>
+                <button
+                  onClick={() => this.uploadFileToSP()}
+                  disabled={this.state.uploading}
+                  style={{
+                    flex: 1,
+                    background: "#0078d4",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "10px",
+                  }}
+                >
+                  Hochladen
+                </button>
+              </div>
             </div>
           </div>
         )}
