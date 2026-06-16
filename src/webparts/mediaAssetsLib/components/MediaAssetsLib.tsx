@@ -82,6 +82,119 @@ export default class MediaAssetsLib extends React.Component<
       bucketOptions: [],
     };
   }
+  private async uploadItem(): Promise<void> {
+    const {
+      uploadFile,
+      uploadName,
+      uploadTags,
+      uploadCategory,
+      uploadFormat,
+      uploadBucket,
+    } = this.state;
+
+    if (!uploadFile) {
+      console.log("❌ Kein File gewählt");
+      return;
+    }
+
+    try {
+      const fileBuffer = await uploadFile.arrayBuffer();
+
+      const uploadUrl =
+        this.props.siteUrl +
+        "/_api/web/GetFolderByServerRelativeUrl('/sites/IntranetSpielwiese/Medienbibliothek')" +
+        "/Files/add(overwrite=true,url='" +
+        uploadFile.name +
+        "')";
+
+      console.log("⬆️ Starte Upload...");
+      console.log("📤 UPLOAD URL:", uploadUrl);
+
+      const response = await this.props.spHttpClient.post(
+        uploadUrl,
+        SPHttpClient.configurations.v1,
+        {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+          },
+          body: fileBuffer,
+        },
+      );
+
+      const result = await response.json();
+
+      console.log("✅ Upload Response:", result);
+
+      const fileUrl = result.ServerRelativeUrl;
+
+      console.log("📂 Datei URL:", fileUrl);
+
+      // 👉 List Item nachladen
+      const itemResponse = await this.props.spHttpClient.get(
+        `${this.props.siteUrl}/_api/web/GetFileByServerRelativeUrl('${fileUrl}')/ListItemAllFields`,
+        SPHttpClient.configurations.v1,
+      );
+
+      const itemData = await itemResponse.json();
+
+      console.log("📄 ListItem:", itemData);
+
+      const itemId = itemData.Id;
+
+      console.log("✅ Item ID:", itemId);
+
+      console.log("📄 Item ID:", itemId);
+
+      // ✅ METADATEN setzen (wie Edit)
+      const updateUrl =
+        this.props.siteUrl +
+        "/_api/web/lists/getbytitle('Medienbibliothek')/items(" +
+        itemId +
+        ")";
+
+      const cleanTags = uploadTags
+        .map((t) => t.toLowerCase().trim())
+        .filter((t, i, arr) => t && arr.indexOf(t) === i);
+
+      const bodyData = {
+        FileLeafRef: uploadName,
+        Kategorie: uploadCategory || null,
+        Tags: cleanTags.length ? cleanTags.join(";") : null,
+        Format: uploadFormat || null,
+        Bucket: uploadBucket || null,
+      };
+
+      console.log("📦 Metadaten:", bodyData);
+      console.log("📤 UPLOAD URL:", uploadUrl);
+      console.log("📝 UPDATE URL:", updateUrl);
+
+      const updateResponse = await this.props.spHttpClient.post(
+        updateUrl,
+        SPHttpClient.configurations.v1,
+        {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-Type": "application/json;odata=nometadata",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+          },
+          body: JSON.stringify(bodyData),
+        },
+      );
+
+      if (updateResponse.ok) {
+        console.log("✅ Metadaten gespeichert");
+      } else {
+        console.error("❌ Fehler beim Speichern", updateResponse);
+      }
+
+      await this.loadAllMedia();
+
+      this.setState({ isUploadOpen: false });
+    } catch (error) {
+      console.error("❌ Upload Fehler:", error);
+    }
+  }
 
   public async componentDidMount(): Promise<void> {
     await this.loadAllMedia();
@@ -102,29 +215,28 @@ export default class MediaAssetsLib extends React.Component<
 
     let results: IMediaItem[] = [];
 
-    data.Files.forEach((file: any) => {
-      /*console.log("FIELDS:", file.ListItemAllFields);*/
-      console.log("FILE:", file);
+    data.Files.forEach((file: unknown) => {
+      const f = file as any;
 
       results.push({
-        id: file.ListItemAllFields.Id,
-        name: file.Name,
-        fileRef: file.ServerRelativeUrl,
-        category: file.ListItemAllFields?.Kategorie,
-        notes: file.ListItemAllFields?.Notizen,
-        created: file.TimeCreated,
-        tags: Array.isArray(file.ListItemAllFields?.Tags)
-          ? file.ListItemAllFields.Tags
-          : file.ListItemAllFields?.Tags
-            ? String(file.ListItemAllFields.Tags)
+        id: f.ListItemAllFields.Id,
+        name: f.Name,
+        fileRef: f.ServerRelativeUrl,
+        category: f.ListItemAllFields?.Kategorie,
+        notes: f.ListItemAllFields?.Notizen,
+        created: f.TimeCreated,
+        tags: Array.isArray(f.ListItemAllFields?.Tags)
+          ? f.ListItemAllFields.Tags
+          : f.ListItemAllFields?.Tags
+            ? String(f.ListItemAllFields.Tags)
                 .split(/[;,#]+/)
                 .map((t: string) => t.trim())
                 .filter((t: string) => t)
             : [],
 
-        driveId: file.ListItemAllFields?.File?.VroomDriveID,
-        driveItemId: file.ListItemAllFields?.File?.VroomItemID,
-        format: file.ListItemAllFields?.Format,
+        driveId: f.ListItemAllFields?.File?.VroomDriveID,
+        driveItemId: f.ListItemAllFields?.File?.VroomItemID,
+        format: f.ListItemAllFields?.Format,
       });
     });
 
@@ -452,8 +564,6 @@ export default class MediaAssetsLib extends React.Component<
           }}
         >
           {this.state.visibleItems.map((item) => {
-            /*const videoUrl = `${window.location.origin}${item.fileRef}?web=1`;*/
-            console.log("DRIVE:", item.driveId, item.driveItemId);
             const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
               `${window.location.origin}${item.fileRef}`,
             )}`;
@@ -810,7 +920,7 @@ export default class MediaAssetsLib extends React.Component<
             </div>
           </div>
         )}
-        // EDIT MODAL //////////
+
         {this.state.isEditOpen && this.state.selectedItem && (
           <div
             style={{
@@ -850,13 +960,29 @@ export default class MediaAssetsLib extends React.Component<
               <div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {this.state.editTags.map((tag, index) => (
-                    <span key={index}>
+                    <span
+                      key={index}
+                      style={{
+                        background: "#0078d4",
+                        color: "white",
+                        padding: "4px 8px",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
                       {tag}
                       <span
                         onClick={() => {
                           const newTags = [...this.state.editTags];
                           newTags.splice(index, 1);
                           this.setState({ editTags: newTags });
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          fontWeight: "bold",
                         }}
                       >
                         ✕
@@ -1126,6 +1252,21 @@ export default class MediaAssetsLib extends React.Component<
               <button onClick={() => this.setState({ isUploadOpen: false })}>
                 Schließen
               </button>
+              <button
+                onClick={() => {
+                  console.log("UPLOAD TEST");
+
+                  console.log("File:", this.state.uploadFile);
+                  console.log("Name:", this.state.uploadName);
+                  console.log("Tags:", this.state.uploadTags);
+                  console.log("Kategorie:", this.state.uploadCategory);
+                  console.log("Format:", this.state.uploadFormat);
+                  console.log("Bucket:", this.state.uploadBucket);
+                }}
+              >
+                Test Upload (DEBUG)
+              </button>
+              <button onClick={() => this.uploadItem()}>Hochladen</button>
             </div>
           </div>
         )}
