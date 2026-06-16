@@ -11,6 +11,7 @@ interface IMediaItem {
   created?: string;
   uniqueId?: string;
   tags?: string[];
+  bucket?: string[];
 
   driveId?: string;
   driveItemId?: string;
@@ -36,12 +37,14 @@ interface IMediaAssetsLibState {
   editCategory: string;
   editFormat: string;
 
+  editBucket: string[];
+  uploadBucket: string[];
+
   isUploadOpen: boolean; // ✅ NEU
   uploadName: string;
   uploadTags: string[];
   uploadCategory: string;
   uploadFormat: string;
-  uploadBucket: string;
   uploadFile?: File;
   uploadPreviewUrl?: string;
 
@@ -70,13 +73,14 @@ export default class MediaAssetsLib extends React.Component<
       editTags: [],
       editCategory: "",
       editFormat: "",
+      editBucket: [],
 
       isUploadOpen: false,
       uploadName: "",
       uploadTags: [],
       uploadCategory: "",
       uploadFormat: "",
-      uploadBucket: "",
+      uploadBucket: [],
       uploadFile: undefined,
 
       bucketOptions: [],
@@ -169,11 +173,19 @@ export default class MediaAssetsLib extends React.Component<
         },
 
         Format: uploadFormat || null,
-        Bucket: uploadBucket || null,
+
+        Bucket: uploadBucket.length
+          ? {
+              __metadata: { type: "Collection(Edm.String)" },
+              results: uploadBucket,
+            }
+          : null,
       };
 
       console.log("🧪 Tags vor Upload:", cleanTags);
       console.log("📦 Metadaten:", bodyData);
+      console.log("🧪 UPLOAD BUCKET:", uploadBucket);
+      console.log("🧪 FINAL UPLOAD BODY:", JSON.stringify(bodyData, null, 2));
       console.log("📤 UPLOAD URL:", uploadUrl);
       console.log("📝 UPDATE URL:", updateUrl);
 
@@ -225,6 +237,7 @@ export default class MediaAssetsLib extends React.Component<
         editTags: cleanTags,
         editCategory: uploadCategory,
         editFormat: uploadFormat,
+        editBucket: uploadBucket,
       });
 
       this.setState({ isUploadOpen: false });
@@ -284,7 +297,7 @@ export default class MediaAssetsLib extends React.Component<
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
     /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
 
-    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format`;
+    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format,Files/ListItemAllFields/Bucket`;
 
     const response = await this.props.spHttpClient.get(
       url,
@@ -309,6 +322,14 @@ export default class MediaAssetsLib extends React.Component<
           ? f.ListItemAllFields.Tags
           : f.ListItemAllFields?.Tags
             ? String(f.ListItemAllFields.Tags)
+                .split(/[;,#]+/)
+                .map((t: string) => t.trim())
+                .filter((t: string) => t)
+            : [],
+        bucket: Array.isArray(f.ListItemAllFields?.Bucket)
+          ? f.ListItemAllFields.Bucket
+          : f.ListItemAllFields?.Bucket
+            ? String(f.ListItemAllFields.Bucket)
                 .split(/[;,#]+/)
                 .map((t: string) => t.trim())
                 .filter((t: string) => t)
@@ -348,8 +369,14 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private async updateItem(): Promise<void> {
-    const { selectedItem, editName, editTags, editCategory, editFormat } =
-      this.state;
+    const {
+      selectedItem,
+      editName,
+      editTags,
+      editCategory,
+      editFormat,
+      editBucket,
+    } = this.state;
 
     if (!selectedItem) return;
 
@@ -359,20 +386,62 @@ export default class MediaAssetsLib extends React.Component<
 
       const tagsArray = editTags;
 
-      await this.props.spHttpClient.post(url, SPHttpClient.configurations.v1, {
-        headers: {
-          Accept: "application/json;odata=nometadata",
-          "Content-Type": "application/json;odata=nometadata",
-          "IF-MATCH": "*",
-          "X-HTTP-Method": "MERGE",
+      const bucketsArray = editBucket;
+
+      // DEBBUG ___________________________________________________
+      console.log(
+        "🧪 UPDATE BODY:",
+        JSON.stringify(
+          {
+            FileLeafRef: editName,
+            Kategorie: editCategory,
+            body: JSON.stringify({
+              FileLeafRef: editName,
+
+              Kategorie: editCategory,
+
+              Tags: tagsArray,
+
+              Format: editFormat,
+
+              Bucket: editBucket.length
+                ? {
+                    __metadata: { type: "Collection(Edm.String)" },
+                    results: editBucket,
+                  }
+                : null,
+            }),
+          },
+          null,
+          2,
+        ),
+      );
+
+      console.log("🧪 EDIT BUCKET:", editBucket);
+
+      const response = await this.props.spHttpClient.post(
+        url,
+        SPHttpClient.configurations.v1,
+        {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-Type": "application/json;odata=nometadata",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+          },
+          /* _______________________________________________________________________ */
+          body: JSON.stringify({
+            FileLeafRef: editName,
+            Kategorie: editCategory,
+            Tags: tagsArray,
+            Format: editFormat,
+            Bucket: bucketsArray,
+          }),
         },
-        body: JSON.stringify({
-          FileLeafRef: editName, // Dateiname-Feld (wichtig!)
-          Kategorie: editCategory, // deine SP-Spalte
-          Tags: tagsArray, // Mehrfachwert möglich
-          Format: editFormat,
-        }),
-      });
+      );
+
+      const errorText = await response.text();
+      console.log("🧪 UPDATE RESPONSE:", errorText);
 
       console.log("Update erfolgreich");
 
@@ -386,10 +455,6 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private applyFilters = (): void => {
-    /*console.log("FILTER TRIGGERED");
-    console.log("Year:", this.state.filterYear);
-    console.log("Month:", this.state.filterMonth);*/
-
     const { allItems, searchText, filterCategory, filterFormat } = this.state;
 
     let filtered = [...allItems];
@@ -871,6 +936,7 @@ export default class MediaAssetsLib extends React.Component<
                           editTags: item.tags || [],
                           editCategory: item.category || "",
                           editFormat: item.format || "",
+                          editBucket: item.bucket || [],
                         });
                       }}
                       style={{
@@ -1164,6 +1230,32 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Dokument">Dokument</option>
               </select>
 
+              <div>
+                <label>Bucket</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {this.state.bucketOptions.map((b) => (
+                    <label key={b} style={{ fontSize: "12px" }}>
+                      <input
+                        type="checkbox"
+                        checked={this.state.editBucket.includes(b)}
+                        onChange={(e) => {
+                          const current = this.state.editBucket;
+
+                          if (e.target.checked) {
+                            this.setState({ editBucket: [...current, b] });
+                          } else {
+                            this.setState({
+                              editBucket: current.filter((x) => x !== b),
+                            });
+                          }
+                        }}
+                      />
+                      {b}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                 <button
                   onClick={() => this.setState({ isEditOpen: false })}
@@ -1321,6 +1413,32 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Video">Video</option>
                 <option value="Dokument">Dokument</option>
               </select>
+
+              <div>
+                <label>Bucket</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {this.state.bucketOptions.map((b) => (
+                    <label key={b} style={{ fontSize: "12px" }}>
+                      <input
+                        type="checkbox"
+                        checked={this.state.uploadBucket.includes(b)}
+                        onChange={(e) => {
+                          const current = this.state.uploadBucket;
+
+                          if (e.target.checked) {
+                            this.setState({ uploadBucket: [...current, b] });
+                          } else {
+                            this.setState({
+                              uploadBucket: current.filter((x) => x !== b),
+                            });
+                          }
+                        }}
+                      />
+                      {b}
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               <button onClick={() => this.setState({ isUploadOpen: false })}>
                 Schließen
