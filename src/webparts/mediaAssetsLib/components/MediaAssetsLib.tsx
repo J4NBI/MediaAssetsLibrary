@@ -196,6 +196,49 @@ export default class MediaAssetsLib extends React.Component<
     }
   }
 
+  private async deleteItem(): Promise<void> {
+    const { selectedItem } = this.state;
+
+    if (!selectedItem) return;
+
+    const confirmDelete = window.confirm(
+      "Möchten Sie dieses Element wirklich löschen?",
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/items(${selectedItem.id})`;
+
+      const response = await this.props.spHttpClient.post(
+        url,
+        SPHttpClient.configurations.v1,
+        {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "DELETE",
+          },
+        },
+      );
+
+      if (response.ok) {
+        console.log("✅ Element gelöscht");
+
+        await this.loadAllMedia();
+
+        this.setState({
+          isEditOpen: false,
+          selectedItem: undefined,
+        });
+      } else {
+        console.error("❌ Fehler beim Löschen", response);
+      }
+    } catch (error) {
+      console.error("❌ Delete Fehler:", error);
+    }
+  }
+
   public async componentDidMount(): Promise<void> {
     await this.loadAllMedia();
     await this.loadBuckets(); // ✅ NEU
@@ -1032,11 +1075,31 @@ export default class MediaAssetsLib extends React.Component<
               </select>
 
               <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                <button onClick={() => this.setState({ isEditOpen: false })}>
+                <button
+                  onClick={() => this.setState({ isEditOpen: false })}
+                  style={{ flex: 1 }}
+                >
                   Abbrechen
                 </button>
 
-                <button onClick={() => this.updateItem()}>Speichern</button>
+                <button onClick={() => this.updateItem()} style={{ flex: 1 }}>
+                  Speichern
+                </button>
+
+                <button
+                  onClick={() => this.deleteItem()}
+                  style={{
+                    flex: 1,
+                    background: "#d13438",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Löschen
+                </button>
               </div>
             </div>
           </div>
