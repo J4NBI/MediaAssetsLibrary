@@ -157,13 +157,22 @@ export default class MediaAssetsLib extends React.Component<
         .filter((t, i, arr) => t && arr.indexOf(t) === i);
 
       const bodyData = {
+        __metadata: {
+          type: "SP.Data.MedienbibliothekItem",
+        },
+
         FileLeafRef: uploadName,
         Kategorie: uploadCategory || null,
-        Tags: cleanTags.length ? cleanTags.join(";") : null,
+
+        Tags: {
+          results: cleanTags,
+        },
+
         Format: uploadFormat || null,
         Bucket: uploadBucket || null,
       };
 
+      console.log("🧪 Tags vor Upload:", cleanTags);
       console.log("📦 Metadaten:", bodyData);
       console.log("📤 UPLOAD URL:", uploadUrl);
       console.log("📝 UPDATE URL:", updateUrl);
@@ -187,8 +196,36 @@ export default class MediaAssetsLib extends React.Component<
       } else {
         console.error("❌ Fehler beim Speichern", updateResponse);
       }
+      console.log("🧪 RAW RESPONSE:", updateResponse);
+      console.log("🧪 STATUS:", updateResponse.status);
+
+      const text = await updateResponse.text();
+      console.log("🧪 RESPONSE TEXT:", text);
 
       await this.loadAllMedia();
+
+      // 👉 gerade hochgeladenes Item holen
+      const newItem: IMediaItem = {
+        id: itemId,
+        name: uploadName,
+        fileRef: fileUrl,
+        tags: cleanTags,
+        category: uploadCategory,
+        format: uploadFormat,
+      };
+
+      // 👉 direkt Edit öffnen
+      this.setState({
+        isUploadOpen: false,
+
+        isEditOpen: true,
+        selectedItem: newItem,
+
+        editName: uploadName,
+        editTags: cleanTags,
+        editCategory: uploadCategory,
+        editFormat: uploadFormat,
+      });
 
       this.setState({ isUploadOpen: false });
     } catch (error) {
@@ -991,6 +1028,59 @@ export default class MediaAssetsLib extends React.Component<
               }}
             >
               <h3>Element bearbeiten</h3>
+              {/* PREVIEW */}
+              {(() => {
+                const item = this.state.selectedItem!;
+                const fileUrl = `${window.location.origin}${item.fileRef}`;
+
+                const fileType = item.fileRef?.split(".").pop()?.toLowerCase();
+
+                const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(
+                  fileType || "",
+                );
+                const isVideo = ["mp4", "mov", "webm"].includes(fileType || "");
+
+                if (isImage) {
+                  return (
+                    <img
+                      src={fileUrl}
+                      style={{
+                        width: "100%",
+                        maxHeight: "200px",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                      }}
+                    />
+                  );
+                }
+
+                if (isVideo) {
+                  return (
+                    <video
+                      src={fileUrl}
+                      controls
+                      style={{
+                        width: "100%",
+                        maxHeight: "200px",
+                        borderRadius: "8px",
+                      }}
+                    />
+                  );
+                }
+
+                return (
+                  <div
+                    style={{
+                      padding: "20px",
+                      background: "#f3f2f1",
+                      borderRadius: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    📄 {item.name}
+                  </div>
+                );
+              })()}
 
               <input
                 type="text"
@@ -1220,70 +1310,6 @@ export default class MediaAssetsLib extends React.Component<
                 onChange={(e) => this.setState({ uploadName: e.target.value })}
               />
 
-              {/* TAGS UPLOAD*/}
-              <div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {this.state.uploadTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      style={{
-                        background: "#0078d4",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      {tag}
-                      <span
-                        onClick={() => {
-                          const newTags = [...this.state.uploadTags];
-                          newTags.splice(index, 1);
-                          this.setState({ uploadTags: newTags });
-                        }}
-                        style={{ cursor: "pointer", fontWeight: "bold" }}
-                      >
-                        ✕
-                      </span>
-                    </span>
-                  ))}
-                </div>
-
-                <input
-                  type="text"
-                  placeholder="Tag hinzufügen + Enter"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-
-                      const value = (e.target as HTMLInputElement).value.trim();
-                      if (!value) return;
-
-                      this.setState({
-                        uploadTags: [...this.state.uploadTags, value],
-                      });
-
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }}
-                  style={{ marginTop: "8px", width: "100%" }}
-                />
-              </div>
-
-              <select
-                value={this.state.uploadCategory}
-                onChange={(e) =>
-                  this.setState({ uploadCategory: e.target.value })
-                }
-              >
-                <option value="">Kategorie wählen</option>
-                <option value="Säugetier">Säugetier</option>
-                <option value="Vogel">Vogel</option>
-              </select>
-
               <select
                 value={this.state.uploadFormat}
                 onChange={(e) =>
@@ -1296,39 +1322,10 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Dokument">Dokument</option>
               </select>
 
-              {/* BUCKET */}
-              <input
-                list="bucket-list"
-                placeholder="Bucket wählen oder neu eingeben"
-                value={this.state.uploadBucket}
-                onChange={(e) =>
-                  this.setState({ uploadBucket: e.target.value })
-                }
-              />
-
-              <datalist id="bucket-list">
-                {this.state.bucketOptions.map((b, i) => (
-                  <option key={i} value={b} />
-                ))}
-              </datalist>
-
               <button onClick={() => this.setState({ isUploadOpen: false })}>
                 Schließen
               </button>
-              <button
-                onClick={() => {
-                  console.log("UPLOAD TEST");
 
-                  console.log("File:", this.state.uploadFile);
-                  console.log("Name:", this.state.uploadName);
-                  console.log("Tags:", this.state.uploadTags);
-                  console.log("Kategorie:", this.state.uploadCategory);
-                  console.log("Format:", this.state.uploadFormat);
-                  console.log("Bucket:", this.state.uploadBucket);
-                }}
-              >
-                Test Upload (DEBUG)
-              </button>
               <button onClick={() => this.uploadItem()}>Hochladen</button>
             </div>
           </div>
