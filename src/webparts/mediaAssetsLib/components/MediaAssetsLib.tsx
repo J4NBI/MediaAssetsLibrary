@@ -45,7 +45,7 @@ interface IMediaAssetsLibState {
   uploadTags: string[];
   uploadCategory: string;
   uploadFormat: string;
-  uploadFile?: File;
+  uploadFiles?: File[];
   uploadPreviewUrl?: string;
 
   bucketOptions: string[];
@@ -84,7 +84,7 @@ export default class MediaAssetsLib extends React.Component<
       uploadCategory: "",
       uploadFormat: "",
       uploadBucket: [],
-      uploadFile: undefined,
+      uploadFiles: [],
 
       bucketOptions: [],
 
@@ -94,162 +94,104 @@ export default class MediaAssetsLib extends React.Component<
   }
   private async uploadItem(): Promise<void> {
     const {
-      uploadFile,
-      uploadName,
+      uploadFiles,
       uploadTags,
       uploadCategory,
       uploadFormat,
       uploadBucket,
     } = this.state;
 
-    if (!uploadFile) {
-      console.log("❌ Kein File gewählt");
+    if (!uploadFiles || uploadFiles.length === 0) {
+      console.log("❌ Keine Files gewählt");
       return;
     }
 
-    try {
-      const fileBuffer = await uploadFile.arrayBuffer();
+    for (const uploadFile of uploadFiles) {
+      try {
+        const fileBuffer = await uploadFile.arrayBuffer();
 
-      const uploadUrl =
-        this.props.siteUrl +
-        "/_api/web/GetFolderByServerRelativeUrl('/sites/IntranetSpielwiese/Medienbibliothek')" +
-        "/Files/add(overwrite=true,url='" +
-        uploadFile.name +
-        "')";
+        const uploadUrl =
+          this.props.siteUrl +
+          "/_api/web/GetFolderByServerRelativeUrl('/sites/IntranetSpielwiese/Medienbibliothek')" +
+          "/Files/add(overwrite=true,url='" +
+          uploadFile.name +
+          "')";
 
-      console.log("⬆️ Starte Upload...");
-      console.log("📤 UPLOAD URL:", uploadUrl);
+        console.log("⬆️ Starte Upload:", uploadFile.name);
 
-      const response = await this.props.spHttpClient.post(
-        uploadUrl,
-        SPHttpClient.configurations.v1,
-        {
-          headers: {
-            Accept: "application/json;odata=nometadata",
+        const response = await this.props.spHttpClient.post(
+          uploadUrl,
+          SPHttpClient.configurations.v1,
+          {
+            headers: {
+              Accept: "application/json;odata=nometadata",
+            },
+            body: fileBuffer,
           },
-          body: fileBuffer,
-        },
-      );
+        );
 
-      const result = await response.json();
+        const result = await response.json();
+        const fileUrl = result.ServerRelativeUrl;
 
-      console.log("✅ Upload Response:", result);
+        const itemResponse = await this.props.spHttpClient.get(
+          `${this.props.siteUrl}/_api/web/GetFileByServerRelativeUrl('${fileUrl}')/ListItemAllFields`,
+          SPHttpClient.configurations.v1,
+        );
 
-      const fileUrl = result.ServerRelativeUrl;
+        const itemData = await itemResponse.json();
+        const itemId = itemData.Id;
 
-      console.log("📂 Datei URL:", fileUrl);
+        const updateUrl =
+          this.props.siteUrl +
+          "/_api/web/lists/getbytitle('Medienbibliothek')/items(" +
+          itemId +
+          ")";
 
-      // 👉 List Item nachladen
-      const itemResponse = await this.props.spHttpClient.get(
-        `${this.props.siteUrl}/_api/web/GetFileByServerRelativeUrl('${fileUrl}')/ListItemAllFields`,
-        SPHttpClient.configurations.v1,
-      );
+        const cleanTags = uploadTags
+          .map((t) => t.toLowerCase().trim())
+          .filter((t, i, arr) => t && arr.indexOf(t) === i);
 
-      const itemData = await itemResponse.json();
+        const cleanBuckets = uploadBucket
+          .map((t) => t.trim())
+          .filter((t, i, arr) => t && arr.indexOf(t) === i);
 
-      console.log("📄 ListItem:", itemData);
+        const bodyData = {
+          FileLeafRef: uploadFile.name,
+          Kategorie: uploadCategory || null,
+          Tags: cleanTags,
+          Format: uploadFormat || null,
+          Bucket: cleanBuckets,
+        };
 
-      const itemId = itemData.Id;
+        console.log("UPLOAD BUCKET RAW:", uploadBucket);
+        console.log("CLEAN BUCKET:", cleanBuckets);
 
-      console.log("✅ Item ID:", itemId);
-
-      console.log("📄 Item ID:", itemId);
-
-      // ✅ METADATEN setzen (wie Edit)
-      const updateUrl =
-        this.props.siteUrl +
-        "/_api/web/lists/getbytitle('Medienbibliothek')/items(" +
-        itemId +
-        ")";
-
-      const cleanTags = uploadTags
-        .map((t) => t.toLowerCase().trim())
-        .filter((t, i, arr) => t && arr.indexOf(t) === i);
-
-      const bodyData = {
-        __metadata: {
-          type: "SP.Data.MedienbibliothekItem",
-        },
-
-        FileLeafRef: uploadName,
-        Kategorie: uploadCategory || null,
-
-        Tags: {
-          results: cleanTags,
-        },
-
-        Format: uploadFormat || null,
-
-        Bucket: uploadBucket.length
-          ? {
-              __metadata: { type: "Collection(Edm.String)" },
-              results: uploadBucket,
-            }
-          : null,
-      };
-
-      console.log("🧪 Tags vor Upload:", cleanTags);
-      console.log("📦 Metadaten:", bodyData);
-      console.log("🧪 UPLOAD BUCKET:", uploadBucket);
-      console.log("🧪 FINAL UPLOAD BODY:", JSON.stringify(bodyData, null, 2));
-      console.log("📤 UPLOAD URL:", uploadUrl);
-      console.log("📝 UPDATE URL:", updateUrl);
-
-      const updateResponse = await this.props.spHttpClient.post(
-        updateUrl,
-        SPHttpClient.configurations.v1,
-        {
-          headers: {
-            Accept: "application/json;odata=nometadata",
-            "Content-Type": "application/json;odata=nometadata",
-            "IF-MATCH": "*",
-            "X-HTTP-Method": "MERGE",
+        await this.props.spHttpClient.post(
+          updateUrl,
+          SPHttpClient.configurations.v1,
+          {
+            headers: {
+              Accept: "application/json;odata=nometadata",
+              "Content-Type": "application/json;odata=nometadata",
+              "IF-MATCH": "*",
+              "X-HTTP-Method": "MERGE",
+            },
+            body: JSON.stringify(bodyData),
           },
-          body: JSON.stringify(bodyData),
-        },
-      );
-
-      if (updateResponse.ok) {
-        console.log("✅ Metadaten gespeichert");
-      } else {
-        console.error("❌ Fehler beim Speichern", updateResponse);
+        );
+        console.log("FINAL BODY:", bodyData);
+        console.log("✅ Fertig:", uploadFile.name);
+      } catch (error) {
+        console.error("❌ Fehler bei Datei:", uploadFile.name, error);
       }
-      console.log("🧪 RAW RESPONSE:", updateResponse);
-      console.log("🧪 STATUS:", updateResponse.status);
-
-      const text = await updateResponse.text();
-      console.log("🧪 RESPONSE TEXT:", text);
-
-      await this.loadAllMedia();
-
-      // 👉 gerade hochgeladenes Item holen
-      const newItem: IMediaItem = {
-        id: itemId,
-        name: uploadName,
-        fileRef: fileUrl,
-        tags: cleanTags,
-        category: uploadCategory,
-        format: uploadFormat,
-      };
-
-      // 👉 direkt Edit öffnen
-      this.setState({
-        isUploadOpen: false,
-
-        isEditOpen: true,
-        selectedItem: newItem,
-
-        editName: uploadName,
-        editTags: cleanTags,
-        editCategory: uploadCategory,
-        editFormat: uploadFormat,
-        editBucket: uploadBucket,
-      });
-
-      this.setState({ isUploadOpen: false });
-    } catch (error) {
-      console.error("❌ Upload Fehler:", error);
     }
+
+    await this.loadAllMedia();
+
+    this.setState({
+      isUploadOpen: false,
+      uploadFiles: [],
+    });
   }
 
   private async deleteItem(): Promise<void> {
@@ -410,12 +352,7 @@ export default class MediaAssetsLib extends React.Component<
 
               Format: editFormat,
 
-              Bucket: editBucket.length
-                ? {
-                    __metadata: { type: "Collection(Edm.String)" },
-                    results: editBucket,
-                  }
-                : null,
+              Bucket: bucketsArray,
             }),
           },
           null,
@@ -1377,10 +1314,10 @@ export default class MediaAssetsLib extends React.Component<
             >
               <h3>Upload</h3>
               {/* MODAL PREVIEW */}
-              {this.state.uploadFile && this.state.uploadPreviewUrl && (
+              {this.state.uploadFiles?.[0] && this.state.uploadPreviewUrl && (
                 <div style={{ marginTop: "10px" }}>
                   {(() => {
-                    const file = this.state.uploadFile!;
+                    const file = this.state.uploadFiles![0];
                     const fileType = file.name.split(".").pop()?.toLowerCase();
 
                     const isImage = [
@@ -1439,24 +1376,32 @@ export default class MediaAssetsLib extends React.Component<
               )}
               <input
                 type="file"
+                multiple
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
+                  const files = e.target.files;
+                  if (!files || files.length === 0) return;
 
-                  const fileName = file.name;
+                  const fileArray = Array.from(files);
+
+                  const firstFile = fileArray[0];
+
+                  const fileName = firstFile.name;
                   const baseName = fileName.includes(".")
                     ? fileName.substring(0, fileName.lastIndexOf("."))
                     : fileName;
 
-                  const previewUrl = URL.createObjectURL(file); // ✅ NEU
+                  const previewUrl = URL.createObjectURL(firstFile);
 
                   this.setState({
-                    uploadFile: file,
+                    uploadFiles: fileArray,
                     uploadName: baseName,
-                    uploadPreviewUrl: previewUrl, // ✅ WICHTIG
+                    uploadPreviewUrl: previewUrl,
                   });
                 }}
               />
+
+              <div>{this.state.uploadFiles?.length} Dateien gewählt</div>
+
               <input
                 type="text"
                 placeholder="Name"
