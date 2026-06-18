@@ -1,6 +1,20 @@
 import * as React from "react";
 import { SPHttpClient } from "@microsoft/sp-http";
 import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
+/*******************************************************
+ * MEDIA ASSETS LIB
+ * -----------------------------------------------------
+ * SharePoint Medienverwaltung
+ * - Upload
+ * - Edit
+ * - Delete
+ * - Filter
+ * - Bucket Dropdown
+ *******************************************************/
+
+/********************* DATA MODEL **********************
+ * SharePoint List Item Struktur
+ ******************************************************/
 
 interface IMediaItem {
   id: number;
@@ -18,7 +32,10 @@ interface IMediaItem {
 
   format?: string;
 }
-
+/********************* STATE ***************************
+ * Enthält alle UI Zustände (Filter, Modals, Form Daten)
+ ******************************************************/
+``;
 interface IMediaAssetsLibState {
   allItems: IMediaItem[];
   visibleItems: IMediaItem[];
@@ -54,6 +71,12 @@ interface IMediaAssetsLibState {
   newBucketInputUpload: string;
 }
 
+/********************* BUCKET DROPDOWN *****************
+ * Custom Multi-Select Dropdown:
+ * - Suche
+ * - Mehrfachauswahl
+ * - neue Buckets hinzufügen
+ ******************************************************/
 const BucketDropdown = ({
   options,
   selected,
@@ -63,6 +86,7 @@ const BucketDropdown = ({
   selected: string[];
   onChange: (values: string[]) => void;
 }) => {
+  /**************** LOCAL STATE ****************/
   const [input, setInput] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
@@ -77,10 +101,12 @@ const BucketDropdown = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**************** FILTER LOGIK ****************/
   const filtered = options.filter((o) =>
     o.toLowerCase().includes(input.toLowerCase()),
   );
 
+  /**************** ADD BUCKET ****************/
   const addValue = (value: string) => {
     const clean = value.trim();
     if (!clean) return;
@@ -92,6 +118,8 @@ const BucketDropdown = ({
     setInput("");
     setOpen(false);
   };
+
+  /**************** RENDER ****************/
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -180,10 +208,19 @@ const BucketDropdown = ({
   );
 };
 
+/********************* HAUPTKOMPNENTE ******************
+ * Steuert:
+ * - Datenladen
+ * - Upload
+ * - Update
+ * - Rendering
+ ******************************************************/
+
 export default class MediaAssetsLib extends React.Component<
   IMediaAssetsLibProps,
   IMediaAssetsLibState
 > {
+  /********************* INITIAL STATE *******************/
   constructor(props: IMediaAssetsLibProps) {
     super(props);
 
@@ -218,6 +255,11 @@ export default class MediaAssetsLib extends React.Component<
       newBucketInputUpload: "",
     };
   }
+
+  /********************* UPLOAD **************************
+   * Lädt Dateien hoch und setzt Metadaten
+   ******************************************************/
+
   private async uploadItem(): Promise<void> {
     const {
       uploadFiles,
@@ -320,6 +362,10 @@ export default class MediaAssetsLib extends React.Component<
     });
   }
 
+  /********************* DELETE **************************
+   * Löscht ein Element aus SharePoint
+   ******************************************************/
+
   private async deleteItem(): Promise<void> {
     const { selectedItem } = this.state;
 
@@ -363,10 +409,18 @@ export default class MediaAssetsLib extends React.Component<
     }
   }
 
+  /********************* INIT ****************************
+   * Lädt Daten beim Start
+   ******************************************************/
+
   public async componentDidMount(): Promise<void> {
     await this.loadAllMedia();
     await this.loadBuckets(); // ✅ NEU
   }
+
+  /********************* REKURSIVER LOAD *****************
+   * Lädt alle Dateien + Unterordner
+   ******************************************************/
 
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
     /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
@@ -425,6 +479,8 @@ export default class MediaAssetsLib extends React.Component<
     return results;
   }
 
+  /********************* LOAD MEDIA **********************/
+
   private async loadAllMedia(): Promise<void> {
     try {
       const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
@@ -441,6 +497,10 @@ export default class MediaAssetsLib extends React.Component<
       console.error(error);
     }
   }
+
+  /********************* UPDATE **************************
+   * Aktualisiert Metadaten eines Elements
+   ******************************************************/
 
   private async updateItem(): Promise<void> {
     const {
@@ -522,6 +582,9 @@ export default class MediaAssetsLib extends React.Component<
       console.error("Update Fehler:", error);
     }
   }
+  /********************* FILTER LOGIK ********************
+   * Suche + Kategorie + Datum + Format
+   ******************************************************/
 
   private applyFilters = (): void => {
     const { allItems, searchText, filterCategory, filterFormat } = this.state;
@@ -632,6 +695,9 @@ export default class MediaAssetsLib extends React.Component<
     // Duplikate entfernen + sortieren (neueste zuerst)
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }
+  /********************* BUCKET LADEN ********************
+   * Lädt Choice Werte aus SharePoint
+   ******************************************************/
 
   private async loadBuckets(): Promise<void> {
     try {
@@ -662,7 +728,8 @@ export default class MediaAssetsLib extends React.Component<
 
     const yearOptions = this.getUniqueYears();
 
-    /* HEADER */
+    /********************* RENDER **************************/
+
     return (
       <div style={{ padding: "20px" }}>
         <div
@@ -672,6 +739,8 @@ export default class MediaAssetsLib extends React.Component<
             alignItems: "center",
           }}
         >
+          {/* **************** HEADER **************** */}
+
           <h2>Media Library</h2>
 
           <button
@@ -689,6 +758,9 @@ export default class MediaAssetsLib extends React.Component<
             ＋
           </button>
         </div>
+
+        {/* **************** SEARCH **************** */}
+
         <input
           type="text"
           placeholder="Suche..."
@@ -697,6 +769,7 @@ export default class MediaAssetsLib extends React.Component<
           style={{ padding: "8px", width: "300px" }}
         />
         <div style={{ marginTop: "10px" }}>
+          {/* **************** FILTER **************** */}
           <select
             onChange={(e) =>
               this.setState(
@@ -777,6 +850,8 @@ export default class MediaAssetsLib extends React.Component<
             marginTop: "20px",
           }}
         >
+          {/* **************** MEDIA GRID **************** */}
+
           {this.state.visibleItems.map((item) => {
             const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
               `${window.location.origin}${item.fileRef}`,
@@ -1027,6 +1102,9 @@ export default class MediaAssetsLib extends React.Component<
             );
           })}
         </div>
+
+        {/* **************** PREVIEW MODAL **************** */}
+
         {this.state.isModalOpen && this.state.selectedItem && (
           <div
             style={{
@@ -1135,6 +1213,8 @@ export default class MediaAssetsLib extends React.Component<
             </div>
           </div>
         )}
+
+        {/* **************** EDIT MODAL **************** */}
 
         {this.state.isEditOpen && this.state.selectedItem && (
           <div
@@ -1337,7 +1417,8 @@ export default class MediaAssetsLib extends React.Component<
           </div>
         )}
 
-        {/* UPLOAD MODAL */}
+        {/* **************** UPLOAD MODAL **************** */}
+
         {this.state.isUploadOpen && (
           <div
             style={{
