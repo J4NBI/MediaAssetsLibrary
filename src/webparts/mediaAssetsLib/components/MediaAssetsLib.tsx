@@ -2,7 +2,7 @@ import * as React from "react";
 import { SPHttpClient } from "@microsoft/sp-http";
 import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
 /*******************************************************
- * MEDIA ASSETS LIB
+ * MEDIA ASSETS LIB V3
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
@@ -111,7 +111,7 @@ const BucketDropdown = ({
   );
 
   /**************** ADD BUCKET ****************/
-  const addValue = (value: string) => {
+  const addValue = (value: string): void => {
     const clean = value.trim();
     if (!clean) return;
 
@@ -310,6 +310,26 @@ export default class MediaAssetsLib extends React.Component<
     return counts;
   }
 
+  private getBucketsSortedByNewest(items: IMediaItem[]): string[] {
+    const map: { [key: string]: number } = {};
+
+    items.forEach((item) => {
+      if (item.bucket && item.created) {
+        const time = new Date(item.created).getTime();
+
+        item.bucket.forEach((b) => {
+          if (!map[b] || map[b] < time) {
+            map[b] = time;
+          }
+        });
+      }
+    });
+
+    return Object.keys(map).sort((a, b) => {
+      return map[b] - map[a]; // neueste zuerst
+    });
+  }
+
   /********************* UPLOAD **************************
    * Lädt Dateien hoch und setzt Metadaten
    ******************************************************/
@@ -469,7 +489,6 @@ export default class MediaAssetsLib extends React.Component<
 
   public async componentDidMount(): Promise<void> {
     await this.loadAllMedia();
-    await this.loadBuckets(); // ✅ NEU
   }
 
   /********************* REKURSIVER LOAD *****************
@@ -541,9 +560,12 @@ export default class MediaAssetsLib extends React.Component<
 
       const items = await this.getFolderContent(rootFolder);
 
+      const uniqueBuckets = this.getBucketsSortedByNewest(items);
+
       this.setState(
         {
           allItems: items,
+          bucketOptions: uniqueBuckets,
         },
         this.applyFilters,
       );
@@ -759,6 +781,14 @@ export default class MediaAssetsLib extends React.Component<
     return Array.from(new Set(values)) as string[];
   }
 
+  private getUniqueFormats(): string[] {
+    const values = this.state.allItems
+      .map((item) => item.format)
+      .filter((v): v is string => !!v);
+
+    return Array.from(new Set(values));
+  }
+
   private getUniqueYears(): number[] {
     const years = this.state.allItems
       .map((item) => {
@@ -776,34 +806,12 @@ export default class MediaAssetsLib extends React.Component<
    * Lädt Choice Werte aus SharePoint
    ******************************************************/
 
-  private async loadBuckets(): Promise<void> {
-    try {
-      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/fields/getbyinternalnameortitle('Bucket')`;
-
-      const response = await this.props.spHttpClient.get(
-        url,
-        SPHttpClient.configurations.v1,
-      );
-
-      const data = await response.json();
-
-      const choices = data.Choices || [];
-
-      // ✅ Neueste zuerst (einfach reverse – SharePoint sortiert alt→neu)
-      const sorted = choices.reverse();
-
-      this.setState({
-        bucketOptions: sorted, // wir brauchen gleich ein neues State Feld
-      });
-    } catch (error) {
-      console.error("Bucket laden Fehler:", error);
-    }
-  }
-
   public render(): React.ReactElement<IMediaAssetsLibProps> {
     const categoryOptions = this.getUniqueCategories();
 
     const yearOptions = this.getUniqueYears();
+
+    const formatOptions = this.getUniqueFormats();
 
     const bucketCounts = this.getBucketCounts();
 
@@ -893,6 +901,23 @@ export default class MediaAssetsLib extends React.Component<
               <option value="">Kategorie</option>
               {categoryOptions.map((cat) => (
                 <option key={cat}>{cat}</option>
+              ))}
+            </select>
+            <select
+              onChange={(e) =>
+                this.setState(
+                  { filterFormat: e.target.value || undefined },
+                  this.applyFilters,
+                )
+              }
+              value={this.state.filterFormat || ""}
+            >
+              <option value="">Format</option>
+
+              {formatOptions.map((format) => (
+                <option key={format} value={format}>
+                  {format}
+                </option>
               ))}
             </select>
           </div>
@@ -1630,12 +1655,10 @@ export default class MediaAssetsLib extends React.Component<
                 onChange={(values) =>
                   this.setState({
                     editBucket: values,
-                    bucketOptions: Array.from(
-                      new Set([...values, ...this.state.bucketOptions]),
-                    ),
                   })
                 }
               />
+
               <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                 <button
                   onClick={() => this.setState({ isEditOpen: false })}
@@ -1782,16 +1805,27 @@ export default class MediaAssetsLib extends React.Component<
                   });
                 }}
               />
-
               <div>{this.state.uploadFiles?.length} Dateien gewählt</div>
-
               <input
                 type="text"
                 placeholder="Name"
                 value={this.state.uploadName}
                 onChange={(e) => this.setState({ uploadName: e.target.value })}
               />
+              <select
+                value={this.state.uploadCategory}
+                onChange={(e) =>
+                  this.setState({ uploadCategory: e.target.value })
+                }
+              >
+                <option value="">Kategorie wählen</option>
 
+                {this.getUniqueCategories().map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
               <select
                 value={this.state.uploadFormat}
                 onChange={(e) =>
@@ -1803,15 +1837,63 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Video">Video</option>
                 <option value="Dokument">Dokument</option>
               </select>
+              <div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {this.state.uploadTags.map((tag, index) => (
+                    <span
+                      key={index}
+                      style={{
+                        background: "#0078d4",
+                        color: "white",
+                        padding: "4px 8px",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      {tag}
+                      <span
+                        onClick={() => {
+                          const newTags = [...this.state.uploadTags];
+                          newTags.splice(index, 1);
+                          this.setState({ uploadTags: newTags });
+                        }}
+                        style={{ cursor: "pointer", fontWeight: "bold" }}
+                      >
+                        ✕
+                      </span>
+                    </span>
+                  ))}
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Tag hinzufügen + Enter"
+                  style={{ width: "100%", marginTop: "10px" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+
+                      const value = (e.target as HTMLInputElement).value.trim();
+                      if (!value) return;
+
+                      this.setState({
+                        uploadTags: [...this.state.uploadTags, value],
+                      });
+
+                      (e.target as HTMLInputElement).value = "";
+                    }
+                  }}
+                />
+              </div>
               <BucketDropdown
                 options={this.state.bucketOptions}
                 selected={this.state.uploadBucket}
                 onChange={(values) =>
                   this.setState({
-                    uploadBucket: values,
-                    bucketOptions: Array.from(
-                      new Set([...values, ...this.state.bucketOptions]),
-                    ),
+                    editBucket: values,
                   })
                 }
               />
@@ -1819,7 +1901,6 @@ export default class MediaAssetsLib extends React.Component<
               <button onClick={() => this.setState({ isUploadOpen: false })}>
                 Schließen
               </button>
-
               <button onClick={() => this.uploadItem()}>Hochladen</button>
             </div>
           </div>
