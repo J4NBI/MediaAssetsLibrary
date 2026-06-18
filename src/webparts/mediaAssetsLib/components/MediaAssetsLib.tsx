@@ -54,6 +54,132 @@ interface IMediaAssetsLibState {
   newBucketInputUpload: string;
 }
 
+const BucketDropdown = ({
+  options,
+  selected,
+  onChange,
+}: {
+  options: string[];
+  selected: string[];
+  onChange: (values: string[]) => void;
+}) => {
+  const [input, setInput] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = options.filter((o) =>
+    o.toLowerCase().includes(input.toLowerCase()),
+  );
+
+  const addValue = (value: string) => {
+    const clean = value.trim();
+    if (!clean) return;
+
+    if (!selected.some((s) => s.toLowerCase() === clean.toLowerCase())) {
+      onChange([...selected, clean]);
+    }
+
+    setInput("");
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      {/* INPUT */}
+      <input
+        type="text"
+        value={input}
+        placeholder="Bucket suchen oder hinzufügen..."
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          setInput(e.target.value);
+          setOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            addValue(input);
+          }
+        }}
+      />
+
+      {/* DROPDOWN */}
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            background: "white",
+            border: "1px solid #ccc",
+            zIndex: 1000,
+            maxHeight: "200px",
+            overflow: "auto",
+          }}
+        >
+          {/* NEU */}
+          {input.trim() &&
+            !options.some(
+              (o) => o.toLowerCase() === input.trim().toLowerCase(),
+            ) && (
+              <div
+                style={{
+                  padding: "8px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+                onClick={() => addValue(input)}
+              >
+                + "{input}" hinzufügen
+              </div>
+            )}
+
+          {/* LISTE */}
+          {filtered.map((o) => (
+            <div
+              key={o}
+              style={{ padding: "8px", cursor: "pointer" }}
+              onClick={() => addValue(o)}
+            >
+              {o}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* AUSWAHL */}
+      <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {selected.map((b) => (
+          <span
+            key={b}
+            style={{
+              background: "#0078d4",
+              color: "white",
+              padding: "4px 8px",
+              borderRadius: "12px",
+              cursor: "pointer",
+            }}
+            onClick={() => onChange(selected.filter((x) => x !== b))}
+          >
+            {b} ✕
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default class MediaAssetsLib extends React.Component<
   IMediaAssetsLibProps,
   IMediaAssetsLibState
@@ -1168,93 +1294,18 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Video">Video</option>
                 <option value="Dokument">Dokument</option>
               </select>
-              <div>
-                {/* ✅ Dropdown */}
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (!value) return;
-
-                    if (!this.state.editBucket.includes(value)) {
-                      this.setState({
-                        editBucket: [...this.state.editBucket, value],
-                      });
-                    }
-                  }}
-                >
-                  <option value="">Bucket auswählen</option>
-
-                  {this.state.bucketOptions.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-
-                {/* ✅ neues Bucket eintippen */}
-                <input
-                  type="text"
-                  placeholder="Neues Bucket + Enter"
-                  value={this.state.newBucketInputEdit}
-                  onChange={(e) =>
-                    this.setState({ newBucketInputEdit: e.target.value })
-                  }
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-
-                      const value = this.state.newBucketInputEdit.trim();
-                      if (!value) return;
-
-                      const updatedOptions = [
-                        value,
-                        ...this.state.bucketOptions.filter((b) => b !== value),
-                      ];
-
-                      this.setState({
-                        bucketOptions: updatedOptions,
-                        editBucket: [...this.state.editBucket, value],
-                        newBucketInputEdit: "",
-                      });
-                    }
-                  }}
-                />
-
-                {/* ✅ ausgewählte anzeigen */}
-                <div
-                  style={{
-                    marginTop: "8px",
-                    display: "flex",
-                    gap: "6px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {this.state.editBucket.map((b, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        background: "#0078d4",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        cursor: "pointer",
-                      }}
-                      onClick={() =>
-                        this.setState({
-                          editBucket: this.state.editBucket.filter(
-                            (x) => x !== b,
-                          ),
-                        })
-                      }
-                    >
-                      {b} ✕
-                    </span>
-                  ))}
-                </div>
-              </div>
-
+              <BucketDropdown
+                options={this.state.bucketOptions}
+                selected={this.state.editBucket}
+                onChange={(values) =>
+                  this.setState({
+                    editBucket: values,
+                    bucketOptions: Array.from(
+                      new Set([...values, ...this.state.bucketOptions]),
+                    ),
+                  })
+                }
+              />
               <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                 <button
                   onClick={() => this.setState({ isEditOpen: false })}
@@ -1285,6 +1336,7 @@ export default class MediaAssetsLib extends React.Component<
             </div>
           </div>
         )}
+
         {/* UPLOAD MODAL */}
         {this.state.isUploadOpen && (
           <div
@@ -1420,93 +1472,18 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="Video">Video</option>
                 <option value="Dokument">Dokument</option>
               </select>
-
-              <div>
-                {/* ✅ Dropdown */}
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (!value) return;
-
-                    if (!this.state.uploadBucket.includes(value)) {
-                      this.setState({
-                        uploadBucket: [...this.state.uploadBucket, value],
-                      });
-                    }
-                  }}
-                >
-                  <option value="">Bucket auswählen</option>
-
-                  {this.state.bucketOptions.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-
-                {/* ✅ neues hinzufügen */}
-                <input
-                  type="text"
-                  placeholder="Neues Bucket + Enter"
-                  value={this.state.newBucketInputUpload}
-                  onChange={(e) =>
-                    this.setState({ newBucketInputUpload: e.target.value })
-                  }
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-
-                      const value = this.state.newBucketInputUpload.trim();
-                      if (!value) return;
-
-                      const updatedOptions = [
-                        value,
-                        ...this.state.bucketOptions.filter((b) => b !== value),
-                      ];
-
-                      this.setState({
-                        bucketOptions: updatedOptions,
-                        uploadBucket: [...this.state.uploadBucket, value],
-                        newBucketInputUpload: "",
-                      });
-                    }
-                  }}
-                />
-
-                {/* ✅ Auswahl anzeigen */}
-                <div
-                  style={{
-                    marginTop: "8px",
-                    display: "flex",
-                    gap: "6px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {this.state.uploadBucket.map((b, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        background: "#0078d4",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        cursor: "pointer",
-                      }}
-                      onClick={() =>
-                        this.setState({
-                          uploadBucket: this.state.uploadBucket.filter(
-                            (x) => x !== b,
-                          ),
-                        })
-                      }
-                    >
-                      {b} ✕
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <BucketDropdown
+                options={this.state.bucketOptions}
+                selected={this.state.uploadBucket}
+                onChange={(values) =>
+                  this.setState({
+                    uploadBucket: values,
+                    bucketOptions: Array.from(
+                      new Set([...values, ...this.state.bucketOptions]),
+                    ),
+                  })
+                }
+              />
 
               <button onClick={() => this.setState({ isUploadOpen: false })}>
                 Schließen
