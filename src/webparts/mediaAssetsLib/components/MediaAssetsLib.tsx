@@ -122,10 +122,11 @@ const BucketDropdown = ({
   /**************** RENDER ****************/
 
   return (
-    <div ref={ref} style={{ position: "relative" }}>
+    <div ref={ref} style={{ position: "relative", width: "100%" }}>
       {/* INPUT */}
       <input
         type="text"
+        style={{ width: "100%" }}
         value={input}
         placeholder="Bucket suchen oder hinzufügen..."
         onFocus={() => setOpen(true)}
@@ -1339,6 +1340,10 @@ export default class MediaAssetsLib extends React.Component<
 
                 <input
                   type="text"
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                  }}
                   placeholder="Tag hinzufügen + Enter"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
