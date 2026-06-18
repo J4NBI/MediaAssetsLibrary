@@ -35,7 +35,6 @@ interface IMediaItem {
 /********************* STATE ***************************
  * Enthält alle UI Zustände (Filter, Modals, Form Daten)
  ******************************************************/
-``;
 interface IMediaAssetsLibState {
   allItems: IMediaItem[];
   visibleItems: IMediaItem[];
@@ -69,6 +68,11 @@ interface IMediaAssetsLibState {
 
   newBucketInputEdit: string;
   newBucketInputUpload: string;
+
+  viewMode: "buckets" | "items";
+  selectedBucket?: string;
+
+  bucketSearchText: string;
 }
 
 /********************* BUCKET DROPDOWN *****************
@@ -254,7 +258,56 @@ export default class MediaAssetsLib extends React.Component<
 
       newBucketInputEdit: "",
       newBucketInputUpload: "",
+
+      viewMode: "buckets",
+      selectedBucket: undefined,
+
+      bucketSearchText: "",
     };
+  }
+
+  private getAllBuckets(): string[] {
+    const map: { [key: string]: number } = {};
+
+    this.state.allItems.forEach((item) => {
+      if (item.bucket) {
+        item.bucket.forEach((b) => {
+          map[b] = (map[b] || 0) + 1;
+        });
+      }
+    });
+
+    return Object.keys(map);
+  }
+
+  private getBucketPreview(bucket: string): IMediaItem | undefined {
+    return this.state.allItems.find((item) => item.bucket?.includes(bucket));
+  }
+
+  private getFilteredBuckets(): string[] {
+    const { bucketSearchText } = this.state;
+
+    const all = this.getAllBuckets();
+
+    if (!bucketSearchText) return all;
+
+    return all.filter((b) =>
+      b.toLowerCase().includes(bucketSearchText.toLowerCase()),
+    );
+  }
+
+  private getBucketCounts(): { [key: string]: number } {
+    const counts: { [key: string]: number } = {};
+
+    this.state.allItems.forEach((item) => {
+      if (item.bucket) {
+        item.bucket.forEach((b) => {
+          counts[b] = (counts[b] || 0) + 1;
+        });
+      }
+    });
+
+    return counts;
   }
 
   /********************* UPLOAD **************************
@@ -588,7 +641,13 @@ export default class MediaAssetsLib extends React.Component<
    ******************************************************/
 
   private applyFilters = (): void => {
-    const { allItems, searchText, filterCategory, filterFormat } = this.state;
+    const {
+      allItems,
+      searchText,
+      filterCategory,
+      filterFormat,
+      selectedBucket,
+    } = this.state;
 
     let filtered = [...allItems];
     const search = searchText.toLowerCase();
@@ -623,6 +682,12 @@ export default class MediaAssetsLib extends React.Component<
         const date = new Date(item.created);
         return date.getFullYear() === this.state.filterYear;
       });
+    }
+
+    if (selectedBucket) {
+      filtered = filtered.filter((item) =>
+        item.bucket?.includes(selectedBucket),
+      );
     }
 
     /*
@@ -671,8 +736,19 @@ export default class MediaAssetsLib extends React.Component<
     this.setState({ visibleItems: filtered });
   };
 
+  /* +++++++++  SUCHE ++++++++ */
+
   private onSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    this.setState({ searchText: e.target.value }, this.applyFilters);
+    const value = e.target.value;
+
+    this.setState(
+      {
+        searchText: value,
+        viewMode: value ? "items" : "buckets",
+        selectedBucket: undefined,
+      },
+      this.applyFilters,
+    );
   };
 
   private getUniqueCategories(): string[] {
@@ -729,6 +805,8 @@ export default class MediaAssetsLib extends React.Component<
 
     const yearOptions = this.getUniqueYears();
 
+    const bucketCounts = this.getBucketCounts();
+
     /********************* RENDER **************************/
 
     return (
@@ -769,146 +847,179 @@ export default class MediaAssetsLib extends React.Component<
           onChange={this.onSearchChange}
           style={{ padding: "8px", width: "300px" }}
         />
-        <div style={{ marginTop: "10px" }}>
-          {/* **************** FILTER **************** */}
-          <select
-            onChange={(e) =>
-              this.setState(
-                { filterCategory: e.target.value },
-                this.applyFilters,
-              )
-            }
-          >
-            <option value="">Kategorie</option>
-            {categoryOptions.map((cat) => (
-              <option key={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
-          {/* Jahr Filter */}
-          <select
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              this.setState(
-                {
-                  filterYear: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                },
-                this.applyFilters,
-              )
-            }
-          >
-            <option value="">Jahr</option>
-            {yearOptions.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-
-          {/* Monat Filter */}
-          <select
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              this.setState(
-                {
-                  filterMonth: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                },
-                this.applyFilters,
-              )
-            }
-          >
-            <option value="">Monat</option>
-
-            {[
-              { v: 1, n: "Jan" },
-              { v: 2, n: "Feb" },
-              { v: 3, n: "Mär" },
-              { v: 4, n: "Apr" },
-              { v: 5, n: "Mai" },
-              { v: 6, n: "Jun" },
-              { v: 7, n: "Jul" },
-              { v: 8, n: "Aug" },
-              { v: 9, n: "Sep" },
-              { v: 10, n: "Okt" },
-              { v: 11, n: "Nov" },
-              { v: 12, n: "Dez" },
-            ].map((m) => (
-              <option key={m.v} value={m.v}>
-                {m.n}
-              </option>
-            ))}
-          </select>
-        </div>
-        <p>Ergebnisse: {this.state.visibleItems.length}</p>
-        <div
+        <input
+          type="text"
+          placeholder="Bucket suchen..."
+          value={this.state.bucketSearchText}
+          onChange={(e) => this.setState({ bucketSearchText: e.target.value })}
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "20px",
-            marginTop: "20px",
+            padding: "8px",
+            width: "300px",
+            marginTop: "10px",
           }}
-        >
-          {/* **************** MEDIA GRID **************** */}
-
-          {this.state.visibleItems.map((item) => {
-            const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
-              `${window.location.origin}${item.fileRef}`,
-            )}`;
-            let thumbnailUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
-
-            const fileType = item.name?.split(".").pop()?.toLowerCase();
-            const isVideo = fileType === "mp4" || fileType === "mov";
-
-            // VIDEO FALL → später via canvas erzeugen
-            if (isVideo) {
-              thumbnailUrl = ""; // erstmal leer
+        />
+        {this.state.viewMode === "items" && (
+          <button
+            onClick={() =>
+              this.setState(
+                {
+                  viewMode: "buckets",
+                  selectedBucket: undefined,
+                  searchText: "",
+                },
+                this.applyFilters,
+              )
             }
-            // VIDEO FALL → später via canvas erzeugen
-            if (isVideo) {
-              thumbnailUrl = ""; // erstmal leer
-            }
-            return (
-              <div
-                key={item.id}
-                style={{
-                  width: "300px",
-                  border: "1px solid #ddd",
-                  borderRadius: "12px",
-                  overflow: "hidden",
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                }}
-              >
-                {isVideo ? (
-                  <div
-                    onClick={() =>
-                      this.setState({
-                        isModalOpen: true,
-                        selectedItem: item,
-                      })
-                    }
-                    style={{
-                      position: "relative",
-                      cursor: "pointer",
-                    }}
-                  >
+            style={{
+              marginTop: "10px",
+              padding: "6px 10px",
+              cursor: "pointer",
+            }}
+          >
+            ← Zurück zu Buckets
+          </button>
+        )}
+        <div style={{ display: "flex", gap: "5px" }}>
+          <div style={{ marginTop: "10px" }}>
+            {/* **************** FILTER **************** */}
+            <select
+              onChange={(e) =>
+                this.setState(
+                  { filterCategory: e.target.value },
+                  this.applyFilters,
+                )
+              }
+            >
+              <option value="">Kategorie</option>
+              {categoryOptions.map((cat) => (
+                <option key={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
+            {/* Jahr Filter */}
+            <select
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                this.setState(
+                  {
+                    filterYear: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  },
+                  this.applyFilters,
+                )
+              }
+            >
+              <option value="">Jahr</option>
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+
+            {/* Monat Filter */}
+            <select
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                this.setState(
+                  {
+                    filterMonth: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  },
+                  this.applyFilters,
+                )
+              }
+            >
+              <option value="">Monat</option>
+
+              {[
+                { v: 1, n: "Jan" },
+                { v: 2, n: "Feb" },
+                { v: 3, n: "Mär" },
+                { v: 4, n: "Apr" },
+                { v: 5, n: "Mai" },
+                { v: 6, n: "Jun" },
+                { v: 7, n: "Jul" },
+                { v: 8, n: "Aug" },
+                { v: 9, n: "Sep" },
+                { v: 10, n: "Okt" },
+                { v: 11, n: "Nov" },
+                { v: 12, n: "Dez" },
+              ].map((m) => (
+                <option key={m.v} value={m.v}>
+                  {m.n}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {this.state.viewMode === "items" && (
+          <p>Ergebnisse: {this.state.visibleItems.length}</p>
+        )}
+
+        {this.state.viewMode === "buckets" ? (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "20px",
+              marginTop: "20px",
+            }}
+          >
+            {this.getFilteredBuckets().map((bucket) => {
+              const preview = this.getBucketPreview(bucket);
+
+              const thumbnailUrl = preview
+                ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
+                : "";
+
+              return (
+                <div
+                  key={bucket}
+                  onClick={() =>
+                    this.setState(
+                      {
+                        viewMode: "items",
+                        selectedBucket: bucket,
+                      },
+                      this.applyFilters,
+                    )
+                  }
+                  style={{
+                    width: "250px",
+                    border: "1px solid #ddd",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  {thumbnailUrl && (
                     <img
                       src={thumbnailUrl}
                       ref={(el) => {
-                        if (el && isVideo && !thumbnailUrl) {
+                        if (!el || !preview) return;
+
+                        const fileType = preview.name
+                          ?.split(".")
+                          .pop()
+                          ?.toLowerCase();
+                        const isVideo =
+                          fileType === "mp4" || fileType === "mov";
+
+                        if (isVideo) {
                           const video = document.createElement("video");
-                          video.src = `${window.location.origin}${item.fileRef}`;
+                          video.src = thumbnailUrl;
                           video.crossOrigin = "anonymous";
-                          video.currentTime = 1;
+                          video.currentTime = 100;
 
                           video.onloadeddata = () => {
                             const canvas = document.createElement("canvas");
 
-                            // Zielgröße (wie deine Card)
-                            canvas.width = 300;
-                            canvas.height = 200;
+                            canvas.width = 250;
+                            canvas.height = 150;
 
                             const ctx = canvas.getContext("2d");
 
@@ -920,13 +1031,11 @@ export default class MediaAssetsLib extends React.Component<
                               let drawWidth, drawHeight, offsetX, offsetY;
 
                               if (videoRatio > canvasRatio) {
-                                // Video breiter → links/rechts abschneiden
                                 drawHeight = canvas.height;
                                 drawWidth = canvas.height * videoRatio;
                                 offsetX = (canvas.width - drawWidth) / 2;
                                 offsetY = 0;
                               } else {
-                                // Video höher → oben/unten abschneiden (wichtig für Hochformat!)
                                 drawWidth = canvas.width;
                                 drawHeight = canvas.width / videoRatio;
                                 offsetX = 0;
@@ -940,11 +1049,190 @@ export default class MediaAssetsLib extends React.Component<
                                 drawWidth,
                                 drawHeight,
                               );
+
                               el.src = canvas.toDataURL();
                             }
                           };
                         }
                       }}
+                      style={{
+                        width: "100%",
+                        height: "150px",
+                        objectFit: "cover",
+                      }}
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "data:image/svg+xml;charset=UTF-8," +
+                          encodeURIComponent(`
+          <svg width="250" height="150" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#f3f2f1"/>
+            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c">
+              Kein Preview
+            </text>
+          </svg>
+        `);
+                      }}
+                    />
+                  )}
+
+                  <div style={{ padding: "10px" }}>
+                    <h3>{bucket}</h3>
+                    <p style={{ fontSize: "12px", color: "#666" }}>
+                      {bucketCounts[bucket] || 0} Dateien
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "20px",
+              marginTop: "20px",
+            }}
+          >
+            {/* **************** MEDIA GRID **************** */}
+
+            {this.state.visibleItems.map((item) => {
+              const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
+                `${window.location.origin}${item.fileRef}`,
+              )}`;
+              let thumbnailUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
+
+              const fileType = item.name?.split(".").pop()?.toLowerCase();
+              const isVideo = fileType === "mp4" || fileType === "mov";
+
+              // VIDEO FALL → später via canvas erzeugen
+              if (isVideo) {
+                thumbnailUrl = ""; // erstmal leer
+              }
+              // VIDEO FALL → später via canvas erzeugen
+              if (isVideo) {
+                thumbnailUrl = ""; // erstmal leer
+              }
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    width: "300px",
+                    border: "1px solid #ddd",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  {isVideo ? (
+                    <div
+                      onClick={() =>
+                        this.setState({
+                          isModalOpen: true,
+                          selectedItem: item,
+                        })
+                      }
+                      style={{
+                        position: "relative",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <img
+                        src={thumbnailUrl}
+                        ref={(el) => {
+                          if (el && isVideo && !thumbnailUrl) {
+                            const video = document.createElement("video");
+                            video.src = `${window.location.origin}${item.fileRef}`;
+                            video.crossOrigin = "anonymous";
+                            video.currentTime = 100;
+
+                            video.onloadeddata = () => {
+                              const canvas = document.createElement("canvas");
+
+                              // Zielgröße (wie deine Card)
+                              canvas.width = 300;
+                              canvas.height = 200;
+
+                              const ctx = canvas.getContext("2d");
+
+                              if (ctx) {
+                                const videoRatio =
+                                  video.videoWidth / video.videoHeight;
+                                const canvasRatio =
+                                  canvas.width / canvas.height;
+
+                                let drawWidth, drawHeight, offsetX, offsetY;
+
+                                if (videoRatio > canvasRatio) {
+                                  // Video breiter → links/rechts abschneiden
+                                  drawHeight = canvas.height;
+                                  drawWidth = canvas.height * videoRatio;
+                                  offsetX = (canvas.width - drawWidth) / 2;
+                                  offsetY = 0;
+                                } else {
+                                  // Video höher → oben/unten abschneiden (wichtig für Hochformat!)
+                                  drawWidth = canvas.width;
+                                  drawHeight = canvas.width / videoRatio;
+                                  offsetX = 0;
+                                  offsetY = (canvas.height - drawHeight) / 2;
+                                }
+
+                                ctx.drawImage(
+                                  video,
+                                  offsetX,
+                                  offsetY,
+                                  drawWidth,
+                                  drawHeight,
+                                );
+                                el.src = canvas.toDataURL();
+                              }
+                            };
+                          }
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "data:image/svg+xml;charset=UTF-8," +
+                            encodeURIComponent(`
+        <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#f3f2f1"/>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c" font-size="16">
+            Kein Preview
+          </text>
+        </svg>
+      `);
+                        }}
+                        style={{
+                          width: "100%",
+                          height: "200px",
+                          objectFit: "cover",
+                        }}
+                      />
+
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          fontSize: "40px",
+                          color: "white",
+                          background: "rgba(0,0,0,0.4)",
+                        }}
+                      >
+                        ▶
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={thumbnailUrl}
+                      style={{ width: "100%", cursor: "pointer" }}
+                      onClick={() =>
+                        this.setState({
+                          isModalOpen: true,
+                          selectedItem: item,
+                        })
+                      }
                       onError={(e) => {
                         e.currentTarget.src =
                           "data:image/svg+xml;charset=UTF-8," +
@@ -957,152 +1245,109 @@ export default class MediaAssetsLib extends React.Component<
         </svg>
       `);
                       }}
-                      style={{
-                        width: "100%",
-                        height: "200px",
-                        objectFit: "cover",
-                      }}
                     />
+                  )}
 
+                  <div style={{ padding: "12px" }}>
+                    <h3>{item.name}</h3>
+                    {/* ✅ TAG CHIPS HIER */}
                     <div
                       style={{
-                        position: "absolute",
-                        inset: 0,
                         display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        fontSize: "40px",
-                        color: "white",
-                        background: "rgba(0,0,0,0.4)",
+                        flexWrap: "wrap",
+                        gap: "6px",
+                        marginBottom: "8px",
                       }}
                     >
-                      ▶
+                      {(item.tags || []).map((tag, i) => (
+                        <span
+                          key={i}
+                          onClick={() =>
+                            this.setState(
+                              { searchText: tag.toLowerCase() },
+                              this.applyFilters,
+                            )
+                          }
+                          style={{
+                            background: "#0078d4",
+                            color: "white",
+                            padding: "4px 8px",
+                            borderRadius: "12px",
+                            fontSize: "11px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
-                  </div>
-                ) : (
-                  <img
-                    src={thumbnailUrl}
-                    style={{ width: "100%", cursor: "pointer" }}
-                    onClick={() =>
-                      this.setState({
-                        isModalOpen: true,
-                        selectedItem: item,
-                      })
-                    }
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "data:image/svg+xml;charset=UTF-8," +
-                        encodeURIComponent(`
-        <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#f3f2f1"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c" font-size="16">
-            Kein Preview
-          </text>
-        </svg>
-      `);
-                    }}
-                  />
-                )}
+                    <p style={{ fontSize: "12px", color: "#666" }}>
+                      Erstellt am:{" "}
+                      {item.created
+                        ? new Date(item.created).toLocaleDateString()
+                        : "-"}
+                    </p>
+                    <div
+                      style={{ display: "flex", gap: "8px", marginTop: "10px" }}
+                    >
+                      {/* DOWNLOAD */}
+                      <button
+                        onClick={() => {
+                          const link = document.createElement("a");
+                          link.href = downloadUrl;
+                          link.setAttribute("download", item.name);
 
-                <div style={{ padding: "12px" }}>
-                  <h3>{item.name}</h3>
-                  {/* ✅ TAG CHIPS HIER */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "6px",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {(item.tags || []).map((tag, i) => (
-                      <span
-                        key={i}
-                        onClick={() =>
-                          this.setState(
-                            { searchText: tag.toLowerCase() },
-                            this.applyFilters,
-                          )
-                        }
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
                         style={{
-                          background: "#0078d4",
+                          flex: 1,
+                          padding: "10px",
+                          background: "#e42828",
                           color: "white",
-                          padding: "4px 8px",
-                          borderRadius: "12px",
-                          fontSize: "11px",
+                          borderRadius: "6px",
+                          border: "none",
                           cursor: "pointer",
+                          fontWeight: "bold",
                         }}
                       >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <p style={{ fontSize: "12px", color: "#666" }}>
-                    Erstellt am:{" "}
-                    {item.created
-                      ? new Date(item.created).toLocaleDateString()
-                      : "-"}
-                  </p>
-                  <div
-                    style={{ display: "flex", gap: "8px", marginTop: "10px" }}
-                  >
-                    {/* DOWNLOAD */}
-                    <button
-                      onClick={() => {
-                        const link = document.createElement("a");
-                        link.href = downloadUrl;
-                        link.setAttribute("download", item.name);
+                        Download
+                      </button>
 
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: "10px",
-                        background: "#e42828",
-                        color: "white",
-                        borderRadius: "6px",
-                        border: "none",
-                        cursor: "pointer",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Download
-                    </button>
-
-                    {/* EDIT BUTTON (neu) */}
-                    <button
-                      onClick={() => {
-                        this.setState({
-                          isEditOpen: true,
-                          selectedItem: item,
-                          editName: item.name || "",
-                          editTags: item.tags || [],
-                          editCategory: item.category || "",
-                          editFormat: item.format || "",
-                          editBucket: item.bucket || [],
-                        });
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: "10px",
-                        background: "#e1dfdd", // leicht grau
-                        color: "#323130",
-                        borderRadius: "6px",
-                        border: "1px solid #c8c6c4",
-                        cursor: "pointer",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Editieren
-                    </button>
+                      {/* EDIT BUTTON (neu) */}
+                      <button
+                        onClick={() => {
+                          this.setState({
+                            isEditOpen: true,
+                            selectedItem: item,
+                            editName: item.name || "",
+                            editTags: item.tags || [],
+                            editCategory: item.category || "",
+                            editFormat: item.format || "",
+                            editBucket: item.bucket || [],
+                          });
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: "10px",
+                          background: "#e1dfdd", // leicht grau
+                          color: "#323130",
+                          borderRadius: "6px",
+                          border: "1px solid #c8c6c4",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Editieren
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* **************** PREVIEW MODAL **************** */}
 
