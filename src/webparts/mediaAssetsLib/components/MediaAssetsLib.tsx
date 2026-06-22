@@ -70,12 +70,8 @@ interface IMediaAssetsLibState {
   newBucketInputUpload: string;
 
   viewMode: "buckets" | "items";
+  resultMode: "folders" | "files";
   selectedBucket?: string;
-
-  bucketSearchText: string;
-
-  bucketFilterYear?: number;
-  bucketFilterMonth?: number;
 }
 
 /********************* BUCKET DROPDOWN *****************
@@ -131,11 +127,12 @@ const BucketDropdown = ({
   return (
     <div ref={ref} style={{ position: "relative", width: "100%" }}>
       {/* INPUT */}
+      <label>Ordner</label>
       <input
         type="text"
         style={{ width: "100%" }}
         value={input}
-        placeholder="Bucket suchen oder hinzufügen..."
+        placeholder="Ordner wählen oder hinzufügen..."
         onFocus={() => setOpen(true)}
         onChange={(e) => {
           setInput(e.target.value);
@@ -263,9 +260,8 @@ export default class MediaAssetsLib extends React.Component<
       newBucketInputUpload: "",
 
       viewMode: "buckets",
+      resultMode: "folders",
       selectedBucket: undefined,
-
-      bucketSearchText: "",
     };
   }
 
@@ -288,42 +284,59 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private getFilteredBuckets(): string[] {
-    const { bucketSearchText, bucketFilterYear, bucketFilterMonth } =
-      this.state;
+    const {
+      searchText,
+      filterCategory,
+      filterFormat,
+      filterYear,
+      filterMonth,
+    } = this.state;
 
     let buckets = this.getAllBuckets();
 
-    // ✅ Bucket Name Suche
-    if (bucketSearchText) {
-      buckets = buckets.filter((b) =>
-        b.toLowerCase().includes(bucketSearchText.toLowerCase()),
+    return buckets.filter((bucket) => {
+      const items = this.state.allItems.filter((item) =>
+        item.bucket?.includes(bucket),
       );
-    }
 
-    // ✅ Bucket Datum Filter
-    if (bucketFilterYear || bucketFilterMonth) {
-      buckets = buckets.filter((bucket) => {
-        const items = this.state.allItems.filter((item) =>
-          item.bucket?.includes(bucket),
-        );
+      const text = searchText.toLowerCase();
 
-        return items.some((item) => {
-          if (!item.created) return false;
+      // ✅ NEU: Bucket Name Match
+      const matchesBucketName = !text || bucket.toLowerCase().includes(text);
 
-          const date = new Date(item.created);
+      return (
+        // ✅ Bucket selbst passt → sofort anzeigen
+        matchesBucketName ||
+        // ✅ oder Items im Bucket passen
+        items.some((item) => {
+          const matchesText =
+            !text ||
+            item.name.toLowerCase().includes(text) ||
+            (item.tags || []).join(" ").toLowerCase().includes(text);
 
-          const matchYear =
-            !bucketFilterYear || date.getFullYear() === bucketFilterYear;
+          const matchesCategory =
+            !filterCategory || item.category === filterCategory;
 
-          const matchMonth =
-            !bucketFilterMonth || date.getMonth() + 1 === bucketFilterMonth;
+          const matchesFormat = !filterFormat || item.format === filterFormat;
 
-          return matchYear && matchMonth;
-        });
-      });
-    }
+          const date = item.created ? new Date(item.created) : null;
 
-    return buckets;
+          const matchesYear =
+            !filterYear || (date && date.getFullYear() === filterYear);
+
+          const matchesMonth =
+            !filterMonth || (date && date.getMonth() + 1 === filterMonth);
+
+          return (
+            matchesText &&
+            matchesCategory &&
+            matchesFormat &&
+            matchesYear &&
+            matchesMonth
+          );
+        })
+      );
+    });
   }
 
   private getBucketCounts(): { [key: string]: number } {
@@ -821,8 +834,8 @@ export default class MediaAssetsLib extends React.Component<
     this.setState(
       {
         searchText: value,
-        viewMode: "items", // ✅ IMMER items
-        selectedBucket: undefined, // ✅ raus aus Bucket
+        viewMode: "items",
+        // ✅ WICHTIG: selectedBucket NICHT löschen!
       },
       this.applyFilters,
     );
@@ -874,6 +887,8 @@ export default class MediaAssetsLib extends React.Component<
 
     return (
       <div style={{ padding: "20px" }}>
+        {/* **************** HEADER **************** */}
+        <h2>Media Library</h2>
         <div
           style={{
             display: "flex",
@@ -881,9 +896,40 @@ export default class MediaAssetsLib extends React.Component<
             alignItems: "center",
           }}
         >
-          {/* **************** HEADER **************** */}
+          {!this.state.selectedBucket && (
+            <div style={{ marginBottom: "10px", display: "flex", gap: "10px" }}>
+              <button
+                onClick={() => this.setState({ resultMode: "folders" })}
+                style={{
+                  padding: "6px 10px",
+                  background:
+                    this.state.resultMode === "folders" ? "#0078d4" : "#ddd",
+                  color:
+                    this.state.resultMode === "folders" ? "white" : "black",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                Ordner
+              </button>
 
-          <h2>Media Library</h2>
+              <button
+                onClick={() => this.setState({ resultMode: "files" })}
+                style={{
+                  padding: "6px 10px",
+                  background:
+                    this.state.resultMode === "files" ? "#0078d4" : "#ddd",
+                  color: this.state.resultMode === "files" ? "white" : "black",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                Dateien
+              </button>
+            </div>
+          )}
 
           <button
             onClick={() => this.setState({ isUploadOpen: true })}
@@ -895,6 +941,8 @@ export default class MediaAssetsLib extends React.Component<
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
+              marginBottom: "10px",
+              alignSelf: "end",
             }}
           >
             ＋
@@ -914,29 +962,6 @@ export default class MediaAssetsLib extends React.Component<
             onChange={this.onSearchChange}
             style={{ padding: "8px", width: "100%", maxWidth: "300px" }}
           />
-
-          {this.state.viewMode === "buckets" && (
-            <input
-              type="text"
-              placeholder="Bucket suchen..."
-              value={this.state.bucketSearchText}
-              onFocus={() =>
-                this.setState({
-                  viewMode: "buckets", // ✅ zurück zu buckets
-                  selectedBucket: undefined, // ✅ sicherstellen
-                })
-              }
-              onChange={(e) =>
-                this.setState({ bucketSearchText: e.target.value })
-              }
-              style={{
-                padding: "8px",
-                width: "100%",
-                maxWidth: "300px",
-                marginTop: "10px",
-              }}
-            />
-          )}
         </div>
 
         {this.state.viewMode === "items" && (
@@ -945,8 +970,13 @@ export default class MediaAssetsLib extends React.Component<
               this.setState(
                 {
                   viewMode: "buckets",
+                  resultMode: "folders", // ✅ zurück zu Ordnern
                   selectedBucket: undefined,
                   searchText: "",
+                  filterCategory: undefined,
+                  filterFormat: undefined,
+                  filterYear: undefined,
+                  filterMonth: undefined,
                 },
                 this.applyFilters,
               )
@@ -957,38 +987,77 @@ export default class MediaAssetsLib extends React.Component<
               cursor: "pointer",
             }}
           >
-            ← Zurück zu Buckets
+            ← Zurück zu Ordnern
           </button>
         )}
 
-        {this.state.viewMode === "buckets" && (
+        <div style={{ display: "flex", gap: "5px", marginTop: "10px" }}>
           <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
-            {/* JAHR */}
+            {/* **************** FILTER **************** */}
             <select
               onChange={(e) =>
-                this.setState({
-                  bucketFilterYear: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                })
+                this.setState(
+                  { filterCategory: e.target.value },
+                  this.applyFilters,
+                )
+              }
+            >
+              <option value="">Kategorie</option>
+              {categoryOptions.map((cat) => (
+                <option key={cat}>{cat}</option>
+              ))}
+            </select>
+            <select
+              onChange={(e) =>
+                this.setState(
+                  { filterFormat: e.target.value || undefined },
+                  this.applyFilters,
+                )
+              }
+              value={this.state.filterFormat || ""}
+            >
+              <option value="">Format</option>
+
+              {formatOptions.map((format) => (
+                <option key={format} value={format}>
+                  {format}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
+            {/* Jahr Filter */}
+            <select
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                this.setState(
+                  {
+                    filterYear: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  },
+                  this.applyFilters,
+                )
               }
             >
               <option value="">Jahr</option>
-              {this.getUniqueYears().map((year) => (
+              {yearOptions.map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
               ))}
             </select>
 
-            {/* MONAT */}
+            {/* Monat Filter */}
             <select
-              onChange={(e) =>
-                this.setState({
-                  bucketFilterMonth: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                })
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                this.setState(
+                  {
+                    filterMonth: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  },
+                  this.applyFilters,
+                )
               }
             >
               <option value="">Monat</option>
@@ -1013,108 +1082,13 @@ export default class MediaAssetsLib extends React.Component<
               ))}
             </select>
           </div>
-        )}
-
-        {this.state.viewMode === "items" && (
-          <div style={{ display: "flex", gap: "5px" }}>
-            <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
-              {/* **************** FILTER **************** */}
-              <select
-                onChange={(e) =>
-                  this.setState(
-                    { filterCategory: e.target.value },
-                    this.applyFilters,
-                  )
-                }
-              >
-                <option value="">Kategorie</option>
-                {categoryOptions.map((cat) => (
-                  <option key={cat}>{cat}</option>
-                ))}
-              </select>
-              <select
-                onChange={(e) =>
-                  this.setState(
-                    { filterFormat: e.target.value || undefined },
-                    this.applyFilters,
-                  )
-                }
-                value={this.state.filterFormat || ""}
-              >
-                <option value="">Format</option>
-
-                {formatOptions.map((format) => (
-                  <option key={format} value={format}>
-                    {format}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
-              {/* Jahr Filter */}
-              <select
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  this.setState(
-                    {
-                      filterYear: e.target.value
-                        ? Number(e.target.value)
-                        : undefined,
-                    },
-                    this.applyFilters,
-                  )
-                }
-              >
-                <option value="">Jahr</option>
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-
-              {/* Monat Filter */}
-              <select
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  this.setState(
-                    {
-                      filterMonth: e.target.value
-                        ? Number(e.target.value)
-                        : undefined,
-                    },
-                    this.applyFilters,
-                  )
-                }
-              >
-                <option value="">Monat</option>
-
-                {[
-                  { v: 1, n: "Jan" },
-                  { v: 2, n: "Feb" },
-                  { v: 3, n: "Mär" },
-                  { v: 4, n: "Apr" },
-                  { v: 5, n: "Mai" },
-                  { v: 6, n: "Jun" },
-                  { v: 7, n: "Jul" },
-                  { v: 8, n: "Aug" },
-                  { v: 9, n: "Sep" },
-                  { v: 10, n: "Okt" },
-                  { v: 11, n: "Nov" },
-                  { v: 12, n: "Dez" },
-                ].map((m) => (
-                  <option key={m.v} value={m.v}>
-                    {m.n}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
+        </div>
 
         {this.state.viewMode === "items" && (
           <p>Ergebnisse: {this.state.visibleItems.length}</p>
         )}
 
-        {this.state.viewMode === "buckets" ? (
+        {this.state.resultMode === "folders" ? (
           <div
             style={{
               display: "flex",
@@ -1144,8 +1118,13 @@ export default class MediaAssetsLib extends React.Component<
                     this.setState(
                       {
                         viewMode: "items",
+                        resultMode: "files", // ✅ NEU
                         selectedBucket: bucket,
-                        searchText: "", // ✅ reset
+                        searchText: "",
+                        filterCategory: undefined,
+                        filterFormat: undefined,
+                        filterYear: undefined,
+                        filterMonth: undefined,
                       },
                       this.applyFilters,
                     )
@@ -1942,12 +1921,27 @@ export default class MediaAssetsLib extends React.Component<
                 }}
               />
               <div>{this.state.uploadFiles?.length} Dateien gewählt</div>
-              <input
-                type="text"
-                placeholder="Name"
-                value={this.state.uploadName}
-                onChange={(e) => this.setState({ uploadName: e.target.value })}
+              <BucketDropdown
+                options={this.state.bucketOptions}
+                selected={this.state.uploadBucket}
+                onChange={(values) =>
+                  this.setState({
+                    uploadBucket: values,
+                  })
+                }
               />
+              {(!this.state.uploadFiles ||
+                this.state.uploadFiles.length <= 1) && (
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={this.state.uploadName}
+                  onChange={(e) =>
+                    this.setState({ uploadName: e.target.value })
+                  }
+                />
+              )}
+
               <select
                 value={this.state.uploadCategory}
                 onChange={(e) =>
@@ -2024,15 +2018,6 @@ export default class MediaAssetsLib extends React.Component<
                   }}
                 />
               </div>
-              <BucketDropdown
-                options={this.state.bucketOptions}
-                selected={this.state.uploadBucket}
-                onChange={(values) =>
-                  this.setState({
-                    uploadBucket: values,
-                  })
-                }
-              />
 
               <button onClick={() => this.setState({ isUploadOpen: false })}>
                 Schließen
