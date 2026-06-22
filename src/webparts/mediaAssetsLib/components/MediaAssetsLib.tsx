@@ -1172,11 +1172,20 @@ export default class MediaAssetsLib extends React.Component<
               return (
                 <div
                   key={bucket}
+                  style={{
+                    position: "relative", // ✅ nötig für absolutes + Icon
+                    width: "250px",
+                    border: "1px solid #ddd",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                  }}
                   onClick={() =>
                     this.setState(
                       {
                         viewMode: "items",
-                        resultMode: "files", // ✅ NEU
+                        resultMode: "files",
                         selectedBucket: bucket,
                         searchText: "",
                         filterCategory: undefined,
@@ -1187,15 +1196,38 @@ export default class MediaAssetsLib extends React.Component<
                       this.applyFilters,
                     )
                   }
-                  style={{
-                    width: "250px",
-                    border: "1px solid #ddd",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                  }}
                 >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // ✅ verhindert Öffnen des Ordners
+
+                      this.setState({
+                        isUploadOpen: true,
+                        uploadBucket: [bucket], // ✅ AUTO ausgewählt!
+                      });
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      background: "#0078d4",
+                      color: "white",
+                      border: "none",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    +
+                  </button>
+
                   {preview && (
                     <img
                       src={!isVideo ? imageUrl : ""}
