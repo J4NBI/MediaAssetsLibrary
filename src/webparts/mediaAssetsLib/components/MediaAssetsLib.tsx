@@ -298,50 +298,50 @@ export default class MediaAssetsLib extends React.Component<
       filterMonth,
     } = this.state;
 
-    let buckets = this.getAllBuckets();
+    const buckets = this.getAllBuckets();
 
     return buckets.filter((bucket) => {
       const items = this.state.allItems.filter((item) =>
         item.bucket?.includes(bucket),
       );
 
-      const text = searchText.toLowerCase();
+      const search = searchText.toLowerCase();
 
-      // ✅ NEU: Bucket Name Match
-      const matchesBucketName = !text || bucket.toLowerCase().includes(text);
+      // ✅ gleiche Filterlogik wie applyFilters
+      const filteredItems = items.filter((item) => {
+        // TEXT
+        const matchesText =
+          !search ||
+          item.name.toLowerCase().includes(search) ||
+          (item.tags || []).join(" ").toLowerCase().includes(search);
 
-      return (
-        // ✅ Bucket selbst passt → sofort anzeigen
-        matchesBucketName ||
-        // ✅ oder Items im Bucket passen
-        items.some((item) => {
-          const matchesText =
-            !text ||
-            item.name.toLowerCase().includes(text) ||
-            (item.tags || []).join(" ").toLowerCase().includes(text);
+        // KATEGORIE
+        const matchesCategory =
+          !filterCategory || item.category === filterCategory;
 
-          const matchesCategory =
-            !filterCategory || item.category === filterCategory;
+        // FORMAT
+        const matchesFormat = !filterFormat || item.format === filterFormat;
 
-          const matchesFormat = !filterFormat || item.format === filterFormat;
+        // DATUM
+        const date = item.created ? new Date(item.created) : null;
 
-          const date = item.created ? new Date(item.created) : null;
+        const matchesYear =
+          !filterYear || (date && date.getFullYear() === filterYear);
 
-          const matchesYear =
-            !filterYear || (date && date.getFullYear() === filterYear);
+        const matchesMonth =
+          !filterMonth || (date && date.getMonth() + 1 === filterMonth);
 
-          const matchesMonth =
-            !filterMonth || (date && date.getMonth() + 1 === filterMonth);
+        return (
+          matchesText &&
+          matchesCategory &&
+          matchesFormat &&
+          matchesYear &&
+          matchesMonth
+        );
+      });
 
-          return (
-            matchesText &&
-            matchesCategory &&
-            matchesFormat &&
-            matchesYear &&
-            matchesMonth
-          );
-        })
-      );
+      // ✅ Bucket nur anzeigen wenn Treffer vorhanden
+      return filteredItems.length > 0;
     });
   }
 
