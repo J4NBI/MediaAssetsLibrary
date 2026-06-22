@@ -2,7 +2,7 @@ import * as React from "react";
 import { SPHttpClient } from "@microsoft/sp-http";
 import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
 /*******************************************************
- * MEDIA ASSETS LIB V3
+ * MEDIA ASSETS LIB V4
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
@@ -72,6 +72,9 @@ interface IMediaAssetsLibState {
   viewMode: "buckets" | "items";
   resultMode: "folders" | "files";
   selectedBucket?: string;
+
+  isUploading: boolean;
+  downloadingItemId?: number;
 }
 
 /********************* BUCKET DROPDOWN *****************
@@ -198,7 +201,7 @@ const BucketDropdown = ({
             key={b}
             style={{
               background: "#ecdd04",
-              color: "white",
+              color: "black",
               padding: "4px 8px",
               borderRadius: "0px",
               cursor: "pointer",
@@ -262,6 +265,9 @@ export default class MediaAssetsLib extends React.Component<
       viewMode: "buckets",
       resultMode: "folders",
       selectedBucket: undefined,
+
+      isUploading: false,
+      downloadingItemId: undefined,
     };
   }
 
@@ -378,6 +384,7 @@ export default class MediaAssetsLib extends React.Component<
    ******************************************************/
 
   private async uploadItem(): Promise<void> {
+    this.setState({ isUploading: true });
     const {
       uploadFiles,
       uploadTags,
@@ -490,6 +497,8 @@ export default class MediaAssetsLib extends React.Component<
     }
 
     await this.loadAllMedia();
+
+    this.setState({ isUploading: false });
 
     this.setState(
       {
@@ -1468,19 +1477,25 @@ export default class MediaAssetsLib extends React.Component<
                       {/* DOWNLOAD */}
                       <button
                         onClick={() => {
+                          this.setState({ downloadingItemId: item.id });
+
                           const link = document.createElement("a");
                           link.href = downloadUrl;
-                          link.target = "_blank"; // ✅ wichtig
+                          link.target = "_blank";
                           link.download = item.name;
 
                           document.body.appendChild(link);
                           link.click();
                           document.body.removeChild(link);
+
+                          setTimeout(() => {
+                            this.setState({ downloadingItemId: undefined });
+                          }, 1500);
                         }}
                         style={{
                           flex: 1,
                           padding: "10px",
-                          background: "#e42828",
+                          background: "#e42828", // ✅ ROT bleibt!
                           color: "white",
                           borderRadius: "6px",
                           border: "none",
@@ -1488,7 +1503,9 @@ export default class MediaAssetsLib extends React.Component<
                           fontWeight: "bold",
                         }}
                       >
-                        Download
+                        {this.state.downloadingItemId === item.id
+                          ? "⏳ Lädt..."
+                          : "Download"}
                       </button>
 
                       {/* EDIT BUTTON (neu) */}
@@ -2064,24 +2081,11 @@ export default class MediaAssetsLib extends React.Component<
               </button>
               <button
                 onClick={() => this.uploadItem()}
-                disabled={
-                  !this.state.uploadBucket ||
-                  this.state.uploadBucket.length === 0
-                }
-                style={{
-                  opacity:
-                    !this.state.uploadBucket ||
-                    this.state.uploadBucket.length === 0
-                      ? 0.5
-                      : 1,
-                  cursor:
-                    !this.state.uploadBucket ||
-                    this.state.uploadBucket.length === 0
-                      ? "not-allowed"
-                      : "pointer",
-                }}
+                disabled={this.state.isUploading}
               >
-                Hochladen
+                {this.state.isUploading
+                  ? "⏳ Wird hochgeladen..."
+                  : "Hochladen"}
               </button>
             </div>
           </div>
