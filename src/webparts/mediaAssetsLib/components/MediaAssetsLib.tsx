@@ -197,10 +197,10 @@ const BucketDropdown = ({
           <span
             key={b}
             style={{
-              background: "#0078d4",
+              background: "#ecdd04",
               color: "white",
               padding: "4px 8px",
-              borderRadius: "12px",
+              borderRadius: "0px",
               cursor: "pointer",
             }}
             onClick={() => onChange(selected.filter((x) => x !== b))}
@@ -385,6 +385,12 @@ export default class MediaAssetsLib extends React.Component<
       uploadFormat,
       uploadBucket,
     } = this.state;
+
+    // ✅ ORDNER VALIDIERUNG
+    if (!uploadBucket || uploadBucket.length === 0) {
+      alert("Bitte wählen Sie mindestens einen Ordner aus.");
+      return;
+    }
 
     if (!uploadFiles || uploadFiles.length === 0) {
       console.log("❌ Keine Files gewählt");
@@ -2056,7 +2062,27 @@ export default class MediaAssetsLib extends React.Component<
               <button onClick={() => this.setState({ isUploadOpen: false })}>
                 Schließen
               </button>
-              <button onClick={() => this.uploadItem()}>Hochladen</button>
+              <button
+                onClick={() => this.uploadItem()}
+                disabled={
+                  !this.state.uploadBucket ||
+                  this.state.uploadBucket.length === 0
+                }
+                style={{
+                  opacity:
+                    !this.state.uploadBucket ||
+                    this.state.uploadBucket.length === 0
+                      ? 0.5
+                      : 1,
+                  cursor:
+                    !this.state.uploadBucket ||
+                    this.state.uploadBucket.length === 0
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                Hochladen
+              </button>
             </div>
           </div>
         )}
