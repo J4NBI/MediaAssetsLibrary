@@ -73,6 +73,9 @@ interface IMediaAssetsLibState {
   selectedBucket?: string;
 
   bucketSearchText: string;
+
+  bucketFilterYear?: number;
+  bucketFilterMonth?: number;
 }
 
 /********************* BUCKET DROPDOWN *****************
@@ -285,15 +288,42 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private getFilteredBuckets(): string[] {
-    const { bucketSearchText } = this.state;
+    const { bucketSearchText, bucketFilterYear, bucketFilterMonth } =
+      this.state;
 
-    const all = this.getAllBuckets();
+    let buckets = this.getAllBuckets();
 
-    if (!bucketSearchText) return all;
+    // ✅ Bucket Name Suche
+    if (bucketSearchText) {
+      buckets = buckets.filter((b) =>
+        b.toLowerCase().includes(bucketSearchText.toLowerCase()),
+      );
+    }
 
-    return all.filter((b) =>
-      b.toLowerCase().includes(bucketSearchText.toLowerCase()),
-    );
+    // ✅ Bucket Datum Filter
+    if (bucketFilterYear || bucketFilterMonth) {
+      buckets = buckets.filter((bucket) => {
+        const items = this.state.allItems.filter((item) =>
+          item.bucket?.includes(bucket),
+        );
+
+        return items.some((item) => {
+          if (!item.created) return false;
+
+          const date = new Date(item.created);
+
+          const matchYear =
+            !bucketFilterYear || date.getFullYear() === bucketFilterYear;
+
+          const matchMonth =
+            !bucketFilterMonth || date.getMonth() + 1 === bucketFilterMonth;
+
+          return matchYear && matchMonth;
+        });
+      });
+    }
+
+    return buckets;
   }
 
   private getBucketCounts(): { [key: string]: number } {
@@ -791,9 +821,8 @@ export default class MediaAssetsLib extends React.Component<
     this.setState(
       {
         searchText: value,
-
-        // ✅ Nur wechseln, wenn KEIN Bucket aktiv ist
-        viewMode: this.state.selectedBucket || value ? "items" : "buckets",
+        viewMode: "items", // ✅ IMMER items
+        selectedBucket: undefined, // ✅ raus aus Bucket
       },
       this.applyFilters,
     );
@@ -885,11 +914,18 @@ export default class MediaAssetsLib extends React.Component<
             onChange={this.onSearchChange}
             style={{ padding: "8px", width: "100%", maxWidth: "300px" }}
           />
+
           {this.state.viewMode === "buckets" && (
             <input
               type="text"
               placeholder="Bucket suchen..."
               value={this.state.bucketSearchText}
+              onFocus={() =>
+                this.setState({
+                  viewMode: "buckets", // ✅ zurück zu buckets
+                  selectedBucket: undefined, // ✅ sicherstellen
+                })
+              }
               onChange={(e) =>
                 this.setState({ bucketSearchText: e.target.value })
               }
@@ -924,73 +960,35 @@ export default class MediaAssetsLib extends React.Component<
             ← Zurück zu Buckets
           </button>
         )}
-        <div style={{ display: "flex", gap: "5px" }}>
-          <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
-            {/* **************** FILTER **************** */}
-            <select
-              onChange={(e) =>
-                this.setState(
-                  { filterCategory: e.target.value },
-                  this.applyFilters,
-                )
-              }
-            >
-              <option value="">Kategorie</option>
-              {categoryOptions.map((cat) => (
-                <option key={cat}>{cat}</option>
-              ))}
-            </select>
-            <select
-              onChange={(e) =>
-                this.setState(
-                  { filterFormat: e.target.value || undefined },
-                  this.applyFilters,
-                )
-              }
-              value={this.state.filterFormat || ""}
-            >
-              <option value="">Format</option>
 
-              {formatOptions.map((format) => (
-                <option key={format} value={format}>
-                  {format}
-                </option>
-              ))}
-            </select>
-          </div>
+        {this.state.viewMode === "buckets" && (
           <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
-            {/* Jahr Filter */}
+            {/* JAHR */}
             <select
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                this.setState(
-                  {
-                    filterYear: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  },
-                  this.applyFilters,
-                )
+              onChange={(e) =>
+                this.setState({
+                  bucketFilterYear: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                })
               }
             >
               <option value="">Jahr</option>
-              {yearOptions.map((year) => (
+              {this.getUniqueYears().map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
               ))}
             </select>
 
-            {/* Monat Filter */}
+            {/* MONAT */}
             <select
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                this.setState(
-                  {
-                    filterMonth: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  },
-                  this.applyFilters,
-                )
+              onChange={(e) =>
+                this.setState({
+                  bucketFilterMonth: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                })
               }
             >
               <option value="">Monat</option>
@@ -1015,7 +1013,102 @@ export default class MediaAssetsLib extends React.Component<
               ))}
             </select>
           </div>
-        </div>
+        )}
+
+        {this.state.viewMode === "items" && (
+          <div style={{ display: "flex", gap: "5px" }}>
+            <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
+              {/* **************** FILTER **************** */}
+              <select
+                onChange={(e) =>
+                  this.setState(
+                    { filterCategory: e.target.value },
+                    this.applyFilters,
+                  )
+                }
+              >
+                <option value="">Kategorie</option>
+                {categoryOptions.map((cat) => (
+                  <option key={cat}>{cat}</option>
+                ))}
+              </select>
+              <select
+                onChange={(e) =>
+                  this.setState(
+                    { filterFormat: e.target.value || undefined },
+                    this.applyFilters,
+                  )
+                }
+                value={this.state.filterFormat || ""}
+              >
+                <option value="">Format</option>
+
+                {formatOptions.map((format) => (
+                  <option key={format} value={format}>
+                    {format}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
+              {/* Jahr Filter */}
+              <select
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  this.setState(
+                    {
+                      filterYear: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    },
+                    this.applyFilters,
+                  )
+                }
+              >
+                <option value="">Jahr</option>
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+
+              {/* Monat Filter */}
+              <select
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  this.setState(
+                    {
+                      filterMonth: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    },
+                    this.applyFilters,
+                  )
+                }
+              >
+                <option value="">Monat</option>
+
+                {[
+                  { v: 1, n: "Jan" },
+                  { v: 2, n: "Feb" },
+                  { v: 3, n: "Mär" },
+                  { v: 4, n: "Apr" },
+                  { v: 5, n: "Mai" },
+                  { v: 6, n: "Jun" },
+                  { v: 7, n: "Jul" },
+                  { v: 8, n: "Aug" },
+                  { v: 9, n: "Sep" },
+                  { v: 10, n: "Okt" },
+                  { v: 11, n: "Nov" },
+                  { v: 12, n: "Dez" },
+                ].map((m) => (
+                  <option key={m.v} value={m.v}>
+                    {m.n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
         {this.state.viewMode === "items" && (
           <p>Ergebnisse: {this.state.visibleItems.length}</p>
@@ -1161,9 +1254,8 @@ export default class MediaAssetsLib extends React.Component<
             {/* **************** MEDIA GRID **************** */}
 
             {this.state.visibleItems.map((item) => {
-              const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(
-                `${window.location.origin}${item.fileRef}`,
-              )}`;
+              const downloadUrl = `${window.location.origin}${item.fileRef}`;
+
               let thumbnailUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
 
               const fileType = item.name?.split(".").pop()?.toLowerCase();
@@ -1359,7 +1451,8 @@ export default class MediaAssetsLib extends React.Component<
                         onClick={() => {
                           const link = document.createElement("a");
                           link.href = downloadUrl;
-                          link.setAttribute("download", item.name);
+                          link.target = "_blank"; // ✅ wichtig
+                          link.download = item.name;
 
                           document.body.appendChild(link);
                           link.click();
