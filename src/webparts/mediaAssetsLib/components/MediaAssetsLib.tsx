@@ -440,8 +440,20 @@ export default class MediaAssetsLib extends React.Component<
           .map((t) => t.trim())
           .filter((t, i, arr) => t && arr.indexOf(t) === i);
 
+        const isSingleUpload = uploadFiles.length === 1;
+
+        let finalName = uploadFile.name;
+
+        if (isSingleUpload && this.state.uploadName) {
+          const extension = uploadFile.name.includes(".")
+            ? uploadFile.name.substring(uploadFile.name.lastIndexOf("."))
+            : "";
+
+          finalName = this.state.uploadName + extension;
+        }
+
         const bodyData = {
-          FileLeafRef: uploadFile.name,
+          FileLeafRef: finalName,
           Kategorie: uploadCategory || null,
           Tags: cleanTags,
           Format: uploadFormat || null,
@@ -490,7 +502,7 @@ export default class MediaAssetsLib extends React.Component<
    ******************************************************/
 
   private async deleteItem(): Promise<void> {
-    const { selectedItem } = this.state;
+    const { selectedItem, selectedBucket } = this.state;
 
     if (!selectedItem) return;
 
@@ -521,26 +533,48 @@ export default class MediaAssetsLib extends React.Component<
         const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
         const items = await this.getFolderContent(rootFolder);
 
-        // ✅ NEU SORTIEREN
+        // ✅ Buckets neu berechnen
         const sortedBuckets = this.getBucketsSortedByNewest(items);
+
+        // ✅ Prüfen ob noch Dateien im aktuellen Ordner sind
+        const remainingInBucket = items.filter((i) =>
+          selectedBucket ? i.bucket?.includes(selectedBucket) : false,
+        );
 
         this.setState(
           {
             allItems: items,
-            bucketOptions: sortedBuckets, // ✅ direkt neu sortiert
-            isUploadOpen: false,
-            uploadFiles: [],
-            viewMode: "buckets",
-            selectedBucket: undefined,
-            searchText: "",
+            bucketOptions: sortedBuckets,
+
+            isEditOpen: false,
+            selectedItem: undefined,
+
+            // ✅ FALL 1: Ordner jetzt leer → zurück zur Übersicht
+            ...(selectedBucket && remainingInBucket.length === 0
+              ? {
+                  viewMode: "buckets",
+                  resultMode: "folders",
+                  selectedBucket: undefined,
+                  searchText: "",
+                  filterCategory: undefined,
+                  filterFormat: undefined,
+                  filterYear: undefined,
+                  filterMonth: undefined,
+                }
+              : // ✅ FALL 2: Ordner hat noch Dateien → drin bleiben
+                {
+                  viewMode: "items",
+                  resultMode: "files",
+                  selectedBucket: selectedBucket,
+                  searchText: "",
+                  filterCategory: undefined,
+                  filterFormat: undefined,
+                  filterYear: undefined,
+                  filterMonth: undefined,
+                }),
           },
           this.applyFilters,
         );
-
-        this.setState({
-          isEditOpen: false,
-          selectedItem: undefined,
-        });
       } else {
         console.error("❌ Fehler beim Löschen", response);
       }
