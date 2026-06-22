@@ -430,10 +430,16 @@ export default class MediaAssetsLib extends React.Component<
 
     await this.loadAllMedia();
 
-    this.setState({
-      isUploadOpen: false,
-      uploadFiles: [],
-    });
+    this.setState(
+      {
+        isUploadOpen: false,
+        uploadFiles: [],
+        viewMode: "buckets", // ✅ zurück zur Bucket Ansicht
+        selectedBucket: undefined, // ✅ Reset
+        searchText: "", // ✅ wichtig für Ansicht
+      },
+      this.applyFilters, // ✅ neu berechnen
+    );
   }
 
   /********************* DELETE **************************
@@ -469,7 +475,24 @@ export default class MediaAssetsLib extends React.Component<
       if (response.ok) {
         console.log("✅ Element gelöscht");
 
-        await this.loadAllMedia();
+        const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
+        const items = await this.getFolderContent(rootFolder);
+
+        // ✅ NEU SORTIEREN
+        const sortedBuckets = this.getBucketsSortedByNewest(items);
+
+        this.setState(
+          {
+            allItems: items,
+            bucketOptions: sortedBuckets, // ✅ direkt neu sortiert
+            isUploadOpen: false,
+            uploadFiles: [],
+            viewMode: "buckets",
+            selectedBucket: undefined,
+            searchText: "",
+          },
+          this.applyFilters,
+        );
 
         this.setState({
           isEditOpen: false,
@@ -672,6 +695,14 @@ export default class MediaAssetsLib extends React.Component<
     } = this.state;
 
     let filtered = [...allItems];
+
+    // ✅ IMMER ZUERST BUCKET einschränken
+    if (selectedBucket) {
+      filtered = filtered.filter((item) =>
+        item.bucket?.includes(selectedBucket),
+      );
+    }
+
     const search = searchText.toLowerCase();
 
     if (search) {
@@ -704,12 +735,6 @@ export default class MediaAssetsLib extends React.Component<
         const date = new Date(item.created);
         return date.getFullYear() === this.state.filterYear;
       });
-    }
-
-    if (selectedBucket) {
-      filtered = filtered.filter((item) =>
-        item.bucket?.includes(selectedBucket),
-      );
     }
 
     /*
@@ -766,8 +791,9 @@ export default class MediaAssetsLib extends React.Component<
     this.setState(
       {
         searchText: value,
-        viewMode: value ? "items" : "buckets",
-        selectedBucket: undefined,
+
+        // ✅ Nur wechseln, wenn KEIN Bucket aktiv ist
+        viewMode: this.state.selectedBucket || value ? "items" : "buckets",
       },
       this.applyFilters,
     );
@@ -847,25 +873,36 @@ export default class MediaAssetsLib extends React.Component<
         </div>
 
         {/* **************** SEARCH **************** */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <input
+            type="text"
+            placeholder={
+              this.state.selectedBucket
+                ? `Suche in "${this.state.selectedBucket}"`
+                : "Suche..."
+            }
+            value={this.state.searchText}
+            onChange={this.onSearchChange}
+            style={{ padding: "8px", width: "100%", maxWidth: "300px" }}
+          />
+          {this.state.viewMode === "buckets" && (
+            <input
+              type="text"
+              placeholder="Bucket suchen..."
+              value={this.state.bucketSearchText}
+              onChange={(e) =>
+                this.setState({ bucketSearchText: e.target.value })
+              }
+              style={{
+                padding: "8px",
+                width: "100%",
+                maxWidth: "300px",
+                marginTop: "10px",
+              }}
+            />
+          )}
+        </div>
 
-        <input
-          type="text"
-          placeholder="Suche..."
-          value={this.state.searchText}
-          onChange={this.onSearchChange}
-          style={{ padding: "8px", width: "300px" }}
-        />
-        <input
-          type="text"
-          placeholder="Bucket suchen..."
-          value={this.state.bucketSearchText}
-          onChange={(e) => this.setState({ bucketSearchText: e.target.value })}
-          style={{
-            padding: "8px",
-            width: "300px",
-            marginTop: "10px",
-          }}
-        />
         {this.state.viewMode === "items" && (
           <button
             onClick={() =>
@@ -888,7 +925,7 @@ export default class MediaAssetsLib extends React.Component<
           </button>
         )}
         <div style={{ display: "flex", gap: "5px" }}>
-          <div style={{ marginTop: "10px" }}>
+          <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
             {/* **************** FILTER **************** */}
             <select
               onChange={(e) =>
@@ -921,7 +958,7 @@ export default class MediaAssetsLib extends React.Component<
               ))}
             </select>
           </div>
-          <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
+          <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
             {/* Jahr Filter */}
             <select
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -996,8 +1033,15 @@ export default class MediaAssetsLib extends React.Component<
             {this.getFilteredBuckets().map((bucket) => {
               const preview = this.getBucketPreview(bucket);
 
-              const thumbnailUrl = preview
+              const fileType = preview?.name?.split(".").pop()?.toLowerCase();
+              const isVideo = fileType === "mp4" || fileType === "mov";
+
+              const imageUrl = preview
                 ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
+                : "";
+
+              const videoUrl = preview
+                ? `${window.location.origin}${preview.fileRef}`
                 : "";
 
               return (
@@ -1008,6 +1052,7 @@ export default class MediaAssetsLib extends React.Component<
                       {
                         viewMode: "items",
                         selectedBucket: bucket,
+                        searchText: "", // ✅ reset
                       },
                       this.applyFilters,
                     )
@@ -1021,24 +1066,18 @@ export default class MediaAssetsLib extends React.Component<
                     boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
                   }}
                 >
-                  {thumbnailUrl && (
+                  {preview && (
                     <img
-                      src={thumbnailUrl}
+                      src={!isVideo ? imageUrl : ""}
                       ref={(el) => {
                         if (!el || !preview) return;
 
-                        const fileType = preview.name
-                          ?.split(".")
-                          .pop()
-                          ?.toLowerCase();
-                        const isVideo =
-                          fileType === "mp4" || fileType === "mov";
-
                         if (isVideo) {
                           const video = document.createElement("video");
-                          video.src = thumbnailUrl;
+
+                          video.src = videoUrl; // ✅ WICHTIG FIX
                           video.crossOrigin = "anonymous";
-                          video.currentTime = 100;
+                          video.currentTime = 2; // ✅ besser als 100
 
                           video.onloadeddata = () => {
                             const canvas = document.createElement("canvas");
@@ -1705,6 +1744,8 @@ export default class MediaAssetsLib extends React.Component<
               justifyContent: "center",
               alignItems: "center",
               zIndex: 9999,
+              overflowY: "auto",
+              padding: "20px",
             }}
           >
             <div
@@ -1716,6 +1757,8 @@ export default class MediaAssetsLib extends React.Component<
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
+                maxHeight: "90vh",
+                overflowY: "auto",
               }}
             >
               <h3>Upload</h3>
@@ -1893,7 +1936,7 @@ export default class MediaAssetsLib extends React.Component<
                 selected={this.state.uploadBucket}
                 onChange={(values) =>
                   this.setState({
-                    editBucket: values,
+                    uploadBucket: values,
                   })
                 }
               />
