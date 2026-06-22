@@ -60,7 +60,6 @@ interface IMediaAssetsLibState {
   uploadName: string;
   uploadTags: string[];
   uploadCategory: string;
-  uploadFormat: string;
   uploadFiles?: File[];
   uploadPreviewUrl?: string;
 
@@ -253,7 +252,6 @@ export default class MediaAssetsLib extends React.Component<
       uploadName: "",
       uploadTags: [],
       uploadCategory: "",
-      uploadFormat: "",
       uploadBucket: [],
       uploadFiles: [],
 
@@ -271,6 +269,19 @@ export default class MediaAssetsLib extends React.Component<
     };
   }
 
+  private detectFormat(fileName: string): string {
+    const ext = fileName.split(".").pop()?.toLowerCase();
+
+    if (!ext) return "Dokument";
+
+    const imageTypes = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"];
+    const videoTypes = ["mp4", "mov", "avi", "webm", "mkv"];
+
+    if (imageTypes.includes(ext)) return "Bild";
+    if (videoTypes.includes(ext)) return "Video";
+
+    return "Dokument";
+  }
   private getAllBuckets(): string[] {
     const map: { [key: string]: number } = {};
 
@@ -385,22 +396,18 @@ export default class MediaAssetsLib extends React.Component<
 
   private async uploadItem(): Promise<void> {
     this.setState({ isUploading: true });
-    const {
-      uploadFiles,
-      uploadTags,
-      uploadCategory,
-      uploadFormat,
-      uploadBucket,
-    } = this.state;
+    const { uploadFiles, uploadTags, uploadCategory, uploadBucket } =
+      this.state;
 
-    // ✅ ORDNER VALIDIERUNG
     if (!uploadBucket || uploadBucket.length === 0) {
       alert("Bitte wählen Sie mindestens einen Ordner aus.");
+      this.setState({ isUploading: false }); // ✅ FIX!!
       return;
     }
 
     if (!uploadFiles || uploadFiles.length === 0) {
       console.log("❌ Keine Files gewählt");
+      this.setState({ isUploading: false }); // ✅ FIX!!
       return;
     }
 
@@ -465,11 +472,13 @@ export default class MediaAssetsLib extends React.Component<
           finalName = this.state.uploadName + extension;
         }
 
+        const detectedFormat = this.detectFormat(uploadFile.name);
+
         const bodyData = {
           FileLeafRef: finalName,
           Kategorie: uploadCategory || null,
           Tags: cleanTags,
-          Format: uploadFormat || null,
+          Format: detectedFormat, // ✅ AUTO!
           Bucket: cleanBuckets,
         };
 
@@ -2013,17 +2022,7 @@ export default class MediaAssetsLib extends React.Component<
                   </option>
                 ))}
               </select>
-              <select
-                value={this.state.uploadFormat}
-                onChange={(e) =>
-                  this.setState({ uploadFormat: e.target.value })
-                }
-              >
-                <option value="">Format wählen</option>
-                <option value="Bild">Bild</option>
-                <option value="Video">Video</option>
-                <option value="Dokument">Dokument</option>
-              </select>
+
               <div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {this.state.uploadTags.map((tag, index) => (
@@ -2081,7 +2080,25 @@ export default class MediaAssetsLib extends React.Component<
               </button>
               <button
                 onClick={() => this.uploadItem()}
-                disabled={this.state.isUploading}
+                disabled={
+                  this.state.isUploading ||
+                  !this.state.uploadBucket ||
+                  this.state.uploadBucket.length === 0
+                }
+                style={{
+                  opacity:
+                    this.state.isUploading ||
+                    !this.state.uploadBucket ||
+                    this.state.uploadBucket.length === 0
+                      ? 0.5
+                      : 1,
+                  cursor:
+                    this.state.isUploading ||
+                    !this.state.uploadBucket ||
+                    this.state.uploadBucket.length === 0
+                      ? "not-allowed"
+                      : "pointer",
+                }}
               >
                 {this.state.isUploading
                   ? "⏳ Wird hochgeladen..."
