@@ -1198,17 +1198,9 @@ export default class MediaAssetsLib extends React.Component<
                   }
                 >
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // ✅ verhindert Öffnen des Ordners
-
-                      this.setState({
-                        isUploadOpen: true,
-                        uploadBucket: [bucket], // ✅ AUTO ausgewählt!
-                      });
-                    }}
                     style={{
                       position: "absolute",
-                      top: "8px",
+                      bottom: "8px",
                       right: "8px",
                       width: "32px",
                       height: "32px",
@@ -1224,8 +1216,17 @@ export default class MediaAssetsLib extends React.Component<
                       justifyContent: "center",
                       boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
                     }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault(); // ✅ WICHTIG!
+
+                      this.setState({
+                        isUploadOpen: true,
+                        uploadBucket: [bucket],
+                      });
+                    }}
                   >
-                    +
+                    <span style={{ transform: "translateY(-2px)" }}>+</span>
                   </button>
 
                   {preview && (
