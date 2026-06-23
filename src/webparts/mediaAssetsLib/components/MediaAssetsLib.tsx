@@ -2,7 +2,7 @@ import * as React from "react";
 import { SPHttpClient } from "@microsoft/sp-http";
 import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
 /*******************************************************
- * MEDIA ASSETS LIB V4
+ * MEDIA ASSETS LIB V5
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
@@ -1197,6 +1197,7 @@ export default class MediaAssetsLib extends React.Component<
                     )
                   }
                 >
+                  {/* +++++++++++ UPLOAD BUTTON BOTTOM RIGHT +++++++++++ */}
                   <button
                     style={{
                       position: "absolute",
