@@ -74,6 +74,8 @@ interface IMediaAssetsLibState {
 
   isUploading: boolean;
   downloadingItemId?: number;
+
+  showScrollTop: boolean;
 }
 
 /********************* BUCKET DROPDOWN *****************
@@ -266,8 +268,10 @@ export default class MediaAssetsLib extends React.Component<
 
       isUploading: false,
       downloadingItemId: undefined,
+      showScrollTop: false,
     };
   }
+  private observer?: IntersectionObserver;
 
   private detectFormat(fileName: string): string {
     const ext = fileName.split(".").pop()?.toLowerCase();
@@ -612,7 +616,29 @@ export default class MediaAssetsLib extends React.Component<
    ******************************************************/
 
   public async componentDidMount(): Promise<void> {
+    console.log("MOUNTED ✅");
+
     await this.loadAllMedia();
+
+    const target = document.getElementById("top");
+
+    if (target) {
+      this.observer = new IntersectionObserver(
+        ([entry]) => {
+          console.log("HEADER VISIBLE:", entry.isIntersecting);
+
+          this.setState({
+            showScrollTop: !entry.isIntersecting,
+          });
+        },
+        {
+          root: null, // viewport
+          threshold: 0,
+        },
+      );
+
+      this.observer.observe(target);
+    }
   }
 
   /********************* REKURSIVER LOAD *****************
@@ -944,9 +970,9 @@ export default class MediaAssetsLib extends React.Component<
     /********************* RENDER **************************/
 
     return (
-      <div style={{ padding: "20px" }}>
+      <div style={{ padding: "20px", position: "relative" }}>
         {/* **************** HEADER **************** */}
-        <h2>Media Library</h2>
+        <h2 id="top">Media Library</h2>
         <div
           style={{
             display: "flex",
@@ -1006,7 +1032,6 @@ export default class MediaAssetsLib extends React.Component<
             ＋
           </button>
         </div>
-
         {/* **************** SEARCH **************** */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           <input
@@ -1021,7 +1046,6 @@ export default class MediaAssetsLib extends React.Component<
             style={{ padding: "8px", width: "100%", maxWidth: "300px" }}
           />
         </div>
-
         {this.state.viewMode === "items" && (
           <button
             onClick={() =>
@@ -1048,7 +1072,6 @@ export default class MediaAssetsLib extends React.Component<
             ← Zurück zu Ordnern
           </button>
         )}
-
         <div style={{ display: "flex", gap: "5px", marginTop: "10px" }}>
           <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
             {/* **************** FILTER **************** */}
@@ -1141,11 +1164,9 @@ export default class MediaAssetsLib extends React.Component<
             </select>
           </div>
         </div>
-
         {this.state.viewMode === "items" && (
           <p>Ergebnisse: {this.state.visibleItems.length}</p>
         )}
-
         {this.state.resultMode === "folders" ? (
           <div
             style={{
@@ -1584,9 +1605,7 @@ export default class MediaAssetsLib extends React.Component<
             })}
           </div>
         )}
-
         {/* **************** PREVIEW MODAL **************** */}
-
         {this.state.isModalOpen && this.state.selectedItem && (
           <div
             style={{
@@ -1695,9 +1714,7 @@ export default class MediaAssetsLib extends React.Component<
             </div>
           </div>
         )}
-
         {/* **************** EDIT MODAL **************** */}
-
         {this.state.isEditOpen && this.state.selectedItem && (
           <div
             style={{
@@ -1900,9 +1917,7 @@ export default class MediaAssetsLib extends React.Component<
             </div>
           </div>
         )}
-
         {/* **************** UPLOAD MODAL **************** */}
-
         {this.state.isUploadOpen && (
           <div
             style={{
@@ -2140,6 +2155,35 @@ export default class MediaAssetsLib extends React.Component<
               </button>
             </div>
           </div>
+        )}
+        {this.state.showScrollTop && (
+          <a href="#top">
+            <div
+              style={{
+                position: "fixed",
+                bottom: "40px",
+                right: this.state.showScrollTop ? "40px" : "-80px", // 👉 slide von rechts
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                background: "rgba(0, 120, 212, 0.6)", // 👉 halb transparent
+                color: "white",
+                fontSize: "18px",
+                cursor: "pointer",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+                zIndex: 9999,
+
+                opacity: this.state.showScrollTop ? 1 : 0, // 👉 fade
+                transition: "all 0.3s ease", // 👉 Animation
+                backdropFilter: "blur(4px)", // 👉 optional nice glass effect
+              }}
+            >
+              ↑
+            </div>
+          </a>
         )}
       </div>
     );
