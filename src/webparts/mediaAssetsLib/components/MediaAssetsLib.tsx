@@ -1,6 +1,8 @@
 import * as React from "react";
 import { SPHttpClient } from "@microsoft/sp-http";
 import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
+import styles from "./MediaAssetsLib.module.scss";
+
 /*******************************************************
  * MEDIA ASSETS LIB V5
  * -----------------------------------------------------
@@ -970,70 +972,40 @@ export default class MediaAssetsLib extends React.Component<
     /********************* RENDER **************************/
 
     return (
-      <div style={{ padding: "20px", position: "relative" }}>
+      <div className={styles.container}>
         {/* **************** HEADER **************** */}
         <h2 id="top">Media Library</h2>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+
+        <div className={styles.header}>
           {!this.state.selectedBucket && (
-            <div style={{ marginBottom: "10px", display: "flex", gap: "10px" }}>
+            <div className={styles.toggleGroup}>
               <button
                 onClick={() => this.setState({ resultMode: "folders" })}
-                style={{
-                  padding: "6px 10px",
-                  background:
-                    this.state.resultMode === "folders" ? "#0078d4" : "#ddd",
-                  color:
-                    this.state.resultMode === "folders" ? "white" : "black",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
+                className={`${styles.toggleBtn} ${
+                  this.state.resultMode === "folders"
+                    ? styles.active
+                    : styles.inactive
+                }`}
               >
                 Ordner
               </button>
 
               <button
                 onClick={() => this.setState({ resultMode: "files" })}
-                style={{
-                  padding: "6px 10px",
-                  background:
-                    this.state.resultMode === "files" ? "#0078d4" : "#ddd",
-                  color: this.state.resultMode === "files" ? "white" : "black",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
+                className={`${styles.toggleBtn} ${
+                  this.state.resultMode === "files"
+                    ? styles.active
+                    : styles.inactive
+                }`}
               >
                 Dateien
               </button>
             </div>
           )}
-
-          <button
-            onClick={() => this.setState({ isUploadOpen: true })}
-            style={{
-              padding: "10px 16px",
-              fontSize: "20px",
-              background: "#0078d4",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              marginBottom: "10px",
-              alignSelf: "end",
-            }}
-          >
-            ＋
-          </button>
         </div>
+
         {/* **************** SEARCH **************** */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        <div className={styles.container}>
           <input
             type="text"
             placeholder={
@@ -1043,7 +1015,7 @@ export default class MediaAssetsLib extends React.Component<
             }
             value={this.state.searchText}
             onChange={this.onSearchChange}
-            style={{ padding: "8px", width: "100%", maxWidth: "300px" }}
+            className={styles.searchInput}
           />
         </div>
         {this.state.viewMode === "items" && (
@@ -1063,17 +1035,13 @@ export default class MediaAssetsLib extends React.Component<
                 this.applyFilters,
               )
             }
-            style={{
-              marginTop: "10px",
-              padding: "6px 10px",
-              cursor: "pointer",
-            }}
+            className={styles.backBtn}
           >
             ← Zurück zu Ordnern
           </button>
         )}
-        <div style={{ display: "flex", gap: "5px", marginTop: "10px" }}>
-          <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
+        <div className={styles.filterRow}>
+          <div className={styles.filterGroup}>
             {/* **************** FILTER **************** */}
             <select
               onChange={(e) =>
@@ -1106,7 +1074,7 @@ export default class MediaAssetsLib extends React.Component<
               ))}
             </select>
           </div>
-          <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
+          <div className={styles.filterGroup}>
             {/* Jahr Filter */}
             <select
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -1168,14 +1136,7 @@ export default class MediaAssetsLib extends React.Component<
           <p>Ergebnisse: {this.state.visibleItems.length}</p>
         )}
         {this.state.resultMode === "folders" ? (
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "20px",
-              marginTop: "20px",
-            }}
-          >
+          <div className={styles.grid}>
             {this.getFilteredBuckets().map((bucket) => {
               const preview = this.getBucketPreview(bucket);
 
@@ -1193,15 +1154,7 @@ export default class MediaAssetsLib extends React.Component<
               return (
                 <div
                   key={bucket}
-                  style={{
-                    position: "relative", // ✅ nötig für absolutes + Icon
-                    width: "250px",
-                    border: "1px solid #ddd",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                  }}
+                  className={styles.bucketCard}
                   onClick={() =>
                     this.setState(
                       {
@@ -1220,24 +1173,7 @@ export default class MediaAssetsLib extends React.Component<
                 >
                   {/* +++++++++++ UPLOAD BUTTON BOTTOM RIGHT +++++++++++ */}
                   <button
-                    style={{
-                      position: "absolute",
-                      bottom: "8px",
-                      right: "8px",
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "50%",
-                      background: "#0078d4",
-                      color: "white",
-                      border: "none",
-                      fontSize: "18px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-                    }}
+                    className={styles.bucketUploadBtn}
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault(); // ✅ WICHTIG!
@@ -1248,7 +1184,7 @@ export default class MediaAssetsLib extends React.Component<
                       });
                     }}
                   >
-                    <span style={{ transform: "translateY(-2px)" }}>+</span>
+                    <span className={styles.plusIcon}>+</span>
                   </button>
 
                   {preview && (
@@ -1304,11 +1240,7 @@ export default class MediaAssetsLib extends React.Component<
                           };
                         }
                       }}
-                      style={{
-                        width: "100%",
-                        height: "150px",
-                        objectFit: "cover",
-                      }}
+                      className={styles.previewImg}
                       onError={(e) => {
                         e.currentTarget.src =
                           "data:image/svg+xml;charset=UTF-8," +
@@ -1324,9 +1256,9 @@ export default class MediaAssetsLib extends React.Component<
                     />
                   )}
 
-                  <div style={{ padding: "10px" }}>
+                  <div className="styles.bucketContent">
                     <h3>{bucket}</h3>
-                    <p style={{ fontSize: "12px", color: "#666" }}>
+                    <p className="styles.bucketCount">
                       {bucketCounts[bucket] || 0} Dateien
                     </p>
                   </div>
@@ -1335,14 +1267,7 @@ export default class MediaAssetsLib extends React.Component<
             })}
           </div>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "20px",
-              marginTop: "20px",
-            }}
-          >
+          <div className={styles.grid}>
             {/* **************** MEDIA GRID **************** */}
 
             {this.state.visibleItems.map((item) => {
@@ -1362,16 +1287,7 @@ export default class MediaAssetsLib extends React.Component<
                 thumbnailUrl = ""; // erstmal leer
               }
               return (
-                <div
-                  key={item.id}
-                  style={{
-                    width: "300px",
-                    border: "1px solid #ddd",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                  }}
-                >
+                <div key={item.id} className={styles.itemCard}>
                   {isVideo ? (
                     <div
                       onClick={() =>
@@ -1380,10 +1296,7 @@ export default class MediaAssetsLib extends React.Component<
                           selectedItem: item,
                         })
                       }
-                      style={{
-                        position: "relative",
-                        cursor: "pointer",
-                      }}
+                      className={styles.videoWrapper}
                     >
                       <img
                         src={thumbnailUrl}
@@ -1449,32 +1362,15 @@ export default class MediaAssetsLib extends React.Component<
         </svg>
       `);
                         }}
-                        style={{
-                          width: "100%",
-                          height: "200px",
-                          objectFit: "cover",
-                        }}
+                        className={styles.itemImg}
                       />
 
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          fontSize: "40px",
-                          color: "white",
-                          background: "rgba(0,0,0,0.4)",
-                        }}
-                      >
-                        ▶
-                      </div>
+                      <div className={styles.videoOverlay}>▶</div>
                     </div>
                   ) : (
                     <img
                       src={thumbnailUrl}
-                      style={{ width: "100%", cursor: "pointer" }}
+                      className={styles.itemImg}
                       onClick={() =>
                         this.setState({
                           isModalOpen: true,
@@ -1496,17 +1392,10 @@ export default class MediaAssetsLib extends React.Component<
                     />
                   )}
 
-                  <div style={{ padding: "12px" }}>
+                  <div className={styles.itemContent}>
                     <h3>{item.name}</h3>
                     {/* ✅ TAG CHIPS HIER */}
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "6px",
-                        marginBottom: "8px",
-                      }}
-                    >
+                    <div className={styles.tagList}>
                       {(item.tags || []).map((tag, i) => (
                         <span
                           key={i}
@@ -1516,28 +1405,19 @@ export default class MediaAssetsLib extends React.Component<
                               this.applyFilters,
                             )
                           }
-                          style={{
-                            background: "#0078d4",
-                            color: "white",
-                            padding: "4px 8px",
-                            borderRadius: "12px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                          }}
+                          className={styles.tag}
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
-                    <p style={{ fontSize: "12px", color: "#666" }}>
+                    <p className={styles.itemDate}>
                       Erstellt am:{" "}
                       {item.created
                         ? new Date(item.created).toLocaleDateString()
                         : "-"}
                     </p>
-                    <div
-                      style={{ display: "flex", gap: "8px", marginTop: "10px" }}
-                    >
+                    <div className={styles.itemActions}>
                       {/* DOWNLOAD */}
                       <button
                         onClick={() => {
@@ -1556,16 +1436,7 @@ export default class MediaAssetsLib extends React.Component<
                             this.setState({ downloadingItemId: undefined });
                           }, 1500);
                         }}
-                        style={{
-                          flex: 1,
-                          padding: "10px",
-                          background: "#e42828", // ✅ ROT bleibt!
-                          color: "white",
-                          borderRadius: "6px",
-                          border: "none",
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                        }}
+                        className={styles.downloadBtn}
                       >
                         {this.state.downloadingItemId === item.id
                           ? "⏳ Lädt..."
@@ -1585,16 +1456,7 @@ export default class MediaAssetsLib extends React.Component<
                             editBucket: item.bucket || [],
                           });
                         }}
-                        style={{
-                          flex: 1,
-                          padding: "10px",
-                          background: "#e1dfdd", // leicht grau
-                          color: "#323130",
-                          borderRadius: "6px",
-                          border: "1px solid #c8c6c4",
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                        }}
+                        className={styles.editBtn}
                       >
                         Editieren
                       </button>
@@ -1607,49 +1469,18 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {/* **************** PREVIEW MODAL **************** */}
         {this.state.isModalOpen && this.state.selectedItem && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.9)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 9999,
-            }}
-          >
+          <div className={`${styles.modalOverlay} ${styles.preview}`}>
             {/* CLOSE BUTTON */}
             <button
               onClick={() =>
                 this.setState({ isModalOpen: false, selectedItem: undefined })
               }
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                fontSize: "24px",
-                background: "transparent",
-                color: "white",
-                border: "none",
-                cursor: "pointer",
-              }}
+              className="styles.modalClose"
             >
               ✕
             </button>
             {/* CONTENT MODAL */}
-            <div
-              style={{
-                maxWidth: "90%",
-                maxHeight: "90%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
+            <div className="styles.modalContent">
               {(() => {
                 const item = this.state.selectedItem;
                 const fileType = item?.name.split(".").pop()?.toLowerCase();
@@ -1662,14 +1493,7 @@ export default class MediaAssetsLib extends React.Component<
                   <>
                     {/* IMAGE */}
                     {!isVideo && (
-                      <img
-                        src={fileUrl}
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "80vh",
-                          objectFit: "contain",
-                        }}
-                      />
+                      <img src={fileUrl} className="styles.modalMedia" />
                     )}
 
                     {/* VIDEO */}
@@ -1696,15 +1520,7 @@ export default class MediaAssetsLib extends React.Component<
                         link.click();
                         document.body.removeChild(link);
                       }}
-                      style={{
-                        padding: "12px 20px",
-                        background: "#e42828",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontWeight: "bold",
-                      }}
+                      className="styles.downloadBtn styles.modalDownload"
                     >
                       Download
                     </button>
@@ -1716,31 +1532,8 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {/* **************** EDIT MODAL **************** */}
         {this.state.isEditOpen && this.state.selectedItem && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.7)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 9999,
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "12px",
-                width: "400px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-              }}
-            >
+          <div className="styles.modalOverlay styles.edit">
+            <div className="styles.modalBox">
               <h3>Element bearbeiten</h3>
               {/* PREVIEW */}
               {(() => {
@@ -1755,17 +1548,7 @@ export default class MediaAssetsLib extends React.Component<
                 const isVideo = ["mp4", "mov", "webm"].includes(fileType || "");
 
                 if (isImage) {
-                  return (
-                    <img
-                      src={fileUrl}
-                      style={{
-                        width: "100%",
-                        maxHeight: "200px",
-                        objectFit: "cover",
-                        borderRadius: "8px",
-                      }}
-                    />
-                  );
+                  return <img src={fileUrl} className="styles.editPreview" />;
                 }
 
                 if (isVideo) {
@@ -1773,26 +1556,13 @@ export default class MediaAssetsLib extends React.Component<
                     <video
                       src={fileUrl}
                       controls
-                      style={{
-                        width: "100%",
-                        maxHeight: "200px",
-                        borderRadius: "8px",
-                      }}
+                      className="styles.editPreview"
                     />
                   );
                 }
 
                 return (
-                  <div
-                    style={{
-                      padding: "20px",
-                      background: "#f3f2f1",
-                      borderRadius: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    📄 {item.name}
-                  </div>
+                  <div className="styles.editFallback">📄 {item.name}</div>
                 );
               })()}
               <input
@@ -1803,21 +1573,9 @@ export default class MediaAssetsLib extends React.Component<
               />
               {/* TAGS */}
               <div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                <div className="styles.tagList">
                   {this.state.editTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      style={{
-                        background: "#0078d4",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
+                    <span key={index} className="styles.tag styles.editTag">
                       {tag}
                       <span
                         onClick={() => {
@@ -1825,10 +1583,7 @@ export default class MediaAssetsLib extends React.Component<
                           newTags.splice(index, 1);
                           this.setState({ editTags: newTags });
                         }}
-                        style={{
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                        }}
+                        className="styles.tagRemove"
                       >
                         ✕
                       </span>
@@ -1838,10 +1593,7 @@ export default class MediaAssetsLib extends React.Component<
 
                 <input
                   type="text"
-                  style={{
-                    width: "100%",
-                    marginTop: "10px",
-                  }}
+                  className="styles.tagInput"
                   placeholder="Tag hinzufügen + Enter"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -1887,7 +1639,7 @@ export default class MediaAssetsLib extends React.Component<
                 }
               />
 
-              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+              <div className="styles.modalActions">
                 <button
                   onClick={() => this.setState({ isEditOpen: false })}
                   style={{ flex: 1 }}
@@ -1895,21 +1647,16 @@ export default class MediaAssetsLib extends React.Component<
                   Abbrechen
                 </button>
 
-                <button onClick={() => this.updateItem()} style={{ flex: 1 }}>
+                <button
+                  onClick={() => this.updateItem()}
+                  className="styles.btnFlex"
+                >
                   Speichern
                 </button>
 
                 <button
                   onClick={() => this.deleteItem()}
-                  style={{
-                    flex: 1,
-                    background: "#d13438",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                  }}
+                  className="styles.btnDelete"
                 >
                   Löschen
                 </button>
@@ -1919,39 +1666,12 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {/* **************** UPLOAD MODAL **************** */}
         {this.state.isUploadOpen && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.7)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 9999,
-              overflowY: "auto",
-              padding: "20px",
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "12px",
-                width: "400px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-                maxHeight: "90vh",
-                overflowY: "auto",
-              }}
-            >
+          <div className="styles.modalOverlay styles.upload">
+            <div className="styles.modalBox styles.uploadBox">
               <h3>Upload</h3>
               {/* MODAL PREVIEW */}
               {this.state.uploadFiles?.[0] && this.state.uploadPreviewUrl && (
-                <div style={{ marginTop: "10px" }}>
+                <div className="styles.uploadPreview">
                   {(() => {
                     const file = this.state.uploadFiles![0];
                     const fileType = file.name.split(".").pop()?.toLowerCase();
@@ -1971,12 +1691,7 @@ export default class MediaAssetsLib extends React.Component<
                       return (
                         <img
                           src={this.state.uploadPreviewUrl}
-                          style={{
-                            width: "100%",
-                            maxHeight: "200px",
-                            objectFit: "cover",
-                            borderRadius: "8px",
-                          }}
+                          className="styles.uploadPreviewMedia"
                         />
                       );
                     }
@@ -1986,24 +1701,13 @@ export default class MediaAssetsLib extends React.Component<
                         <video
                           src={this.state.uploadPreviewUrl}
                           controls
-                          style={{
-                            width: "100%",
-                            maxHeight: "200px",
-                            borderRadius: "8px",
-                          }}
+                          className="styles.uploadPreviewMedia"
                         />
                       );
                     }
 
                     return (
-                      <div
-                        style={{
-                          padding: "20px",
-                          background: "#f3f2f1",
-                          borderRadius: "8px",
-                          textAlign: "center",
-                        }}
-                      >
+                      <div className="styles.uploadFallback">
                         📄 {file.name}
                       </div>
                     );
@@ -2073,21 +1777,9 @@ export default class MediaAssetsLib extends React.Component<
               </select>
 
               <div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                <div className="styles.tagList">
                   {this.state.uploadTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      style={{
-                        background: "#0078d4",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
+                    <span key={index} className="styles.tag styles.editTag">
                       {tag}
                       <span
                         onClick={() => {
@@ -2095,7 +1787,7 @@ export default class MediaAssetsLib extends React.Component<
                           newTags.splice(index, 1);
                           this.setState({ uploadTags: newTags });
                         }}
-                        style={{ cursor: "pointer", fontWeight: "bold" }}
+                        className="styles.tagRemove"
                       >
                         ✕
                       </span>
@@ -2106,7 +1798,7 @@ export default class MediaAssetsLib extends React.Component<
                 <input
                   type="text"
                   placeholder="Tag hinzufügen + Enter"
-                  style={{ width: "100%", marginTop: "10px" }}
+                  className="styles.tagInput"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -2134,20 +1826,13 @@ export default class MediaAssetsLib extends React.Component<
                   !this.state.uploadBucket ||
                   this.state.uploadBucket.length === 0
                 }
-                style={{
-                  opacity:
-                    this.state.isUploading ||
-                    !this.state.uploadBucket ||
-                    this.state.uploadBucket.length === 0
-                      ? 0.5
-                      : 1,
-                  cursor:
-                    this.state.isUploading ||
-                    !this.state.uploadBucket ||
-                    this.state.uploadBucket.length === 0
-                      ? "not-allowed"
-                      : "pointer",
-                }}
+                className={`${styles.uploadBtn} ${
+                  this.state.isUploading ||
+                  !this.state.uploadBucket ||
+                  this.state.uploadBucket.length === 0
+                    ? "disabled"
+                    : ""
+                }`}
               >
                 {this.state.isUploading
                   ? "⏳ Wird hochgeladen..."
@@ -2159,27 +1844,9 @@ export default class MediaAssetsLib extends React.Component<
         {this.state.showScrollTop && (
           <a href="#top">
             <div
-              style={{
-                position: "fixed",
-                bottom: "40px",
-                right: this.state.showScrollTop ? "40px" : "-80px", // 👉 slide von rechts
-                width: "40px",
-                height: "40px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "50%",
-                background: "rgba(0, 120, 212, 0.6)", // 👉 halb transparent
-                color: "white",
-                fontSize: "18px",
-                cursor: "pointer",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-                zIndex: 9999,
-
-                opacity: this.state.showScrollTop ? 1 : 0, // 👉 fade
-                transition: "all 0.3s ease", // 👉 Animation
-                backdropFilter: "blur(4px)", // 👉 optional nice glass effect
-              }}
+              className={`${styles.scrollTop} ${
+                this.state.showScrollTop ? "visible" : "hidden"
+              }`}
             >
               ↑
             </div>
