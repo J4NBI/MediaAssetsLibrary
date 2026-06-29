@@ -7,8 +7,8 @@ html {
 .mediaAssetsLib {
   overflow: hidden;
   padding: 1em;
-  color: "[theme:bodyText, default: #323130]";
   color: var(--bodyText);
+
   &.teams {
     font-family: $ms-font-family-fallbacks;
   }
@@ -26,17 +26,437 @@ html {
 .links {
   a {
     text-decoration: none;
-    color: "[theme:link, default:#03787c]";
-    color: var(
-      --link
-    ); // note: CSS Custom Properties support is limited to modern browsers only
+    color: var(--link);
 
     &:hover {
       text-decoration: underline;
-      color: "[theme:linkHovered, default: #014446]";
-      color: var(
-        --linkHovered
-      ); // note: CSS Custom Properties support is limited to modern browsers only
+      color: var(--linkHovered);
     }
   }
+}
+
+.container {
+  padding: 20px;
+  position: relative;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toggleGroup {
+  margin-bottom: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.toggleBtn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &.active {
+    background: #0078d4;
+    color: white;
+  }
+
+  &.inactive {
+    background: #ddd;
+    color: black;
+  }
+}
+
+.uploadMainBtn {
+  padding: 10px 16px;
+  font-size: 20px;
+  background: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.btnFlex {
+  flex: 1;
+}
+
+/* SEARCH */
+.searchContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; // 👈 DAS FIXT ES
+}
+
+.searchInput {
+  padding: 8px;
+  width: 100%;
+  max-width: 300px;
+}
+
+/* BACK BUTTON */
+.backBtn {
+  margin-top: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+/* FILTERS */
+.filterRow {
+  display: flex;
+  gap: 5px;
+  margin-block: 10px;
+}
+
+.filterGroup {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* BUCKET */
+.bucketCard {
+  position: relative;
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.bucketUploadBtn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #0078d4;
+  color: white;
+  border: none;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.plusIcon {
+  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+}
+
+.previewImg {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.bucketContent {
+  padding: 10px;
+}
+
+.bucketCount {
+  font-size: 12px;
+  color: #666;
+}
+
+/* ITEM */
+.itemCard {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.itemImg {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.itemContent {
+  padding: 12px;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  align-items: flex-start; // ✅ verhindert Strecken
+}
+
+.tag {
+  background: #0078d4;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+
+  display: inline-block; // ✅ wichtig!
+  width: auto; // ✅ verhindert full width
+}
+
+.itemDate {
+  font-size: 12px;
+  color: #666;
+}
+
+.itemActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.downloadBtn {
+  flex: 1;
+  padding: 10px;
+  background: #e42828;
+  color: white;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.editBtn {
+  flex: 1;
+  padding: 10px;
+  background: #e1dfdd;
+  color: #323130;
+  border-radius: 6px;
+  border: 1px solid #c8c6c4;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* VIDEO */
+.videoWrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.videoOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+  color: white;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* MODAL */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modalOverlayPreview {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.modalOverlayEdit {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.modalOverlayUpload {
+  background: rgba(0, 0, 0, 0.7);
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.modalClose {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 24px;
+  background: transparent;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.modalContent {
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.modalMedia {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+.modalDownload {
+  padding: 12px 20px;
+}
+
+.modalBox {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.editPreview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.editFallback {
+  padding: 20px;
+  background: #f3f2f1;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.editTag {
+  display: inline-flex; // ✅ statt flex!
+  align-items: center;
+  gap: 6px;
+}
+
+.tagRemove {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.tagInput {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btnDelete {
+  flex: 1;
+  background: #d13438;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.uploadBox {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.uploadPreview {
+  margin-top: 10px;
+}
+
+.uploadPreviewMedia {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.uploadFallback {
+  padding: 20px;
+  background: #f3f2f1;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.uploadBtn {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* SCROLL */
+.scrollTop {
+  position: fixed;
+  bottom: 40px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 120, 212, 0.6);
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+
+  &.visible {
+    right: 40px;
+    opacity: 1;
+  }
+
+  &.hidden {
+    right: -80px;
+    opacity: 0;
+  }
+}
+
+.preview {
+  background: red !important;
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.visible {
+  opacity: 1;
+}
+.hidden {
+  opacity: 0;
 }
