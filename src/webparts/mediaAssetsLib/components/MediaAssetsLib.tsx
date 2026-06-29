@@ -355,8 +355,12 @@ export default class MediaAssetsLib extends React.Component<
         );
       });
 
-      // ✅ Bucket nur anzeigen wenn Treffer vorhanden
-      return filteredItems.length > 0;
+      const bucketMatchesSearch = bucket.toLowerCase().includes(search);
+
+      // ✅ Bucket anzeigen wenn:
+      // - Name passt ODER
+      // - Inhalte passen
+      return bucketMatchesSearch || filteredItems.length > 0;
     });
   }
 
