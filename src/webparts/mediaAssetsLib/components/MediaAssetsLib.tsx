@@ -355,12 +355,17 @@ export default class MediaAssetsLib extends React.Component<
         );
       });
 
-      const bucketMatchesSearch = bucket.toLowerCase().includes(search);
+      const bucketMatchesSearch = search
+        ? bucket.toLowerCase().includes(search)
+        : false;
 
-      // ✅ Bucket anzeigen wenn:
-      // - Name passt ODER
-      // - Inhalte passen
-      return bucketMatchesSearch || filteredItems.length > 0;
+      // ✅ Wenn Suche aktiv → Name ODER Inhalt
+      if (search) {
+        return bucketMatchesSearch || filteredItems.length > 0;
+      }
+
+      // ✅ Wenn KEINE Suche → nur Inhalt (Filter!)
+      return filteredItems.length > 0;
     });
   }
 
