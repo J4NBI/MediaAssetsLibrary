@@ -1002,10 +1002,18 @@ export default class MediaAssetsLib extends React.Component<
               </button>
             </div>
           )}
+
+          {/* ✅ HIER FEHLT ER – EINFÜGEN */}
+          <button
+            className={styles.uploadMainBtn}
+            onClick={() => this.setState({ isUploadOpen: true })}
+          >
+            ＋
+          </button>
         </div>
 
         {/* **************** SEARCH **************** */}
-        <div className={styles.container}>
+        <div>
           <input
             type="text"
             placeholder={
@@ -1256,9 +1264,9 @@ export default class MediaAssetsLib extends React.Component<
                     />
                   )}
 
-                  <div className="styles.bucketContent">
+                  <div className={styles.bucketContent}>
                     <h3>{bucket}</h3>
-                    <p className="styles.bucketCount">
+                    <p className={styles.bucketCount}>
                       {bucketCounts[bucket] || 0} Dateien
                     </p>
                   </div>
@@ -1469,18 +1477,20 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {/* **************** PREVIEW MODAL **************** */}
         {this.state.isModalOpen && this.state.selectedItem && (
-          <div className={`${styles.modalOverlay} ${styles.preview}`}>
+          <div
+            className={`${styles.modalOverlay} ${styles.modalOverlayPreview}`}
+          >
             {/* CLOSE BUTTON */}
             <button
               onClick={() =>
                 this.setState({ isModalOpen: false, selectedItem: undefined })
               }
-              className="styles.modalClose"
+              className={styles.modalClose}
             >
               ✕
             </button>
             {/* CONTENT MODAL */}
-            <div className="styles.modalContent">
+            <div className={styles.modalContent}>
               {(() => {
                 const item = this.state.selectedItem;
                 const fileType = item?.name.split(".").pop()?.toLowerCase();
@@ -1493,7 +1503,7 @@ export default class MediaAssetsLib extends React.Component<
                   <>
                     {/* IMAGE */}
                     {!isVideo && (
-                      <img src={fileUrl} className="styles.modalMedia" />
+                      <img src={fileUrl} className={styles.modalMedia} />
                     )}
 
                     {/* VIDEO */}
@@ -1520,7 +1530,8 @@ export default class MediaAssetsLib extends React.Component<
                         link.click();
                         document.body.removeChild(link);
                       }}
-                      className="styles.downloadBtn styles.modalDownload"
+                      className={`
+                        ${styles.downloadBtn} ${styles.modalDownload}`}
                     >
                       Download
                     </button>
@@ -1532,8 +1543,8 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {/* **************** EDIT MODAL **************** */}
         {this.state.isEditOpen && this.state.selectedItem && (
-          <div className="styles.modalOverlay styles.edit">
-            <div className="styles.modalBox">
+          <div className={`${styles.modalOverlay} ${styles.modalOverlayEdit}`}>
+            <div className={styles.modalBox}>
               <h3>Element bearbeiten</h3>
               {/* PREVIEW */}
               {(() => {
@@ -1548,7 +1559,7 @@ export default class MediaAssetsLib extends React.Component<
                 const isVideo = ["mp4", "mov", "webm"].includes(fileType || "");
 
                 if (isImage) {
-                  return <img src={fileUrl} className="styles.editPreview" />;
+                  return <img src={fileUrl} className={styles.editPreview} />;
                 }
 
                 if (isVideo) {
@@ -1556,13 +1567,13 @@ export default class MediaAssetsLib extends React.Component<
                     <video
                       src={fileUrl}
                       controls
-                      className="styles.editPreview"
+                      className={styles.editPreview}
                     />
                   );
                 }
 
                 return (
-                  <div className="styles.editFallback">📄 {item.name}</div>
+                  <div className={styles.editFallback}>📄 {item.name}</div>
                 );
               })()}
               <input
@@ -1573,9 +1584,12 @@ export default class MediaAssetsLib extends React.Component<
               />
               {/* TAGS */}
               <div>
-                <div className="styles.tagList">
+                <div className={styles.tagList}>
                   {this.state.editTags.map((tag, index) => (
-                    <span key={index} className="styles.tag styles.editTag">
+                    <span
+                      key={index}
+                      className={`${styles.tag} ${styles.editTag}`}
+                    >
                       {tag}
                       <span
                         onClick={() => {
@@ -1583,7 +1597,7 @@ export default class MediaAssetsLib extends React.Component<
                           newTags.splice(index, 1);
                           this.setState({ editTags: newTags });
                         }}
-                        className="styles.tagRemove"
+                        className={styles.tagRemove}
                       >
                         ✕
                       </span>
@@ -1593,7 +1607,7 @@ export default class MediaAssetsLib extends React.Component<
 
                 <input
                   type="text"
-                  className="styles.tagInput"
+                  className={styles.tagInput}
                   placeholder="Tag hinzufügen + Enter"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -1639,7 +1653,7 @@ export default class MediaAssetsLib extends React.Component<
                 }
               />
 
-              <div className="styles.modalActions">
+              <div className={styles.modalActions}>
                 <button
                   onClick={() => this.setState({ isEditOpen: false })}
                   style={{ flex: 1 }}
@@ -1649,14 +1663,14 @@ export default class MediaAssetsLib extends React.Component<
 
                 <button
                   onClick={() => this.updateItem()}
-                  className="styles.btnFlex"
+                  className={styles.btnFlex}
                 >
                   Speichern
                 </button>
 
                 <button
                   onClick={() => this.deleteItem()}
-                  className="styles.btnDelete"
+                  className={styles.btnDelete}
                 >
                   Löschen
                 </button>
@@ -1666,12 +1680,14 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {/* **************** UPLOAD MODAL **************** */}
         {this.state.isUploadOpen && (
-          <div className="styles.modalOverlay styles.upload">
-            <div className="styles.modalBox styles.uploadBox">
+          <div
+            className={`${styles.modalOverlay} $${styles.modalOverlayUpload}`}
+          >
+            <div className={`${styles.modalBox} ${styles.uploadBox}`}>
               <h3>Upload</h3>
               {/* MODAL PREVIEW */}
               {this.state.uploadFiles?.[0] && this.state.uploadPreviewUrl && (
-                <div className="styles.uploadPreview">
+                <div className={styles.uploadPreview}>
                   {(() => {
                     const file = this.state.uploadFiles![0];
                     const fileType = file.name.split(".").pop()?.toLowerCase();
@@ -1691,7 +1707,7 @@ export default class MediaAssetsLib extends React.Component<
                       return (
                         <img
                           src={this.state.uploadPreviewUrl}
-                          className="styles.uploadPreviewMedia"
+                          className={styles.uploadPreviewMedia}
                         />
                       );
                     }
@@ -1701,13 +1717,13 @@ export default class MediaAssetsLib extends React.Component<
                         <video
                           src={this.state.uploadPreviewUrl}
                           controls
-                          className="styles.uploadPreviewMedia"
+                          className={styles.uploadPreviewMedia}
                         />
                       );
                     }
 
                     return (
-                      <div className="styles.uploadFallback">
+                      <div className={styles.uploadFallback}>
                         📄 {file.name}
                       </div>
                     );
@@ -1779,7 +1795,10 @@ export default class MediaAssetsLib extends React.Component<
               <div>
                 <div className="styles.tagList">
                   {this.state.uploadTags.map((tag, index) => (
-                    <span key={index} className="styles.tag styles.editTag">
+                    <span
+                      key={index}
+                      className={`${styles.tag} ${styles.editTag}`}
+                    >
                       {tag}
                       <span
                         onClick={() => {
@@ -1787,7 +1806,7 @@ export default class MediaAssetsLib extends React.Component<
                           newTags.splice(index, 1);
                           this.setState({ uploadTags: newTags });
                         }}
-                        className="styles.tagRemove"
+                        className={styles.tagRemove}
                       >
                         ✕
                       </span>
@@ -1798,7 +1817,7 @@ export default class MediaAssetsLib extends React.Component<
                 <input
                   type="text"
                   placeholder="Tag hinzufügen + Enter"
-                  className="styles.tagInput"
+                  className={styles.tagInput}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -1830,7 +1849,7 @@ export default class MediaAssetsLib extends React.Component<
                   this.state.isUploading ||
                   !this.state.uploadBucket ||
                   this.state.uploadBucket.length === 0
-                    ? "disabled"
+                    ? styles.disabled
                     : ""
                 }`}
               >
@@ -1845,7 +1864,7 @@ export default class MediaAssetsLib extends React.Component<
           <a href="#top">
             <div
               className={`${styles.scrollTop} ${
-                this.state.showScrollTop ? "visible" : "hidden"
+                this.state.showScrollTop ? styles.visible : styles.hidden
               }`}
             >
               ↑

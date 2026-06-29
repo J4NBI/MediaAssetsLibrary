@@ -81,10 +81,15 @@ html {
   margin-bottom: 10px;
 }
 
+.btnFlex {
+  flex: 1;
+}
+
 /* SEARCH */
 .searchContainer {
   display: flex;
   flex-direction: column;
+  align-items: flex-start; // 👈 DAS FIXT ES
 }
 
 .searchInput {
@@ -104,7 +109,7 @@ html {
 .filterRow {
   display: flex;
   gap: 5px;
-  margin-top: 10px;
+  margin-block: 10px;
 }
 
 .filterGroup {
@@ -115,16 +120,15 @@ html {
 
 /* GRID */
 .grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
-  margin-top: 20px;
 }
 
 /* BUCKET */
 .bucketCard {
   position: relative;
-  width: 250px;
+  width: 100%;
   border: 1px solid #ddd;
   border-radius: 12px;
   overflow: hidden;
@@ -151,6 +155,13 @@ html {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
+.plusIcon {
+  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+}
+
 .previewImg {
   width: 100%;
   height: 150px;
@@ -168,7 +179,7 @@ html {
 
 /* ITEM */
 .itemCard {
-  width: 300px;
+  width: 100%;
   border: 1px solid #ddd;
   border-radius: 12px;
   overflow: hidden;
@@ -190,7 +201,8 @@ html {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 8px;
+
+  align-items: flex-start; // ✅ verhindert Strecken
 }
 
 .tag {
@@ -200,6 +212,9 @@ html {
   border-radius: 12px;
   font-size: 11px;
   cursor: pointer;
+
+  display: inline-block; // ✅ wichtig!
+  width: auto; // ✅ verhindert full width
 }
 
 .itemDate {
@@ -334,7 +349,7 @@ html {
 }
 
 .editTag {
-  display: flex;
+  display: inline-flex; // ✅ statt flex!
   align-items: center;
   gap: 6px;
 }
@@ -430,12 +445,18 @@ html {
   }
 }
 
-.plusIcon {
-  font-size: 18px;
-  font-weight: bold;
-  color: white;
-}
-
 .preview {
   background: red !important;
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.visible {
+  opacity: 1;
+}
+.hidden {
+  opacity: 0;
 }
