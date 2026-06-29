@@ -4,7 +4,7 @@ import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
 import styles from "./MediaAssetsLib.module.scss";
 
 /*******************************************************
- * MEDIA ASSETS LIB V5
+ * MEDIA ASSETS LIB V6
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
