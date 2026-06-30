@@ -1212,57 +1212,6 @@ export default class MediaAssetsLib extends React.Component<
                     {preview && (
                       <img
                         src={!isVideo ? imageUrl : ""}
-                        ref={(el) => {
-                          if (!el || !preview) return;
-
-                          if (isVideo) {
-                            const video = document.createElement("video");
-
-                            video.src = videoUrl; // ✅ WICHTIG FIX
-                            video.crossOrigin = "anonymous";
-                            video.currentTime = 2; // ✅ besser als 100
-
-                            video.onloadeddata = () => {
-                              const canvas = document.createElement("canvas");
-
-                              canvas.width = 250;
-                              canvas.height = 150;
-
-                              const ctx = canvas.getContext("2d");
-
-                              if (ctx) {
-                                const videoRatio =
-                                  video.videoWidth / video.videoHeight;
-                                const canvasRatio =
-                                  canvas.width / canvas.height;
-
-                                let drawWidth, drawHeight, offsetX, offsetY;
-
-                                if (videoRatio > canvasRatio) {
-                                  drawHeight = canvas.height;
-                                  drawWidth = canvas.height * videoRatio;
-                                  offsetX = (canvas.width - drawWidth) / 2;
-                                  offsetY = 0;
-                                } else {
-                                  drawWidth = canvas.width;
-                                  drawHeight = canvas.width / videoRatio;
-                                  offsetX = 0;
-                                  offsetY = (canvas.height - drawHeight) / 2;
-                                }
-
-                                ctx.drawImage(
-                                  video,
-                                  offsetX,
-                                  offsetY,
-                                  drawWidth,
-                                  drawHeight,
-                                );
-
-                                el.src = canvas.toDataURL();
-                              }
-                            };
-                          }
-                        }}
                         className={styles.previewImg}
                         onError={(e) => {
                           e.currentTarget.src =
@@ -1323,56 +1272,6 @@ export default class MediaAssetsLib extends React.Component<
                     >
                       <img
                         src={thumbnailUrl}
-                        ref={(el) => {
-                          if (el && isVideo && !thumbnailUrl) {
-                            const video = document.createElement("video");
-                            video.src = `${window.location.origin}${item.fileRef}`;
-                            video.crossOrigin = "anonymous";
-                            video.currentTime = 100;
-
-                            video.onloadeddata = () => {
-                              const canvas = document.createElement("canvas");
-
-                              // Zielgröße (wie deine Card)
-                              canvas.width = 300;
-                              canvas.height = 200;
-
-                              const ctx = canvas.getContext("2d");
-
-                              if (ctx) {
-                                const videoRatio =
-                                  video.videoWidth / video.videoHeight;
-                                const canvasRatio =
-                                  canvas.width / canvas.height;
-
-                                let drawWidth, drawHeight, offsetX, offsetY;
-
-                                if (videoRatio > canvasRatio) {
-                                  // Video breiter → links/rechts abschneiden
-                                  drawHeight = canvas.height;
-                                  drawWidth = canvas.height * videoRatio;
-                                  offsetX = (canvas.width - drawWidth) / 2;
-                                  offsetY = 0;
-                                } else {
-                                  // Video höher → oben/unten abschneiden (wichtig für Hochformat!)
-                                  drawWidth = canvas.width;
-                                  drawHeight = canvas.width / videoRatio;
-                                  offsetX = 0;
-                                  offsetY = (canvas.height - drawHeight) / 2;
-                                }
-
-                                ctx.drawImage(
-                                  video,
-                                  offsetX,
-                                  offsetY,
-                                  drawWidth,
-                                  drawHeight,
-                                );
-                                el.src = canvas.toDataURL();
-                              }
-                            };
-                          }
-                        }}
                         onError={(e) => {
                           e.currentTarget.src =
                             "data:image/svg+xml;charset=UTF-8," +
