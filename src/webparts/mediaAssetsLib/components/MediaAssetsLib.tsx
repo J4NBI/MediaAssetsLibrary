@@ -80,6 +80,8 @@ interface IMediaAssetsLibState {
   showScrollTop: boolean;
 
   bucketsToShow: number;
+
+  visibleItemsCount: number;
 }
 
 /********************* BUCKET DROPDOWN *****************
@@ -274,6 +276,7 @@ export default class MediaAssetsLib extends React.Component<
       downloadingItemId: undefined,
       showScrollTop: false,
       bucketsToShow: 5,
+      visibleItemsCount: 20,
     };
   }
   private observer?: IntersectionObserver;
@@ -921,7 +924,7 @@ export default class MediaAssetsLib extends React.Component<
       return dateB - dateA; // neueste zuerst
     });
 
-    this.setState({ visibleItems: filtered });
+    this.setState({ visibleItems: filtered, visibleItemsCount: 20 });
   };
 
   /* +++++++++  SUCHE ++++++++ */
@@ -1254,115 +1257,117 @@ export default class MediaAssetsLib extends React.Component<
           <div className={styles.grid}>
             {/* **************** MEDIA GRID **************** */}
 
-            {this.state.visibleItems.map((item) => {
-              const fileUrl = `${window.location.origin}${item.fileRef}`;
-              const downloadUrl = `${window.location.origin}${item.fileRef}`;
+            {this.state.visibleItems
+              .slice(0, this.state.visibleItemsCount)
+              .map((item) => {
+                const fileUrl = `${window.location.origin}${item.fileRef}`;
+                const downloadUrl = `${window.location.origin}${item.fileRef}`;
 
-              const fileType = item.name?.split(".").pop()?.toLowerCase();
-              const isVideo = fileType === "mp4" || fileType === "mov";
+                const fileType = item.name?.split(".").pop()?.toLowerCase();
+                const isVideo = fileType === "mp4" || fileType === "mov";
 
-              return (
-                <div key={item.id} className={styles.itemCard}>
-                  {isVideo ? (
-                    <video
-                      src={fileUrl}
-                      preload="metadata"
-                      muted
-                      playsInline
-                      className={styles.itemImg}
-                      onClick={() =>
-                        this.setState({
-                          isModalOpen: true,
-                          selectedItem: item,
-                        })
-                      }
-                    />
-                  ) : (
-                    <img
-                      src={fileUrl}
-                      className={styles.itemImg}
-                      onClick={() =>
-                        this.setState({
-                          isModalOpen: true,
-                          selectedItem: item,
-                        })
-                      }
-                    />
-                  )}
-
-                  <div className={styles.itemContent}>
-                    <h3>{item.name}</h3>
-                    {/* ✅ TAG CHIPS HIER */}
-                    <div className={styles.tagList}>
-                      {(item.tags || []).map((tag, i) => (
-                        <span
-                          key={i}
-                          onClick={() =>
-                            this.setState(
-                              { searchText: tag.toLowerCase() },
-                              this.applyFilters,
-                            )
-                          }
-                          className={styles.tag}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <p className={styles.itemDate}>
-                      Erstellt am:{" "}
-                      {item.created
-                        ? new Date(item.created).toLocaleDateString()
-                        : "-"}
-                    </p>
-                    <div className={styles.itemActions}>
-                      {/* DOWNLOAD */}
-                      <button
-                        onClick={() => {
-                          this.setState({ downloadingItemId: item.id });
-
-                          const link = document.createElement("a");
-                          link.href = downloadUrl;
-                          link.target = "_blank";
-                          link.download = item.name;
-
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-
-                          setTimeout(() => {
-                            this.setState({ downloadingItemId: undefined });
-                          }, 1500);
-                        }}
-                        className={styles.downloadBtn}
-                      >
-                        {this.state.downloadingItemId === item.id
-                          ? "⏳ Lädt..."
-                          : "Download"}
-                      </button>
-
-                      {/* EDIT BUTTON (neu) */}
-                      <button
-                        onClick={() => {
+                return (
+                  <div key={item.id} className={styles.itemCard}>
+                    {isVideo ? (
+                      <video
+                        src={fileUrl}
+                        preload="metadata"
+                        muted
+                        playsInline
+                        className={styles.itemImg}
+                        onClick={() =>
                           this.setState({
-                            isEditOpen: true,
+                            isModalOpen: true,
                             selectedItem: item,
-                            editName: item.name || "",
-                            editTags: item.tags || [],
-                            editCategory: item.category || "",
-                            editFormat: item.format || "",
-                            editBucket: item.bucket || [],
-                          });
-                        }}
-                        className={styles.editBtn}
-                      >
-                        Editieren
-                      </button>
+                          })
+                        }
+                      />
+                    ) : (
+                      <img
+                        src={fileUrl}
+                        className={styles.itemImg}
+                        onClick={() =>
+                          this.setState({
+                            isModalOpen: true,
+                            selectedItem: item,
+                          })
+                        }
+                      />
+                    )}
+
+                    <div className={styles.itemContent}>
+                      <h3>{item.name}</h3>
+                      {/* ✅ TAG CHIPS HIER */}
+                      <div className={styles.tagList}>
+                        {(item.tags || []).map((tag, i) => (
+                          <span
+                            key={i}
+                            onClick={() =>
+                              this.setState(
+                                { searchText: tag.toLowerCase() },
+                                this.applyFilters,
+                              )
+                            }
+                            className={styles.tag}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <p className={styles.itemDate}>
+                        Erstellt am:{" "}
+                        {item.created
+                          ? new Date(item.created).toLocaleDateString()
+                          : "-"}
+                      </p>
+                      <div className={styles.itemActions}>
+                        {/* DOWNLOAD */}
+                        <button
+                          onClick={() => {
+                            this.setState({ downloadingItemId: item.id });
+
+                            const link = document.createElement("a");
+                            link.href = downloadUrl;
+                            link.target = "_blank";
+                            link.download = item.name;
+
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+
+                            setTimeout(() => {
+                              this.setState({ downloadingItemId: undefined });
+                            }, 1500);
+                          }}
+                          className={styles.downloadBtn}
+                        >
+                          {this.state.downloadingItemId === item.id
+                            ? "⏳ Lädt..."
+                            : "Download"}
+                        </button>
+
+                        {/* EDIT BUTTON (neu) */}
+                        <button
+                          onClick={() => {
+                            this.setState({
+                              isEditOpen: true,
+                              selectedItem: item,
+                              editName: item.name || "",
+                              editTags: item.tags || [],
+                              editCategory: item.category || "",
+                              editFormat: item.format || "",
+                              editBucket: item.bucket || [],
+                            });
+                          }}
+                          className={styles.editBtn}
+                        >
+                          Editieren
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         )}
 
@@ -1378,6 +1383,7 @@ export default class MediaAssetsLib extends React.Component<
             Mehr laden
           </button>
         )}
+
         {/* **************** PREVIEW MODAL **************** */}
         {this.state.isModalOpen && this.state.selectedItem && (
           <div
