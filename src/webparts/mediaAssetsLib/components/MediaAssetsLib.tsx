@@ -78,6 +78,8 @@ interface IMediaAssetsLibState {
   downloadingItemId?: number;
 
   showScrollTop: boolean;
+
+  bucketsToShow: number;
 }
 
 /********************* BUCKET DROPDOWN *****************
@@ -271,6 +273,7 @@ export default class MediaAssetsLib extends React.Component<
       isUploading: false,
       downloadingItemId: undefined,
       showScrollTop: false,
+      bucketsToShow: 5,
     };
   }
   private observer?: IntersectionObserver;
@@ -1154,114 +1157,117 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {this.state.resultMode === "folders" ? (
           <div className={styles.grid}>
-            {this.getFilteredBuckets().map((bucket) => {
-              const preview = this.getBucketPreview(bucket);
+            {this.getFilteredBuckets()
+              .slice(0, this.state.bucketsToShow)
+              .map((bucket) => {
+                const preview = this.getBucketPreview(bucket);
 
-              const fileType = preview?.name?.split(".").pop()?.toLowerCase();
-              const isVideo = fileType === "mp4" || fileType === "mov";
+                const fileType = preview?.name?.split(".").pop()?.toLowerCase();
+                const isVideo = fileType === "mp4" || fileType === "mov";
 
-              const imageUrl = preview
-                ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
-                : "";
+                const imageUrl = preview
+                  ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
+                  : "";
 
-              const videoUrl = preview
-                ? `${window.location.origin}${preview.fileRef}`
-                : "";
+                const videoUrl = preview
+                  ? `${window.location.origin}${preview.fileRef}`
+                  : "";
 
-              return (
-                <div
-                  key={bucket}
-                  className={styles.bucketCard}
-                  onClick={() =>
-                    this.setState(
-                      {
-                        viewMode: "items",
-                        resultMode: "files",
-                        selectedBucket: bucket,
-                        searchText: "",
-                        filterCategory: undefined,
-                        filterFormat: undefined,
-                        filterYear: undefined,
-                        filterMonth: undefined,
-                      },
-                      this.applyFilters,
-                    )
-                  }
-                >
-                  {/* +++++++++++ UPLOAD BUTTON BOTTOM RIGHT +++++++++++ */}
-                  <button
-                    className={styles.bucketUploadBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault(); // ✅ WICHTIG!
-
-                      this.setState({
-                        isUploadOpen: true,
-                        uploadBucket: [bucket],
-                      });
-                    }}
+                return (
+                  <div
+                    key={bucket}
+                    className={styles.bucketCard}
+                    onClick={() =>
+                      this.setState(
+                        {
+                          viewMode: "items",
+                          resultMode: "files",
+                          selectedBucket: bucket,
+                          searchText: "",
+                          filterCategory: undefined,
+                          filterFormat: undefined,
+                          filterYear: undefined,
+                          filterMonth: undefined,
+                        },
+                        this.applyFilters,
+                      )
+                    }
                   >
-                    <span className={styles.plusIcon}>+</span>
-                  </button>
+                    {/* +++++++++++ UPLOAD BUTTON BOTTOM RIGHT +++++++++++ */}
+                    <button
+                      className={styles.bucketUploadBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault(); // ✅ WICHTIG!
 
-                  {preview && (
-                    <img
-                      src={!isVideo ? imageUrl : ""}
-                      ref={(el) => {
-                        if (!el || !preview) return;
-
-                        if (isVideo) {
-                          const video = document.createElement("video");
-
-                          video.src = videoUrl; // ✅ WICHTIG FIX
-                          video.crossOrigin = "anonymous";
-                          video.currentTime = 2; // ✅ besser als 100
-
-                          video.onloadeddata = () => {
-                            const canvas = document.createElement("canvas");
-
-                            canvas.width = 250;
-                            canvas.height = 150;
-
-                            const ctx = canvas.getContext("2d");
-
-                            if (ctx) {
-                              const videoRatio =
-                                video.videoWidth / video.videoHeight;
-                              const canvasRatio = canvas.width / canvas.height;
-
-                              let drawWidth, drawHeight, offsetX, offsetY;
-
-                              if (videoRatio > canvasRatio) {
-                                drawHeight = canvas.height;
-                                drawWidth = canvas.height * videoRatio;
-                                offsetX = (canvas.width - drawWidth) / 2;
-                                offsetY = 0;
-                              } else {
-                                drawWidth = canvas.width;
-                                drawHeight = canvas.width / videoRatio;
-                                offsetX = 0;
-                                offsetY = (canvas.height - drawHeight) / 2;
-                              }
-
-                              ctx.drawImage(
-                                video,
-                                offsetX,
-                                offsetY,
-                                drawWidth,
-                                drawHeight,
-                              );
-
-                              el.src = canvas.toDataURL();
-                            }
-                          };
-                        }
+                        this.setState({
+                          isUploadOpen: true,
+                          uploadBucket: [bucket],
+                        });
                       }}
-                      className={styles.previewImg}
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "data:image/svg+xml;charset=UTF-8," +
-                          encodeURIComponent(`
+                    >
+                      <span className={styles.plusIcon}>+</span>
+                    </button>
+
+                    {preview && (
+                      <img
+                        src={!isVideo ? imageUrl : ""}
+                        ref={(el) => {
+                          if (!el || !preview) return;
+
+                          if (isVideo) {
+                            const video = document.createElement("video");
+
+                            video.src = videoUrl; // ✅ WICHTIG FIX
+                            video.crossOrigin = "anonymous";
+                            video.currentTime = 2; // ✅ besser als 100
+
+                            video.onloadeddata = () => {
+                              const canvas = document.createElement("canvas");
+
+                              canvas.width = 250;
+                              canvas.height = 150;
+
+                              const ctx = canvas.getContext("2d");
+
+                              if (ctx) {
+                                const videoRatio =
+                                  video.videoWidth / video.videoHeight;
+                                const canvasRatio =
+                                  canvas.width / canvas.height;
+
+                                let drawWidth, drawHeight, offsetX, offsetY;
+
+                                if (videoRatio > canvasRatio) {
+                                  drawHeight = canvas.height;
+                                  drawWidth = canvas.height * videoRatio;
+                                  offsetX = (canvas.width - drawWidth) / 2;
+                                  offsetY = 0;
+                                } else {
+                                  drawWidth = canvas.width;
+                                  drawHeight = canvas.width / videoRatio;
+                                  offsetX = 0;
+                                  offsetY = (canvas.height - drawHeight) / 2;
+                                }
+
+                                ctx.drawImage(
+                                  video,
+                                  offsetX,
+                                  offsetY,
+                                  drawWidth,
+                                  drawHeight,
+                                );
+
+                                el.src = canvas.toDataURL();
+                              }
+                            };
+                          }
+                        }}
+                        className={styles.previewImg}
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "data:image/svg+xml;charset=UTF-8," +
+                            encodeURIComponent(`
           <svg width="250" height="150" xmlns="http://www.w3.org/2000/svg">
             <rect width="100%" height="100%" fill="#f3f2f1"/>
             <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c">
@@ -1269,19 +1275,19 @@ export default class MediaAssetsLib extends React.Component<
             </text>
           </svg>
         `);
-                      }}
-                    />
-                  )}
+                        }}
+                      />
+                    )}
 
-                  <div className={styles.bucketContent}>
-                    <h3>{bucket}</h3>
-                    <p className={styles.bucketCount}>
-                      {bucketCounts[bucket] || 0} Dateien
-                    </p>
+                    <div className={styles.bucketContent}>
+                      <h3>{bucket}</h3>
+                      <p className={styles.bucketCount}>
+                        {bucketCounts[bucket] || 0} Dateien
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         ) : (
           <div className={styles.grid}>
@@ -1483,6 +1489,19 @@ export default class MediaAssetsLib extends React.Component<
               );
             })}
           </div>
+        )}
+
+        {this.state.bucketsToShow < this.getFilteredBuckets().length && (
+          <button
+            onClick={() =>
+              this.setState({
+                bucketsToShow: this.state.bucketsToShow + 5,
+              })
+            }
+            className={styles.loadMoreBtn}
+          >
+            Mehr laden
+          </button>
         )}
         {/* **************** PREVIEW MODAL **************** */}
         {this.state.isModalOpen && this.state.selectedItem && (

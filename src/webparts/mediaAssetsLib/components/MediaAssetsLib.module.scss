@@ -460,3 +460,14 @@ html {
 .hidden {
   opacity: 0;
 }
+
+.loadMoreBtn {
+  padding: 10px 16px;
+  font-size: 16px;
+  background: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 20px;
+}
