@@ -1205,9 +1205,9 @@ export default class MediaAssetsLib extends React.Component<
                       <span className={styles.plusIcon}>+</span>
                     </button>
 
-                    {preview && (
+                    {preview && !isVideo && (
                       <img
-                        src={!isVideo ? imageUrl : ""}
+                        src={imageUrl}
                         className={styles.previewImg}
                         onError={(e) => {
                           e.currentTarget.src =
@@ -1221,6 +1221,22 @@ export default class MediaAssetsLib extends React.Component<
           </svg>
         `);
                         }}
+                      />
+                    )}
+
+                    {preview && isVideo && (
+                      <video
+                        src={`${window.location.origin}${preview.fileRef}`}
+                        preload="metadata"
+                        muted
+                        playsInline
+                        onLoadedData={(e) => {
+                          const v = e.currentTarget;
+                          try {
+                            v.currentTime = 0.1;
+                          } catch {}
+                        }}
+                        className={styles.previewImg}
                       />
                     )}
 
@@ -1251,7 +1267,8 @@ export default class MediaAssetsLib extends React.Component<
                     <video
                       src={fileUrl}
                       preload="metadata"
-                      controls={false}
+                      muted
+                      playsInline
                       className={styles.itemImg}
                       onClick={() =>
                         this.setState({
