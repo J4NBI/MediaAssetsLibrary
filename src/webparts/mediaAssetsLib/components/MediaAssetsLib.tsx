@@ -1169,10 +1169,6 @@ export default class MediaAssetsLib extends React.Component<
                   ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
                   : "";
 
-                const videoUrl = preview
-                  ? `${window.location.origin}${preview.fileRef}`
-                  : "";
-
                 return (
                   <div
                     key={bucket}
@@ -1243,55 +1239,19 @@ export default class MediaAssetsLib extends React.Component<
             {/* **************** MEDIA GRID **************** */}
 
             {this.state.visibleItems.map((item) => {
+              const fileUrl = `${window.location.origin}${item.fileRef}`;
               const downloadUrl = `${window.location.origin}${item.fileRef}`;
-
-              let thumbnailUrl = `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(item.fileRef)}&resolution=1`;
 
               const fileType = item.name?.split(".").pop()?.toLowerCase();
               const isVideo = fileType === "mp4" || fileType === "mov";
 
-              // VIDEO FALL → später via canvas erzeugen
-              if (isVideo) {
-                thumbnailUrl = ""; // erstmal leer
-              }
-              // VIDEO FALL → später via canvas erzeugen
-              if (isVideo) {
-                thumbnailUrl = ""; // erstmal leer
-              }
               return (
                 <div key={item.id} className={styles.itemCard}>
                   {isVideo ? (
-                    <div
-                      onClick={() =>
-                        this.setState({
-                          isModalOpen: true,
-                          selectedItem: item,
-                        })
-                      }
-                      className={styles.videoWrapper}
-                    >
-                      <img
-                        src={thumbnailUrl}
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "data:image/svg+xml;charset=UTF-8," +
-                            encodeURIComponent(`
-        <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#f3f2f1"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c" font-size="16">
-            Kein Preview
-          </text>
-        </svg>
-      `);
-                        }}
-                        className={styles.itemImg}
-                      />
-
-                      <div className={styles.videoOverlay}>▶</div>
-                    </div>
-                  ) : (
-                    <img
-                      src={thumbnailUrl}
+                    <video
+                      src={fileUrl}
+                      preload="metadata"
+                      controls={false}
                       className={styles.itemImg}
                       onClick={() =>
                         this.setState({
@@ -1299,18 +1259,17 @@ export default class MediaAssetsLib extends React.Component<
                           selectedItem: item,
                         })
                       }
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "data:image/svg+xml;charset=UTF-8," +
-                          encodeURIComponent(`
-        <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#f3f2f1"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c" font-size="16">
-            Kein Preview
-          </text>
-        </svg>
-      `);
-                      }}
+                    />
+                  ) : (
+                    <img
+                      src={fileUrl}
+                      className={styles.itemImg}
+                      onClick={() =>
+                        this.setState({
+                          isModalOpen: true,
+                          selectedItem: item,
+                        })
+                      }
                     />
                   )}
 
