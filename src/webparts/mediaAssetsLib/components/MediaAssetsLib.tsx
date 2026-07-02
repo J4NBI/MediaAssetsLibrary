@@ -846,6 +846,8 @@ export default class MediaAssetsLib extends React.Component<
         item.bucket?.includes(selectedBucket),
       );
     }
+    console.log("SELECTED BUCKET:", selectedBucket);
+    console.log("ITEMS NACH BUCKET FILTER:", filtered.length);
 
     const search = searchText.toLowerCase();
 
@@ -1182,6 +1184,7 @@ export default class MediaAssetsLib extends React.Component<
                           viewMode: "items",
                           resultMode: "files",
                           selectedBucket: bucket,
+                          visibleItemsCount: 20,
                           searchText: "",
                           filterCategory: undefined,
                           filterFormat: undefined,
@@ -1371,18 +1374,35 @@ export default class MediaAssetsLib extends React.Component<
           </div>
         )}
 
-        {this.state.bucketsToShow < this.getFilteredBuckets().length && (
-          <button
-            onClick={() =>
-              this.setState({
-                bucketsToShow: this.state.bucketsToShow + 5,
-              })
-            }
-            className={styles.loadMoreBtn}
-          >
-            Mehr laden
-          </button>
-        )}
+        {/* MEHR LADEN ORDNER */}
+        {this.state.resultMode === "folders" &&
+          this.state.bucketsToShow < this.getFilteredBuckets().length && (
+            <button
+              onClick={() =>
+                this.setState({
+                  bucketsToShow: this.state.bucketsToShow + 5,
+                })
+              }
+              className={styles.loadMoreBtn}
+            >
+              Mehr laden
+            </button>
+          )}
+
+        {/* MEHR LADEN DATEIEN */}
+        {this.state.resultMode === "files" &&
+          this.state.visibleItemsCount < this.state.visibleItems.length && (
+            <button
+              onClick={() => {
+                this.setState({
+                  visibleItemsCount: this.state.visibleItemsCount + 20,
+                });
+              }}
+              className={styles.loadMoreBtn}
+            >
+              Mehr laden
+            </button>
+          )}
 
         {/* **************** PREVIEW MODAL **************** */}
         {this.state.isModalOpen && this.state.selectedItem && (
