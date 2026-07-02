@@ -303,6 +303,8 @@ export default class MediaAssetsLib extends React.Component<
     return "Dokument";
   }
   private getAllBuckets(): string[] {
+    console.time("getAllBuckets");
+
     const map: { [key: string]: number } = {};
 
     this.state.allItems.forEach((item) => {
@@ -313,6 +315,8 @@ export default class MediaAssetsLib extends React.Component<
       }
     });
 
+    console.timeEnd("getAllBuckets");
+
     return Object.keys(map);
   }
 
@@ -321,6 +325,8 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private getFilteredBuckets(): string[] {
+    console.time("getFilteredBuckets");
+
     const {
       searchText,
       filterCategory,
@@ -331,29 +337,24 @@ export default class MediaAssetsLib extends React.Component<
 
     const buckets = this.getAllBuckets();
 
-    return buckets.filter((bucket) => {
+    const result = buckets.filter((bucket) => {
       const items = this.state.allItems.filter((item) =>
         item.bucket?.includes(bucket),
       );
 
       const search = searchText.toLowerCase();
 
-      // ✅ gleiche Filterlogik wie applyFilters
       const filteredItems = items.filter((item) => {
-        // TEXT
         const matchesText =
           !search ||
           item.name.toLowerCase().includes(search) ||
           (item.tags || []).join(" ").toLowerCase().includes(search);
 
-        // KATEGORIE
         const matchesCategory =
           !filterCategory || item.category === filterCategory;
 
-        // FORMAT
         const matchesFormat = !filterFormat || item.format === filterFormat;
 
-        // DATUM
         const date = item.created ? new Date(item.created) : null;
 
         const matchesYear =
@@ -375,14 +376,16 @@ export default class MediaAssetsLib extends React.Component<
         ? bucket.toLowerCase().includes(search)
         : false;
 
-      // ✅ Wenn Suche aktiv → Name ODER Inhalt
       if (search) {
         return bucketMatchesSearch || filteredItems.length > 0;
       }
 
-      // ✅ Wenn KEINE Suche → nur Inhalt (Filter!)
       return filteredItems.length > 0;
     });
+
+    console.timeEnd("getFilteredBuckets");
+
+    return result;
   }
 
   private getBucketCounts(): { [key: string]: number } {
@@ -652,6 +655,7 @@ export default class MediaAssetsLib extends React.Component<
 
         const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
         const items = await this.getFolderContent(rootFolder);
+        console.log("Items:", items.length);
 
         // ✅ Buckets neu berechnen
         const sortedBuckets = this.getBucketsSortedByNewest(items);
@@ -739,7 +743,7 @@ export default class MediaAssetsLib extends React.Component<
 
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
     /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
-
+    console.count("FOLDER REQUEST");
     const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format,Files/ListItemAllFields/Bucket`;
 
     const response = await this.props.spHttpClient.get(
@@ -797,13 +801,26 @@ export default class MediaAssetsLib extends React.Component<
   /********************* LOAD MEDIA **********************/
 
   private async loadAllMedia(): Promise<void> {
+    console.time("loadAllMedia");
     try {
       const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
 
       const items = await this.getFolderContent(rootFolder);
+      console.log("Items:", items.length);
+      console.log(
+        "JSON Größe:",
+        Math.round(JSON.stringify(items).length / 1024),
+        "KB",
+      );
+
+      console.log(
+        "Memory allItems:",
+        Math.round(JSON.stringify(items).length / 1024),
+        "KB",
+      );
 
       const uniqueBuckets = this.getBucketsSortedByNewest(items);
-
+      console.timeEnd("loadAllMedia");
       this.setState(
         {
           allItems: items,
@@ -1053,6 +1070,8 @@ export default class MediaAssetsLib extends React.Component<
    ******************************************************/
 
   public render(): React.ReactElement<IMediaAssetsLibProps> {
+    console.count("RENDER");
+
     const categoryOptions = this.getUniqueCategories();
 
     const yearOptions = this.getUniqueYears();
