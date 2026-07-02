@@ -389,6 +389,7 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private getBucketCounts(): { [key: string]: number } {
+    console.time("getBucketCounts");
     const counts: { [key: string]: number } = {};
 
     this.state.allItems.forEach((item) => {
@@ -398,7 +399,7 @@ export default class MediaAssetsLib extends React.Component<
         });
       }
     });
-
+    console.timeEnd("getBucketCounts");
     return counts;
   }
 
@@ -745,13 +746,20 @@ export default class MediaAssetsLib extends React.Component<
     /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
     console.count("FOLDER REQUEST");
     const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format,Files/ListItemAllFields/Bucket`;
-
+    console.time("SP REQUEST");
     const response = await this.props.spHttpClient.get(
       url,
       SPHttpClient.configurations.v1,
     );
 
     const data = await response.json();
+    console.log(data);
+    console.timeEnd("SP REQUEST");
+    console.log(
+      "SP RESPONSE SIZE:",
+      Math.round(JSON.stringify(data).length / 1024),
+      "KB",
+    );
 
     let results: IMediaItem[] = [];
 
@@ -806,7 +814,13 @@ export default class MediaAssetsLib extends React.Component<
       const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
 
       const items = await this.getFolderContent(rootFolder);
-      console.log("Items:", items.length);
+      console.log(
+        "Items:",
+        items.length,
+        "Durchschnitt pro Item:",
+        Math.round(JSON.stringify(items).length / items.length),
+        "Bytes",
+      );
       console.log(
         "JSON Größe:",
         Math.round(JSON.stringify(items).length / 1024),
@@ -1037,6 +1051,7 @@ export default class MediaAssetsLib extends React.Component<
   };
 
   private getUniqueCategories(): string[] {
+    console.time("getUniqueCategories");
     const values = this.state.allItems
       .map((item) => item.category)
       .filter((v) => v);
@@ -1045,14 +1060,17 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private getUniqueFormats(): string[] {
+    console.time("getUniqueFormats");
     const values = this.state.allItems
       .map((item) => item.format)
       .filter((v): v is string => !!v);
-
+    console.timeEnd("getUniqueCategories");
+    console.timeEnd("getUniqueFormats");
     return Array.from(new Set(values));
   }
 
   private getUniqueYears(): number[] {
+    console.time("getUniqueYears");
     const years = this.state.allItems
       .map((item) => {
         if (!item.created) return null;
@@ -1063,6 +1081,7 @@ export default class MediaAssetsLib extends React.Component<
       .filter((y) => y !== null) as number[];
 
     // Duplikate entfernen + sortieren (neueste zuerst)
+    console.timeEnd("getUniqueYears");
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }
   /********************* BUCKET LADEN ********************
@@ -1080,6 +1099,7 @@ export default class MediaAssetsLib extends React.Component<
 
     const bucketCounts = this.getBucketCounts();
 
+    const filteredBuckets = this.getFilteredBuckets();
     /********************* RENDER **************************/
 
     return (
@@ -1256,8 +1276,9 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {this.state.resultMode === "folders" ? (
           <div className={styles.grid}>
-            {this.getFilteredBuckets()
+            {filteredBuckets
               .slice(0, this.state.bucketsToShow)
+
               .map((bucket) => {
                 const preview = this.getBucketPreview(bucket);
 
@@ -1476,7 +1497,7 @@ export default class MediaAssetsLib extends React.Component<
 
         {/* MEHR LADEN ORDNER */}
         {this.state.resultMode === "folders" &&
-          this.state.bucketsToShow < this.getFilteredBuckets().length && (
+          this.state.bucketsToShow < filteredBuckets.length && (
             <button
               onClick={() =>
                 this.setState({
