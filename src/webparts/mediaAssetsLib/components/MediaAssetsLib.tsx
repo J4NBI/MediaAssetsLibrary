@@ -4,7 +4,7 @@ import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
 import styles from "./MediaAssetsLib.module.scss";
 
 /*******************************************************
- * MEDIA ASSETS LIB V6
+ * MEDIA ASSETS LIB V7
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
@@ -82,6 +82,10 @@ interface IMediaAssetsLibState {
   bucketsToShow: number;
 
   visibleItemsCount: number;
+
+  uploadProgress: number;
+  uploadCurrentFile: number;
+  uploadTotalFiles: number;
 }
 
 /********************* BUCKET DROPDOWN *****************
@@ -277,6 +281,10 @@ export default class MediaAssetsLib extends React.Component<
       showScrollTop: false,
       bucketsToShow: 5,
       visibleItemsCount: 20,
+
+      uploadProgress: 0,
+      uploadCurrentFile: 0,
+      uploadTotalFiles: 0,
     };
   }
   private observer?: IntersectionObserver;
@@ -411,14 +419,77 @@ export default class MediaAssetsLib extends React.Component<
     });
   }
 
+  private async getRequestDigest(): Promise<string> {
+    const response = await this.props.spHttpClient.post(
+      `${this.props.siteUrl}/_api/contextinfo`,
+      SPHttpClient.configurations.v1,
+      {
+        headers: {
+          Accept: "application/json;odata=nometadata",
+        },
+      },
+    );
+
+    const data = await response.json();
+
+    return data.FormDigestValue;
+  }
+
   /********************* UPLOAD **************************
    * Lädt Dateien hoch und setzt Metadaten
    ******************************************************/
 
+  private async uploadFileWithProgress(
+    url: string,
+    fileBuffer: ArrayBuffer,
+  ): Promise<any> {
+    const digest = await this.getRequestDigest();
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      // IMMER ZUERST OPEN
+      xhr.open("POST", url, true);
+
+      // DANN HEADER
+      xhr.setRequestHeader("Accept", "application/json;odata=nometadata");
+
+      xhr.setRequestHeader("X-RequestDigest", digest);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+
+          this.setState({
+            uploadProgress: percent,
+          });
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          reject(xhr.responseText);
+        }
+      };
+
+      xhr.onerror = () => reject(xhr.responseText);
+
+      xhr.send(fileBuffer);
+    });
+  }
+
   private async uploadItem(): Promise<void> {
-    this.setState({ isUploading: true });
     const { uploadFiles, uploadTags, uploadCategory, uploadBucket } =
       this.state;
+
+    this.setState({
+      isUploading: true,
+      uploadProgress: 0,
+      uploadCurrentFile: 0,
+      uploadTotalFiles: uploadFiles?.length || 0,
+    });
 
     if (!uploadBucket || uploadBucket.length === 0) {
       alert("Bitte wählen Sie mindestens einen Ordner aus.");
@@ -432,7 +503,13 @@ export default class MediaAssetsLib extends React.Component<
       return;
     }
 
-    for (const uploadFile of uploadFiles) {
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const uploadFile = uploadFiles[i];
+
+      this.setState({
+        uploadCurrentFile: i + 1,
+      });
+
       try {
         const fileBuffer = await uploadFile.arrayBuffer();
 
@@ -445,18 +522,8 @@ export default class MediaAssetsLib extends React.Component<
 
         console.log("⬆️ Starte Upload:", uploadFile.name);
 
-        const response = await this.props.spHttpClient.post(
-          uploadUrl,
-          SPHttpClient.configurations.v1,
-          {
-            headers: {
-              Accept: "application/json;odata=nometadata",
-            },
-            body: fileBuffer,
-          },
-        );
+        const result = await this.uploadFileWithProgress(uploadUrl, fileBuffer);
 
-        const result = await response.json();
         const fileUrl = result.ServerRelativeUrl;
 
         const itemResponse = await this.props.spHttpClient.get(
@@ -521,6 +588,9 @@ export default class MediaAssetsLib extends React.Component<
         );
         console.log("FINAL BODY:", bodyData);
         console.log("✅ Fertig:", uploadFile.name);
+        this.setState({
+          uploadProgress: 100,
+        });
       } catch (error) {
         console.error("❌ Fehler bei Datei:", uploadFile.name, error);
       }
@@ -528,7 +598,12 @@ export default class MediaAssetsLib extends React.Component<
 
     await this.loadAllMedia();
 
-    this.setState({ isUploading: false });
+    this.setState({
+      isUploading: false,
+      uploadProgress: 0,
+      uploadCurrentFile: 0,
+      uploadTotalFiles: 0,
+    });
 
     this.setState(
       {
@@ -1767,6 +1842,36 @@ export default class MediaAssetsLib extends React.Component<
               <button onClick={() => this.setState({ isUploadOpen: false })}>
                 Schließen
               </button>
+              {this.state.isUploading && (
+                <div style={{ marginTop: 20 }}>
+                  <div>
+                    Datei {this.state.uploadCurrentFile} von{" "}
+                    {this.state.uploadTotalFiles}
+                  </div>
+
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "12px",
+                      background: "#ddd",
+                      marginTop: "10px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${this.state.uploadProgress}%`,
+                        height: "100%",
+                        background: "#ecdd04",
+                        transition: "width 0.2s ease",
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ marginTop: 6 }}>
+                    {this.state.uploadProgress}%
+                  </div>
+                </div>
+              )}
               <button
                 onClick={() => this.uploadItem()}
                 disabled={
