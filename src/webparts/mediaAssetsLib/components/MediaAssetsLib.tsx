@@ -1306,19 +1306,19 @@ export default class MediaAssetsLib extends React.Component<
                     )}
 
                     {preview && isVideo && (
-                      <video
-                        src={`${window.location.origin}${preview.fileRef}`}
-                        preload="metadata"
-                        muted
-                        playsInline
-                        onLoadedData={(e) => {
-                          const v = e.currentTarget;
-                          try {
-                            v.currentTime = 0.1;
-                          } catch {}
+                      <div
+                        className={styles.itemImg}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "50px",
+                          background: "#f3f2f1",
+                          cursor: "pointer",
                         }}
-                        className={styles.previewImg}
-                      />
+                      >
+                        🎬
+                      </div>
                     )}
 
                     <div className={styles.bucketContent}>
@@ -1347,11 +1347,7 @@ export default class MediaAssetsLib extends React.Component<
                 return (
                   <div key={item.id} className={styles.itemCard}>
                     {isVideo ? (
-                      <video
-                        src={fileUrl}
-                        preload="metadata"
-                        muted
-                        playsInline
+                      <div
                         className={styles.itemImg}
                         onClick={() =>
                           this.setState({
@@ -1359,7 +1355,17 @@ export default class MediaAssetsLib extends React.Component<
                             selectedItem: item,
                           })
                         }
-                      />
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "50px",
+                          background: "#f3f2f1",
+                          cursor: "pointer",
+                        }}
+                      >
+                        🎬
+                      </div>
                     ) : (
                       <img
                         src={fileUrl}
