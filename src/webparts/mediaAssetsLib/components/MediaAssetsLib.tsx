@@ -331,29 +331,24 @@ export default class MediaAssetsLib extends React.Component<
 
     const buckets = this.getAllBuckets();
 
-    return buckets.filter((bucket) => {
+    const result = buckets.filter((bucket) => {
       const items = this.state.allItems.filter((item) =>
         item.bucket?.includes(bucket),
       );
 
       const search = searchText.toLowerCase();
 
-      // ✅ gleiche Filterlogik wie applyFilters
       const filteredItems = items.filter((item) => {
-        // TEXT
         const matchesText =
           !search ||
           item.name.toLowerCase().includes(search) ||
           (item.tags || []).join(" ").toLowerCase().includes(search);
 
-        // KATEGORIE
         const matchesCategory =
           !filterCategory || item.category === filterCategory;
 
-        // FORMAT
         const matchesFormat = !filterFormat || item.format === filterFormat;
 
-        // DATUM
         const date = item.created ? new Date(item.created) : null;
 
         const matchesYear =
@@ -375,14 +370,14 @@ export default class MediaAssetsLib extends React.Component<
         ? bucket.toLowerCase().includes(search)
         : false;
 
-      // ✅ Wenn Suche aktiv → Name ODER Inhalt
       if (search) {
         return bucketMatchesSearch || filteredItems.length > 0;
       }
 
-      // ✅ Wenn KEINE Suche → nur Inhalt (Filter!)
       return filteredItems.length > 0;
     });
+
+    return result;
   }
 
   private getBucketCounts(): { [key: string]: number } {
@@ -502,6 +497,7 @@ export default class MediaAssetsLib extends React.Component<
       this.setState({ isUploading: false }); // ✅ FIX!!
       return;
     }
+    const newItems: IMediaItem[] = [];
 
     for (let i = 0; i < uploadFiles.length; i++) {
       const uploadFile = uploadFiles[i];
@@ -519,8 +515,6 @@ export default class MediaAssetsLib extends React.Component<
           "/Files/add(overwrite=true,url='" +
           uploadFile.name +
           "')";
-
-        console.log("⬆️ Starte Upload:", uploadFile.name);
 
         const result = await this.uploadFileWithProgress(uploadUrl, fileBuffer);
 
@@ -570,9 +564,6 @@ export default class MediaAssetsLib extends React.Component<
           Bucket: cleanBuckets,
         };
 
-        console.log("UPLOAD BUCKET RAW:", uploadBucket);
-        console.log("CLEAN BUCKET:", cleanBuckets);
-
         await this.props.spHttpClient.post(
           updateUrl,
           SPHttpClient.configurations.v1,
@@ -586,8 +577,17 @@ export default class MediaAssetsLib extends React.Component<
             body: JSON.stringify(bodyData),
           },
         );
-        console.log("FINAL BODY:", bodyData);
-        console.log("✅ Fertig:", uploadFile.name);
+        newItems.push({
+          id: itemId,
+          name: finalName,
+          fileRef: fileUrl,
+          category: uploadCategory || undefined,
+          created: new Date().toISOString(),
+          tags: cleanTags,
+          bucket: cleanBuckets,
+          format: detectedFormat,
+        });
+
         this.setState({
           uploadProgress: 100,
         });
@@ -595,8 +595,17 @@ export default class MediaAssetsLib extends React.Component<
         console.error("❌ Fehler bei Datei:", uploadFile.name, error);
       }
     }
+    const updatedItems = [...newItems, ...this.state.allItems];
 
-    await this.loadAllMedia();
+    const uniqueBuckets = this.getBucketsSortedByNewest(updatedItems);
+
+    this.setState(
+      {
+        allItems: updatedItems,
+        bucketOptions: uniqueBuckets,
+      },
+      this.applyFilters,
+    );
 
     this.setState({
       isUploading: false,
@@ -609,9 +618,6 @@ export default class MediaAssetsLib extends React.Component<
       {
         isUploadOpen: false,
         uploadFiles: [],
-        viewMode: "buckets", // ✅ zurück zur Bucket Ansicht
-        selectedBucket: undefined, // ✅ Reset
-        searchText: "", // ✅ wichtig für Ansicht
       },
       this.applyFilters, // ✅ neu berechnen
     );
@@ -650,8 +656,7 @@ export default class MediaAssetsLib extends React.Component<
       if (response.ok) {
         console.log("✅ Element gelöscht");
 
-        const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
-        const items = await this.getFolderContent(rootFolder);
+        const items = await this.loadItemsFromListApi();
 
         // ✅ Buckets neu berechnen
         const sortedBuckets = this.getBucketsSortedByNewest(items);
@@ -717,8 +722,6 @@ export default class MediaAssetsLib extends React.Component<
     if (target) {
       this.observer = new IntersectionObserver(
         ([entry]) => {
-          console.log("HEADER VISIBLE:", entry.isIntersecting);
-
           this.setState({
             showScrollTop: !entry.isIntersecting,
           });
@@ -737,73 +740,66 @@ export default class MediaAssetsLib extends React.Component<
    * Lädt alle Dateien + Unterordner
    ******************************************************/
 
-  private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
-    /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
+  private async loadItemsFromListApi(): Promise<IMediaItem[]> {
+    let nextUrl =
+      `${this.props.siteUrl}` +
+      "/_api/web/lists/getbytitle('Medienbibliothek')/items" +
+      "?$top=5000" +
+      "&$select=Id,FileLeafRef,Kategorie,Tags,Format,Bucket,Created,FileRef";
 
-    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format,Files/ListItemAllFields/Bucket`;
+    let allItems: any[] = [];
 
-    const response = await this.props.spHttpClient.get(
-      url,
-      SPHttpClient.configurations.v1,
-    );
+    while (nextUrl) {
+      const response = await this.props.spHttpClient.get(
+        nextUrl,
+        SPHttpClient.configurations.v1,
+      );
 
-    const data = await response.json();
+      const data = await response.json();
 
-    let results: IMediaItem[] = [];
+      allItems = allItems.concat(data.value);
 
-    data.Files.forEach((file: unknown) => {
-      const f = file as any;
-
-      results.push({
-        id: f.ListItemAllFields.Id,
-        name: f.Name,
-        fileRef: f.ServerRelativeUrl,
-        category: f.ListItemAllFields?.Kategorie,
-        notes: f.ListItemAllFields?.Notizen,
-        created: f.TimeCreated,
-        tags: Array.isArray(f.ListItemAllFields?.Tags)
-          ? f.ListItemAllFields.Tags
-          : f.ListItemAllFields?.Tags
-            ? String(f.ListItemAllFields.Tags)
-                .split(/[;,#]+/)
-                .map((t: string) => t.trim())
-                .filter((t: string) => t)
-            : [],
-        bucket: Array.isArray(f.ListItemAllFields?.Bucket)
-          ? f.ListItemAllFields.Bucket
-          : f.ListItemAllFields?.Bucket
-            ? String(f.ListItemAllFields.Bucket)
-                .split(/[;,#]+/)
-                .map((t: string) => t.trim())
-                .filter((t: string) => t)
-            : [],
-
-        driveId: f.ListItemAllFields?.File?.VroomDriveID,
-        driveItemId: f.ListItemAllFields?.File?.VroomItemID,
-        format: f.ListItemAllFields?.Format,
-      });
-    });
-
-    for (const folder of data.Folders) {
-      if (folder.Name !== "Forms") {
-        const subItems = await this.getFolderContent(folder.ServerRelativeUrl);
-        results = results.concat(subItems);
-      }
+      nextUrl = data["@odata.nextLink"] || "";
     }
 
-    return results;
+    return allItems.map((item: any) => ({
+      id: item.Id,
+      name: item.FileLeafRef,
+      fileRef: item.FileRef,
+      category: item.Kategorie,
+      created: item.Created,
+
+      tags: Array.isArray(item.Tags)
+        ? item.Tags
+        : item.Tags
+          ? String(item.Tags)
+              .split(/[;,#]+/)
+              .map((t: string) => t.trim())
+              .filter(Boolean)
+          : [],
+
+      bucket: Array.isArray(item.Bucket)
+        ? item.Bucket
+        : item.Bucket
+          ? String(item.Bucket)
+              .split(/[;,#]+/)
+              .map((t: string) => t.trim())
+              .filter(Boolean)
+          : [],
+
+      format: item.Format,
+    }));
   }
 
   /********************* LOAD MEDIA **********************/
 
   private async loadAllMedia(): Promise<void> {
+    console.time("loadAllMedia");
     try {
-      const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
-
-      const items = await this.getFolderContent(rootFolder);
+      const items = await this.loadItemsFromListApi();
 
       const uniqueBuckets = this.getBucketsSortedByNewest(items);
-
+      console.timeEnd("loadAllMedia");
       this.setState(
         {
           allItems: items,
@@ -840,62 +836,47 @@ export default class MediaAssetsLib extends React.Component<
 
       const bucketsArray = editBucket;
 
-      // DEBBUG ___________________________________________________
-      console.log(
-        "🧪 UPDATE BODY:",
-        JSON.stringify(
-          {
-            FileLeafRef: editName,
-            Kategorie: editCategory,
-            body: JSON.stringify({
-              FileLeafRef: editName,
-
-              Kategorie: editCategory,
-
-              Tags: tagsArray,
-
-              Format: editFormat,
-
-              Bucket: bucketsArray,
-            }),
-          },
-          null,
-          2,
-        ),
-      );
-
-      console.log("🧪 EDIT BUCKET:", editBucket);
-
-      const response = await this.props.spHttpClient.post(
-        url,
-        SPHttpClient.configurations.v1,
-        {
-          headers: {
-            Accept: "application/json;odata=nometadata",
-            "Content-Type": "application/json;odata=nometadata",
-            "IF-MATCH": "*",
-            "X-HTTP-Method": "MERGE",
-          },
-          /* _______________________________________________________________________ */
-          body: JSON.stringify({
-            FileLeafRef: editName,
-            Kategorie: editCategory,
-            Tags: tagsArray,
-            Format: editFormat,
-            Bucket: bucketsArray,
-          }),
+      await this.props.spHttpClient.post(url, SPHttpClient.configurations.v1, {
+        headers: {
+          Accept: "application/json;odata=nometadata",
+          "Content-Type": "application/json;odata=nometadata",
+          "IF-MATCH": "*",
+          "X-HTTP-Method": "MERGE",
         },
-      );
-
-      const errorText = await response.text();
-      console.log("🧪 UPDATE RESPONSE:", errorText);
-
-      console.log("Update erfolgreich");
+        body: JSON.stringify({
+          FileLeafRef: editName,
+          Kategorie: editCategory,
+          Tags: tagsArray,
+          Format: editFormat,
+          Bucket: bucketsArray,
+        }),
+      });
 
       // neu laden → damit UI sofort aktualisiert wird
-      await this.loadAllMedia();
 
-      this.setState({ isEditOpen: false });
+      const updatedItems = this.state.allItems.map((item) =>
+        item.id === selectedItem.id
+          ? {
+              ...item,
+              name: editName,
+              category: editCategory,
+              tags: tagsArray,
+              format: editFormat,
+              bucket: bucketsArray,
+            }
+          : item,
+      );
+
+      const uniqueBuckets = this.getBucketsSortedByNewest(updatedItems);
+
+      this.setState(
+        {
+          allItems: updatedItems,
+          bucketOptions: uniqueBuckets,
+          isEditOpen: false,
+        },
+        this.applyFilters,
+      );
     } catch (error) {
       console.error("Update Fehler:", error);
     }
@@ -921,8 +902,6 @@ export default class MediaAssetsLib extends React.Component<
         item.bucket?.includes(selectedBucket),
       );
     }
-    console.log("SELECTED BUCKET:", selectedBucket);
-    console.log("ITEMS NACH BUCKET FILTER:", filtered.length);
 
     const search = searchText.toLowerCase();
 
@@ -957,28 +936,6 @@ export default class MediaAssetsLib extends React.Component<
         return date.getFullYear() === this.state.filterYear;
       });
     }
-
-    /*
-    if (this.state.filterYear) {
-      filtered = filtered.filter((item) => {
-        console.log("CREATED RAW:", item.created);
-
-        if (!item.created) return false;
-
-        const date = new Date(item.created);
-
-        console.log("PARSED DATE:", date);
-        console.log("YEAR:", date.getFullYear());
-
-        const itemYear = date.getFullYear();
-        const selectedYear = this.state.filterYear;
-
-        console.log("COMPARE:", itemYear, selectedYear);
-
-        return itemYear == selectedYear;
-      });
-    }
-      */
 
     if (this.state.filterMonth) {
       filtered = filtered.filter((item) => {
@@ -1046,6 +1003,7 @@ export default class MediaAssetsLib extends React.Component<
       .filter((y) => y !== null) as number[];
 
     // Duplikate entfernen + sortieren (neueste zuerst)
+
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }
   /********************* BUCKET LADEN ********************
@@ -1061,6 +1019,7 @@ export default class MediaAssetsLib extends React.Component<
 
     const bucketCounts = this.getBucketCounts();
 
+    const filteredBuckets = this.getFilteredBuckets();
     /********************* RENDER **************************/
 
     return (
@@ -1237,8 +1196,9 @@ export default class MediaAssetsLib extends React.Component<
         )}
         {this.state.resultMode === "folders" ? (
           <div className={styles.grid}>
-            {this.getFilteredBuckets()
+            {filteredBuckets
               .slice(0, this.state.bucketsToShow)
+
               .map((bucket) => {
                 const preview = this.getBucketPreview(bucket);
 
@@ -1457,7 +1417,7 @@ export default class MediaAssetsLib extends React.Component<
 
         {/* MEHR LADEN ORDNER */}
         {this.state.resultMode === "folders" &&
-          this.state.bucketsToShow < this.getFilteredBuckets().length && (
+          this.state.bucketsToShow < filteredBuckets.length && (
             <button
               onClick={() =>
                 this.setState({
