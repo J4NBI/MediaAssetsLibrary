@@ -303,8 +303,6 @@ export default class MediaAssetsLib extends React.Component<
     return "Dokument";
   }
   private getAllBuckets(): string[] {
-    console.time("getAllBuckets");
-
     const map: { [key: string]: number } = {};
 
     this.state.allItems.forEach((item) => {
@@ -315,8 +313,6 @@ export default class MediaAssetsLib extends React.Component<
       }
     });
 
-    console.timeEnd("getAllBuckets");
-
     return Object.keys(map);
   }
 
@@ -325,8 +321,6 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private getFilteredBuckets(): string[] {
-    console.time("getFilteredBuckets");
-
     const {
       searchText,
       filterCategory,
@@ -383,13 +377,10 @@ export default class MediaAssetsLib extends React.Component<
       return filteredItems.length > 0;
     });
 
-    console.timeEnd("getFilteredBuckets");
-
     return result;
   }
 
   private getBucketCounts(): { [key: string]: number } {
-    console.time("getBucketCounts");
     const counts: { [key: string]: number } = {};
 
     this.state.allItems.forEach((item) => {
@@ -399,7 +390,7 @@ export default class MediaAssetsLib extends React.Component<
         });
       }
     });
-    console.timeEnd("getBucketCounts");
+
     return counts;
   }
 
@@ -716,6 +707,7 @@ export default class MediaAssetsLib extends React.Component<
     console.log("MOUNTED ✅");
 
     await this.loadAllMedia();
+    await this.testListApi();
 
     const target = document.getElementById("top");
 
@@ -806,14 +798,85 @@ export default class MediaAssetsLib extends React.Component<
     return results;
   }
 
+  private async testListApi(): Promise<void> {
+    const url =
+      `${this.props.siteUrl}` +
+      "/_api/web/lists/getbytitle('Medienbibliothek')/items" +
+      "?$top=5" +
+      "&$select=Id,FileLeafRef,Kategorie,Tags,Format,Bucket,Created,FileRef";
+    console.time("LIST API");
+    const response = await this.props.spHttpClient.get(
+      url,
+      SPHttpClient.configurations.v1,
+    );
+
+    const data = await response.json();
+
+    console.timeEnd("LIST API");
+    console.log("LIST API TEST", data);
+  }
+
+  private async loadItemsFromListApi(): Promise<IMediaItem[]> {
+    console.log("LOAD VIA LIST API");
+
+    let nextUrl =
+      `${this.props.siteUrl}` +
+      "/_api/web/lists/getbytitle('Medienbibliothek')/items" +
+      "?$top=5000" +
+      "&$select=Id,FileLeafRef,Kategorie,Tags,Format,Bucket,Created,FileRef";
+
+    let allItems: any[] = [];
+
+    while (nextUrl) {
+      const response = await this.props.spHttpClient.get(
+        nextUrl,
+        SPHttpClient.configurations.v1,
+      );
+
+      const data = await response.json();
+
+      allItems = allItems.concat(data.value);
+
+      nextUrl = data["@odata.nextLink"] || "";
+    }
+
+    console.log("LIST API ITEMS:", allItems.length);
+
+    return allItems.map((item: any) => ({
+      id: item.Id,
+      name: item.FileLeafRef,
+      fileRef: item.FileRef,
+      category: item.Kategorie,
+      created: item.Created,
+
+      tags: Array.isArray(item.Tags)
+        ? item.Tags
+        : item.Tags
+          ? String(item.Tags)
+              .split(/[;,#]+/)
+              .map((t: string) => t.trim())
+              .filter(Boolean)
+          : [],
+
+      bucket: Array.isArray(item.Bucket)
+        ? item.Bucket
+        : item.Bucket
+          ? String(item.Bucket)
+              .split(/[;,#]+/)
+              .map((t: string) => t.trim())
+              .filter(Boolean)
+          : [],
+
+      format: item.Format,
+    }));
+  }
+
   /********************* LOAD MEDIA **********************/
 
   private async loadAllMedia(): Promise<void> {
     console.time("loadAllMedia");
     try {
-      const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
-
-      const items = await this.getFolderContent(rootFolder);
+      const items = await this.loadItemsFromListApi();
       console.log(
         "Items:",
         items.length,
@@ -1051,7 +1114,6 @@ export default class MediaAssetsLib extends React.Component<
   };
 
   private getUniqueCategories(): string[] {
-    console.time("getUniqueCategories");
     const values = this.state.allItems
       .map((item) => item.category)
       .filter((v) => v);
@@ -1060,17 +1122,14 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private getUniqueFormats(): string[] {
-    console.time("getUniqueFormats");
     const values = this.state.allItems
       .map((item) => item.format)
       .filter((v): v is string => !!v);
-    console.timeEnd("getUniqueCategories");
-    console.timeEnd("getUniqueFormats");
+
     return Array.from(new Set(values));
   }
 
   private getUniqueYears(): number[] {
-    console.time("getUniqueYears");
     const years = this.state.allItems
       .map((item) => {
         if (!item.created) return null;
@@ -1081,7 +1140,7 @@ export default class MediaAssetsLib extends React.Component<
       .filter((y) => y !== null) as number[];
 
     // Duplikate entfernen + sortieren (neueste zuerst)
-    console.timeEnd("getUniqueYears");
+
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }
   /********************* BUCKET LADEN ********************
@@ -1089,8 +1148,6 @@ export default class MediaAssetsLib extends React.Component<
    ******************************************************/
 
   public render(): React.ReactElement<IMediaAssetsLibProps> {
-    console.count("RENDER");
-
     const categoryOptions = this.getUniqueCategories();
 
     const yearOptions = this.getUniqueYears();
