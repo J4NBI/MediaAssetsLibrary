@@ -4,6 +4,7 @@ import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
 import styles from "./MediaAssetsLib.module.scss";
 
 import BucketDropdown from "./BucketDropdown";
+import PreviewModal from "./PreviewModal";
 
 /*******************************************************
  * MEDIA ASSETS LIB V7
@@ -1310,70 +1311,17 @@ export default class MediaAssetsLib extends React.Component<
 
         {/* **************** PREVIEW MODAL **************** */}
         {this.state.isModalOpen && this.state.selectedItem && (
-          <div
-            className={`${styles.modalOverlay} ${styles.modalOverlayPreview}`}
-          >
-            {/* CLOSE BUTTON */}
-            <button
-              onClick={() =>
-                this.setState({ isModalOpen: false, selectedItem: undefined })
-              }
-              className={styles.modalClose}
-            >
-              ✕
-            </button>
-            {/* CONTENT MODAL */}
-            <div className={styles.modalContent}>
-              {(() => {
-                const item = this.state.selectedItem;
-                const fileType = item?.name.split(".").pop()?.toLowerCase();
-                const isVideo = fileType === "mp4" || fileType === "mov";
-
-                const fileUrl = `${window.location.origin}${item?.fileRef}`;
-                const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(fileUrl)}`;
-
-                return (
-                  <>
-                    {/* IMAGE */}
-                    {!isVideo && (
-                      <img src={fileUrl} className={styles.modalMedia} />
-                    )}
-
-                    {/* VIDEO */}
-                    {isVideo && (
-                      <video
-                        controls
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "80vh",
-                        }}
-                      >
-                        <source src={fileUrl} />
-                      </video>
-                    )}
-
-                    {/* DOWNLOAD BUTTON */}
-                    <button
-                      onClick={() => {
-                        const link = document.createElement("a");
-                        link.href = downloadUrl;
-                        link.setAttribute("download", item?.name || "file");
-
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                      className={`
-                        ${styles.downloadBtn} ${styles.modalDownload}`}
-                    >
-                      Download
-                    </button>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
+          <PreviewModal
+            item={this.state.selectedItem}
+            onClose={() =>
+              this.setState({
+                isModalOpen: false,
+                selectedItem: undefined,
+              })
+            }
+          />
         )}
+
         {/* **************** EDIT MODAL **************** */}
         {this.state.isEditOpen && this.state.selectedItem && (
           <div className={`${styles.modalOverlay} ${styles.modalOverlayEdit}`}>
