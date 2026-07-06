@@ -1,5 +1,6 @@
 import * as React from "react";
 import styles from "./MediaAssetsLib.module.scss";
+import DownloadButton from "./DownloadButton";
 
 interface IMediaItem {
   id: number;
@@ -20,13 +21,6 @@ const PreviewModal: React.FC<IPreviewModalProps> = ({ item, onClose }) => {
 
   const fileUrl = `${window.location.origin}${item.fileRef}`;
 
-  const downloadUrl = `${
-    window.location.origin
-  }/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(fileUrl)}`;
-  console.log("Name:", item.name);
-  console.log("FileType:", fileType);
-  console.log("IsVideo:", isVideo);
-  console.log("FileUrl:", fileUrl);
   return (
     <div className={`${styles.modalOverlay} ${styles.modalOverlayPreview}`}>
       <button onClick={onClose} className={styles.modalClose}>
@@ -48,21 +42,11 @@ const PreviewModal: React.FC<IPreviewModalProps> = ({ item, onClose }) => {
           <img src={fileUrl} className={styles.modalMedia} />
         )}
 
-        <button
-          onClick={() => {
-            const link = document.createElement("a");
-
-            link.href = downloadUrl;
-            link.setAttribute("download", item.name || "file");
-
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }}
+        <DownloadButton
+          fileUrl={fileUrl}
+          fileName={item.name}
           className={`${styles.downloadBtn} ${styles.modalDownload}`}
-        >
-          Download
-        </button>
+        />
       </div>
     </div>
   );
