@@ -6,6 +6,7 @@ import styles from "./MediaAssetsLib.module.scss";
 import BucketDropdown from "./BucketDropdown";
 import PreviewModal from "./PreviewModal";
 import MediaCard from "./MediaCard";
+import BucketCard from "./BucketCard";
 
 /*******************************************************
  * MEDIA ASSETS LIB V7
@@ -1115,98 +1116,36 @@ export default class MediaAssetsLib extends React.Component<
           <div className={styles.grid}>
             {filteredBuckets
               .slice(0, this.state.bucketsToShow)
-
-              .map((bucket) => {
-                const preview = this.getBucketPreview(bucket);
-
-                const fileType = preview?.name?.split(".").pop()?.toLowerCase();
-                const isVideo = fileType === "mp4" || fileType === "mov";
-
-                const imageUrl = preview
-                  ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
-                  : "";
-
-                return (
-                  <div
-                    key={bucket}
-                    className={styles.bucketCard}
-                    onClick={() =>
-                      this.setState(
-                        {
-                          viewMode: "items",
-                          resultMode: "files",
-                          selectedBucket: bucket,
-                          visibleItemsCount: 20,
-                          searchText: "",
-                          filterCategory: undefined,
-                          filterFormat: undefined,
-                          filterYear: undefined,
-                          filterMonth: undefined,
-                        },
-                        this.applyFilters,
-                      )
-                    }
-                  >
-                    {/* +++++++++++ UPLOAD BUTTON BOTTOM RIGHT +++++++++++ */}
-                    <button
-                      className={styles.bucketUploadBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault(); // ✅ WICHTIG!
-
-                        this.setState({
-                          isUploadOpen: true,
-                          uploadBucket: [bucket],
-                        });
-                      }}
-                    >
-                      <span className={styles.plusIcon}>+</span>
-                    </button>
-
-                    {preview && !isVideo && (
-                      <img
-                        src={imageUrl}
-                        className={styles.previewImg}
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "data:image/svg+xml;charset=UTF-8," +
-                            encodeURIComponent(`
-          <svg width="250" height="150" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#f3f2f1"/>
-            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c">
-              Kein Preview
-            </text>
-          </svg>
-        `);
-                        }}
-                      />
-                    )}
-
-                    {preview && isVideo && (
-                      <div
-                        className={styles.itemImg}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "50px",
-                          background: "#f3f2f1",
-                          cursor: "pointer",
-                        }}
-                      >
-                        🎬
-                      </div>
-                    )}
-
-                    <div className={styles.bucketContent}>
-                      <h3>{bucket}</h3>
-                      <p className={styles.bucketCount}>
-                        {bucketCounts[bucket] || 0} Dateien
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+              .map((bucket) => (
+                <BucketCard
+                  key={bucket}
+                  bucket={bucket}
+                  count={bucketCounts[bucket] || 0}
+                  preview={this.getBucketPreview(bucket)}
+                  onOpen={(selectedBucket) => {
+                    this.setState(
+                      {
+                        viewMode: "items",
+                        resultMode: "files",
+                        selectedBucket,
+                        visibleItemsCount: 20,
+                        searchText: "",
+                        filterCategory: undefined,
+                        filterFormat: undefined,
+                        filterYear: undefined,
+                        filterMonth: undefined,
+                      },
+                      this.applyFilters,
+                    );
+                  }}
+                  onUpload={(selectedBucket) => {
+                    this.setState({
+                      isUploadOpen: true,
+                      uploadBucket: [selectedBucket],
+                    });
+                  }}
+                />
+              ))}
           </div>
         ) : (
           <div className={styles.grid}>
