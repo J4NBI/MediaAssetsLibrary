@@ -35,6 +35,7 @@ interface IMediaItem {
   driveItemId?: string;
 
   format?: string;
+  createdBy?: string;
 }
 
 interface ISPFile {
@@ -50,10 +51,15 @@ interface ISPFile {
     Bucket?: string[] | string;
     Format?: string;
 
+    Author?: {
+      Title: string;
+    };
+
     File?: {
       VroomDriveID?: string;
       VroomItemID?: string;
     };
+    Ersteller?: string;
   };
 }
 /********************* STATE ***************************
@@ -110,6 +116,8 @@ interface IMediaAssetsLibState {
   uploadTotalFiles: number;
 
   categoryOptions: string[];
+
+  filterCreator?: string;
 }
 
 /********************* HAUPTKOMPNENTE ******************
@@ -264,6 +272,7 @@ export default class MediaAssetsLib extends React.Component<
       filterFormat,
       filterYear,
       filterMonth,
+      filterCreator,
     } = this.state;
 
     const buckets = this.getAllBuckets();
@@ -299,9 +308,13 @@ export default class MediaAssetsLib extends React.Component<
         const matchesMonth =
           !filterMonth || (date && date.getMonth() + 1 === filterMonth);
 
+        const matchesCreator =
+          !filterCreator || item.createdBy === filterCreator;
+
         return (
           matchesText &&
           matchesCategory &&
+          matchesCreator &&
           matchesFormat &&
           matchesYear &&
           matchesMonth
@@ -370,6 +383,20 @@ export default class MediaAssetsLib extends React.Component<
     const data = await response.json();
 
     return data.FormDigestValue;
+  }
+
+  private async getCurrentUser(): Promise<{ id: number; title: string }> {
+    const response = await this.props.spHttpClient.get(
+      `${this.props.siteUrl}/_api/web/currentuser`,
+      SPHttpClient.configurations.v1,
+    );
+
+    const user = await response.json();
+
+    return {
+      id: user.Id,
+      title: user.Title,
+    };
   }
 
   /********************* UPLOAD **************************
@@ -497,13 +524,15 @@ export default class MediaAssetsLib extends React.Component<
         }
 
         const detectedFormat = this.detectFormat(uploadFile.name);
-
+        const currentUser = await this.getCurrentUser();
+        console.log("CURRENT USER", currentUser);
         const bodyData = {
           FileLeafRef: finalName,
           Kategorie: uploadCategory || null,
           Tags: cleanTags,
           Format: detectedFormat, // ✅ AUTO!
           Bucket: cleanBuckets,
+          Ersteller: currentUser.title,
         };
 
         console.log("UPLOAD BUCKET RAW:", uploadBucket);
@@ -615,6 +644,7 @@ export default class MediaAssetsLib extends React.Component<
                   filterFormat: undefined,
                   filterYear: undefined,
                   filterMonth: undefined,
+                  filterCreator: undefined,
                 }
               : // ✅ FALL 2: Ordner hat noch Dateien → drin bleiben
                 {
@@ -626,6 +656,7 @@ export default class MediaAssetsLib extends React.Component<
                   filterFormat: undefined,
                   filterYear: undefined,
                   filterMonth: undefined,
+                  filterCreator: undefined,
                 }),
           },
           this.applyFilters,
@@ -677,14 +708,30 @@ export default class MediaAssetsLib extends React.Component<
    ******************************************************/
 
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
-    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format,Files/ListItemAllFields/Bucket`;
-
+    const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')
+?$expand=Folders,Files,Files/ListItemAllFields
+&$select=
+Name,
+ServerRelativeUrl,
+TimeCreated,
+Files/Name,
+Files/ServerRelativeUrl,
+Files/TimeCreated,
+Files/ListItemAllFields/Id,
+Files/ListItemAllFields/Kategorie,
+Files/ListItemAllFields/Notizen,
+Files/ListItemAllFields/UniqueId,
+Files/ListItemAllFields/Tags,
+Files/ListItemAllFields/Bucket,
+Files/ListItemAllFields/Format,
+Files/ListItemAllFields/Ersteller`;
     const response = await this.props.spHttpClient.get(
       url,
       SPHttpClient.configurations.v1,
     );
 
     const data = await response.json();
+    console.log("DATA", data);
 
     let results: IMediaItem[] = [];
 
@@ -718,7 +765,9 @@ export default class MediaAssetsLib extends React.Component<
         driveId: f.ListItemAllFields?.File?.VroomDriveID,
         driveItemId: f.ListItemAllFields?.File?.VroomItemID,
         format: f.ListItemAllFields?.Format,
+        createdBy: f.ListItemAllFields?.Ersteller,
       });
+      console.log(f.ListItemAllFields);
     });
 
     for (const folder of data.Folders) {
@@ -845,6 +894,7 @@ export default class MediaAssetsLib extends React.Component<
       searchText,
       filterCategory,
       filterFormat,
+      filterCreator,
       selectedBucket,
     } = this.state;
 
@@ -882,6 +932,10 @@ export default class MediaAssetsLib extends React.Component<
 
     if (filterFormat) {
       filtered = filtered.filter((item) => item.format === filterFormat);
+    }
+
+    if (filterCreator) {
+      filtered = filtered.filter((item) => item.createdBy === filterCreator);
     }
 
     if (this.state.filterYear) {
@@ -984,6 +1038,14 @@ export default class MediaAssetsLib extends React.Component<
     // Duplikate entfernen + sortieren (neueste zuerst)
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }
+
+  private getUniqueCreators(): string[] {
+    const values = this.state.allItems
+      .map((item) => item.createdBy)
+      .filter((v): v is string => !!v);
+
+    return Array.from(new Set(values)).sort();
+  }
   /********************* BUCKET LADEN ********************
    * Lädt Choice Werte aus SharePoint
    ******************************************************/
@@ -994,6 +1056,8 @@ export default class MediaAssetsLib extends React.Component<
     const yearOptions = this.getUniqueYears();
 
     const formatOptions = this.getUniqueFormats();
+
+    const creatorOptions = this.getUniqueCreators();
 
     const bucketCounts = this.getBucketCounts();
 
@@ -1067,6 +1131,7 @@ export default class MediaAssetsLib extends React.Component<
                   filterFormat: undefined,
                   filterYear: undefined,
                   filterMonth: undefined,
+                  filterCreator: undefined,
                 },
                 this.applyFilters,
               )
@@ -1093,6 +1158,25 @@ export default class MediaAssetsLib extends React.Component<
               <option value="">Kategorie</option>
               {categoryOptions.map((cat) => (
                 <option key={cat}>{cat}</option>
+              ))}
+            </select>
+            <select
+              value={this.state.filterCreator || ""}
+              onChange={(e) =>
+                this.setState(
+                  {
+                    filterCreator: e.target.value || undefined,
+                  },
+                  this.applyFilters,
+                )
+              }
+            >
+              <option value="">Ersteller</option>
+
+              {creatorOptions.map((creator) => (
+                <option key={creator} value={creator}>
+                  {creator}
+                </option>
               ))}
             </select>
             <select
@@ -1173,6 +1257,7 @@ export default class MediaAssetsLib extends React.Component<
             </select>
           </div>
         </div>
+
         {this.state.viewMode === "items" && (
           <p>
             Ergebnisse: {this.state.visibleItems.length}
@@ -1388,6 +1473,7 @@ export default class MediaAssetsLib extends React.Component<
 
                     <div className={styles.itemContent}>
                       <h3>{item.name}</h3>
+                      <p>Ersteller: {item.createdBy || "-"}</p>
                       {/* ✅ TAG CHIPS HIER */}
                       <div className={styles.tagList}>
                         {(item.tags || []).map((tag, i) => (
