@@ -1516,7 +1516,7 @@ export default class MediaAssetsLib extends React.Component<
                 ].includes(fileType || "");
 
                 const fileUrl = `${window.location.origin}${item?.fileRef}`;
-                const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(fileUrl)}`;
+                const downloadUrl = `${window.location.origin}${item?.fileRef}`;
 
                 return (
                   <>
@@ -1554,15 +1554,16 @@ export default class MediaAssetsLib extends React.Component<
                     <button
                       onClick={() => {
                         const link = document.createElement("a");
+
                         link.href = downloadUrl;
-                        link.setAttribute("download", item?.name || "file");
+                        link.target = "_blank";
+                        link.download = item?.name || "file";
 
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
                       }}
-                      className={`
-                        ${styles.downloadBtn} ${styles.modalDownload}`}
+                      className={`${styles.downloadBtn} ${styles.modalDownload}`}
                     >
                       Download
                     </button>
@@ -1791,15 +1792,6 @@ export default class MediaAssetsLib extends React.Component<
                 }}
               />
               <div>{this.state.uploadFiles?.length} Dateien gewählt</div>
-              <BucketDropdown
-                options={this.state.bucketOptions}
-                selected={this.state.uploadBucket}
-                onChange={(values) =>
-                  this.setState({
-                    uploadBucket: values,
-                  })
-                }
-              />
               {(!this.state.uploadFiles ||
                 this.state.uploadFiles.length <= 1) && (
                 <input
@@ -1811,6 +1803,16 @@ export default class MediaAssetsLib extends React.Component<
                   }
                 />
               )}
+
+              <BucketDropdown
+                options={this.state.bucketOptions}
+                selected={this.state.uploadBucket}
+                onChange={(values) =>
+                  this.setState({
+                    uploadBucket: values,
+                  })
+                }
+              />
 
               <select
                 value={this.state.uploadCategory}
