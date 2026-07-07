@@ -206,13 +206,36 @@ export default class MediaAssetsLib extends React.Component<
   private detectFormat(fileName: string): string {
     const ext = fileName.split(".").pop()?.toLowerCase();
 
-    if (!ext) return "Dokument";
+    if (!ext) {
+      return "Dokument";
+    }
 
     const imageTypes = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"];
-    const videoTypes = ["mp4", "mov", "avi", "webm", "mkv"];
 
-    if (imageTypes.includes(ext)) return "Bild";
-    if (videoTypes.includes(ext)) return "Video";
+    const videoTypes = ["mp4", "mov", "avi", "webm", "mkv", "wmv", "m4v"];
+
+    const audioTypes = [
+      "mp3",
+      "wav",
+      "aiff",
+      "aac",
+      "flac",
+      "ogg",
+      "wma",
+      "m4a",
+    ];
+
+    if (imageTypes.includes(ext)) {
+      return "Bild";
+    }
+
+    if (videoTypes.includes(ext)) {
+      return "Video";
+    }
+
+    if (audioTypes.includes(ext)) {
+      return "Audio";
+    }
 
     return "Dokument";
   }
@@ -1157,6 +1180,15 @@ export default class MediaAssetsLib extends React.Component<
 
                 const fileType = preview?.name?.split(".").pop()?.toLowerCase();
                 const isVideo = fileType === "mp4" || fileType === "mov";
+                const isAudio = [
+                  "mp3",
+                  "wav",
+                  "aiff",
+                  "aac",
+                  "flac",
+                  "ogg",
+                  "m4a",
+                ].includes(fileType || "");
 
                 const imageUrl = preview
                   ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
@@ -1199,7 +1231,7 @@ export default class MediaAssetsLib extends React.Component<
                       <span className={styles.plusIcon}>+</span>
                     </button>
 
-                    {preview && !isVideo && (
+                    {preview && !isVideo && !isAudio && (
                       <img
                         src={imageUrl}
                         className={styles.previewImg}
@@ -1233,6 +1265,21 @@ export default class MediaAssetsLib extends React.Component<
                         🎬
                       </div>
                     )}
+                    {preview && isAudio && (
+                      <div
+                        className={styles.itemImg}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "50px",
+                          background: "#f3f2f1",
+                          cursor: "pointer",
+                        }}
+                      >
+                        🔊
+                      </div>
+                    )}
 
                     <div className={styles.bucketContent}>
                       <h3>{bucket}</h3>
@@ -1255,11 +1302,24 @@ export default class MediaAssetsLib extends React.Component<
                 const downloadUrl = `${window.location.origin}${item.fileRef}`;
 
                 const fileType = item.name?.split(".").pop()?.toLowerCase();
-                const isVideo = fileType === "mp4" || fileType === "mov";
 
+                const isVideo = fileType === "mp4" || fileType === "mov";
+                const isAudio = [
+                  "mp3",
+                  "wav",
+                  "aiff",
+                  "aac",
+                  "flac",
+                  "ogg",
+                  "m4a",
+                ].includes(fileType || "");
+
+                if (isAudio) {
+                  console.log("Audio URL:", fileUrl);
+                }
                 return (
                   <div key={item.id} className={styles.itemCard}>
-                    {isVideo ? (
+                    {isVideo && (
                       <div
                         className={styles.itemImg}
                         onClick={() =>
@@ -1279,10 +1339,36 @@ export default class MediaAssetsLib extends React.Component<
                       >
                         🎬
                       </div>
-                    ) : (
+                    )}
+
+                    {isAudio && (
+                      <>
+                        <div
+                          className={styles.itemImg}
+                          onClick={() =>
+                            this.setState({
+                              isModalOpen: true,
+                              selectedItem: item,
+                            })
+                          }
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "50px",
+                            background: "#f3f2f1",
+                            cursor: "pointer",
+                          }}
+                        >
+                          🔊
+                        </div>
+                      </>
+                    )}
+                    {/* IMAGE */}
+                    {!isVideo && !isAudio && (
                       <img
                         src={fileUrl}
-                        className={styles.itemImg}
+                        className={styles.modalMedia}
                         onClick={() =>
                           this.setState({
                             isModalOpen: true,
@@ -1418,6 +1504,16 @@ export default class MediaAssetsLib extends React.Component<
                 const item = this.state.selectedItem;
                 const fileType = item?.name.split(".").pop()?.toLowerCase();
                 const isVideo = fileType === "mp4" || fileType === "mov";
+                const isAudio = [
+                  "mp3",
+                  "wav",
+                  "aiff",
+                  "aac",
+                  "flac",
+                  "ogg",
+                  "m4a",
+                  "wma",
+                ].includes(fileType || "");
 
                 const fileUrl = `${window.location.origin}${item?.fileRef}`;
                 const downloadUrl = `${window.location.origin}/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(fileUrl)}`;
@@ -1425,7 +1521,7 @@ export default class MediaAssetsLib extends React.Component<
                 return (
                   <>
                     {/* IMAGE */}
-                    {!isVideo && (
+                    {!isVideo && !isAudio && (
                       <img src={fileUrl} className={styles.modalMedia} />
                     )}
 
@@ -1440,6 +1536,18 @@ export default class MediaAssetsLib extends React.Component<
                       >
                         <source src={fileUrl} />
                       </video>
+                    )}
+
+                    {isAudio && (
+                      <audio
+                        controls
+                        style={{
+                          minWidth: "200px",
+                          marginTop: "20px",
+                        }}
+                      >
+                        <source src={fileUrl} />
+                      </audio>
                     )}
 
                     {/* DOWNLOAD BUTTON */}
@@ -1568,7 +1676,7 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="">Format wählen</option>
                 <option value="Bild">Bild</option>
                 <option value="Video">Video</option>
-                <option value="Audio">Dokument</option>
+                <option value="Audio">Audio</option>
               </select>
               <BucketDropdown
                 options={this.state.bucketOptions}
