@@ -1080,9 +1080,12 @@ export default class MediaAssetsLib extends React.Component<
           <div className={styles.filterGroup}>
             {/* **************** FILTER **************** */}
             <select
+              value={this.state.filterCategory || ""}
               onChange={(e) =>
                 this.setState(
-                  { filterCategory: e.target.value },
+                  {
+                    filterCategory: e.target.value || undefined,
+                  },
                   this.applyFilters,
                 )
               }
@@ -1113,6 +1116,7 @@ export default class MediaAssetsLib extends React.Component<
           <div className={styles.filterGroup}>
             {/* Jahr Filter */}
             <select
+              value={this.state.filterMonth || ""}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                 this.setState(
                   {
@@ -1134,6 +1138,7 @@ export default class MediaAssetsLib extends React.Component<
 
             {/* Monat Filter */}
             <select
+              value={this.state.filterYear || ""}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                 this.setState(
                   {
@@ -1169,7 +1174,15 @@ export default class MediaAssetsLib extends React.Component<
           </div>
         </div>
         {this.state.viewMode === "items" && (
-          <p>Ergebnisse: {this.state.visibleItems.length}</p>
+          <p>
+            Ergebnisse: {this.state.visibleItems.length}
+            {this.state.selectedBucket && (
+              <>
+                {" | "}
+                <strong>{this.state.selectedBucket}</strong>
+              </>
+            )}
+          </p>
         )}
         {this.state.resultMode === "folders" ? (
           <div className={styles.grid}>
@@ -1205,11 +1218,6 @@ export default class MediaAssetsLib extends React.Component<
                           resultMode: "files",
                           selectedBucket: bucket,
                           visibleItemsCount: 20,
-                          searchText: "",
-                          filterCategory: undefined,
-                          filterFormat: undefined,
-                          filterYear: undefined,
-                          filterMonth: undefined,
                         },
                         this.applyFilters,
                       )
