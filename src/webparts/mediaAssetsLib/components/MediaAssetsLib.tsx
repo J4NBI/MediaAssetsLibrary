@@ -108,6 +108,8 @@ interface IMediaAssetsLibState {
   uploadProgress: number;
   uploadCurrentFile: number;
   uploadTotalFiles: number;
+
+  categoryOptions: string[];
 }
 
 /********************* HAUPTKOMPNENTE ******************
@@ -168,11 +170,32 @@ export default class MediaAssetsLib extends React.Component<
       uploadProgress: 0,
       uploadCurrentFile: 0,
       uploadTotalFiles: 0,
+
+      categoryOptions: [],
     };
   }
 
   /* CHANGE SHAREPOINT URL */
   private readonly libraryName = "Medienbibliothek";
+
+  private async loadCategories(): Promise<void> {
+    try {
+      const response = await this.props.spHttpClient.get(
+        `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/fields/getbyinternalnameortitle('Kategorie')`,
+        SPHttpClient.configurations.v1,
+      );
+
+      const data = await response.json();
+
+      this.setState({
+        categoryOptions: data.Choices || [],
+      });
+
+      console.log("SHAREPOINT CATEGORIES", data.Choices);
+    } catch (error) {
+      console.error("Fehler beim Laden der Kategorien", error);
+    }
+  }
 
   private getLibraryPath(): string {
     return `${new URL(this.props.siteUrl).pathname}/${this.libraryName}`;
@@ -388,6 +411,12 @@ export default class MediaAssetsLib extends React.Component<
       return;
     }
 
+    if (!uploadCategory) {
+      alert("Bitte wählen Sie eine Kategorie aus.");
+      this.setState({ isUploading: false });
+      return;
+    }
+
     if (!uploadFiles || uploadFiles.length === 0) {
       console.log("❌ Keine Files gewählt");
       this.setState({ isUploading: false }); // ✅ FIX!!
@@ -597,6 +626,7 @@ export default class MediaAssetsLib extends React.Component<
     console.log(this.props.siteUrl);
 
     await this.loadAllMedia();
+    await this.loadCategories();
 
     const target = document.getElementById("top");
 
@@ -905,7 +935,8 @@ export default class MediaAssetsLib extends React.Component<
     const values = this.state.allItems
       .map((item) => item.category)
       .filter((v) => v);
-
+    console.log("ALL ITEMS", this.state.allItems);
+    console.log("CATEGORIES", values);
     return Array.from(new Set(values)) as string[];
   }
 
@@ -1523,8 +1554,12 @@ export default class MediaAssetsLib extends React.Component<
                 }
               >
                 <option value="">Kategorie wählen</option>
-                <option value="Säugetier">Säugetier</option>
-                <option value="Vogel">Vogel</option>
+
+                {this.state.categoryOptions.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
               </select>
               <select
                 value={this.state.editFormat}
@@ -1533,7 +1568,7 @@ export default class MediaAssetsLib extends React.Component<
                 <option value="">Format wählen</option>
                 <option value="Bild">Bild</option>
                 <option value="Video">Video</option>
-                <option value="Dokument">Dokument</option>
+                <option value="Audio">Dokument</option>
               </select>
               <BucketDropdown
                 options={this.state.bucketOptions}
@@ -1677,7 +1712,7 @@ export default class MediaAssetsLib extends React.Component<
               >
                 <option value="">Kategorie wählen</option>
 
-                {this.getUniqueCategories().map((cat) => (
+                {this.state.categoryOptions.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>
@@ -1765,12 +1800,14 @@ export default class MediaAssetsLib extends React.Component<
                 disabled={
                   this.state.isUploading ||
                   !this.state.uploadBucket ||
-                  this.state.uploadBucket.length === 0
+                  this.state.uploadBucket.length === 0 ||
+                  !this.state.uploadCategory
                 }
                 className={`${styles.uploadBtn} ${
                   this.state.isUploading ||
                   !this.state.uploadBucket ||
-                  this.state.uploadBucket.length === 0
+                  this.state.uploadBucket.length === 0 ||
+                  !this.state.uploadCategory
                     ? styles.disabled
                     : ""
                 }`}

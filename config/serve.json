@@ -2,5 +2,5 @@
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/spfx-serve.schema.json",
   "port": 4321,
   "https": true,
-  "initialPage": "https://caritasberlin.sharepoint.com/sites/IntranetSpielwiese/_layouts/15/workbench.aspx"
+  "initialPage": "https://caritasberlin.sharepoint.com/sites/Medien_dev/_layouts/15/workbench.aspx"
 }
