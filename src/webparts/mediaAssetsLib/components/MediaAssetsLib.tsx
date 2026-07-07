@@ -5,6 +5,8 @@ import styles from "./MediaAssetsLib.module.scss";
 
 import BucketDropdown from "./BucketDropdown";
 
+import UploadModal from "./UploadModal";
+
 /*******************************************************
  * MEDIA ASSETS LIB V8
  * -----------------------------------------------------
@@ -1809,220 +1811,15 @@ Files/ListItemAllFields/Ersteller`;
           </div>
         )}
         {/* **************** UPLOAD MODAL **************** */}
-        {this.state.isUploadOpen && (
-          <div
-            className={`${styles.modalOverlay} $${styles.modalOverlayUpload}`}
-          >
-            <div className={`${styles.modalBox} ${styles.uploadBox}`}>
-              <h3>Upload</h3>
-              {/* MODAL PREVIEW */}
-              {this.state.uploadFiles?.[0] && this.state.uploadPreviewUrl && (
-                <div className={styles.uploadPreview}>
-                  {(() => {
-                    const file = this.state.uploadFiles![0];
-                    const fileType = file.name.split(".").pop()?.toLowerCase();
 
-                    const isImage = [
-                      "jpg",
-                      "jpeg",
-                      "png",
-                      "gif",
-                      "webp",
-                    ].includes(fileType || "");
-                    const isVideo = ["mp4", "mov", "webm"].includes(
-                      fileType || "",
-                    );
+        <UploadModal
+          isOpen={this.state.isUploadOpen}
+          state={this.state}
+          setState={(newState: any) => this.setState(newState as any)}
+          onClose={() => this.setState({ isUploadOpen: false })}
+          onUpload={() => this.uploadItem()}
+        />
 
-                    if (isImage) {
-                      return (
-                        <img
-                          src={this.state.uploadPreviewUrl}
-                          className={styles.uploadPreviewMedia}
-                        />
-                      );
-                    }
-
-                    if (isVideo) {
-                      return (
-                        <video
-                          src={this.state.uploadPreviewUrl}
-                          controls
-                          className={styles.uploadPreviewMedia}
-                        />
-                      );
-                    }
-
-                    return (
-                      <div className={styles.uploadFallback}>
-                        📄 {file.name}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-              <input
-                type="file"
-                multiple
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (!files || files.length === 0) return;
-
-                  const fileArray = Array.from(files);
-
-                  const firstFile = fileArray[0];
-
-                  const fileName = firstFile.name;
-                  const baseName = fileName.includes(".")
-                    ? fileName.substring(0, fileName.lastIndexOf("."))
-                    : fileName;
-
-                  const previewUrl = URL.createObjectURL(firstFile);
-
-                  this.setState({
-                    uploadFiles: fileArray,
-                    uploadName: baseName,
-                    uploadPreviewUrl: previewUrl,
-                  });
-                }}
-              />
-              <div>{this.state.uploadFiles?.length} Dateien gewählt</div>
-              {(!this.state.uploadFiles ||
-                this.state.uploadFiles.length <= 1) && (
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={this.state.uploadName}
-                  onChange={(e) =>
-                    this.setState({ uploadName: e.target.value })
-                  }
-                />
-              )}
-
-              <BucketDropdown
-                options={this.state.bucketOptions}
-                selected={this.state.uploadBucket}
-                onChange={(values) =>
-                  this.setState({
-                    uploadBucket: values,
-                  })
-                }
-              />
-
-              <select
-                value={this.state.uploadCategory}
-                onChange={(e) =>
-                  this.setState({ uploadCategory: e.target.value })
-                }
-              >
-                <option value="">Kategorie wählen</option>
-
-                {this.state.categoryOptions.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-
-              <div>
-                <div className="styles.tagList">
-                  {this.state.uploadTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className={`${styles.tag} ${styles.editTag}`}
-                    >
-                      {tag}
-                      <span
-                        onClick={() => {
-                          const newTags = [...this.state.uploadTags];
-                          newTags.splice(index, 1);
-                          this.setState({ uploadTags: newTags });
-                        }}
-                        className={styles.tagRemove}
-                      >
-                        ✕
-                      </span>
-                    </span>
-                  ))}
-                </div>
-
-                <input
-                  type="text"
-                  placeholder="Tag hinzufügen + Enter"
-                  className={styles.tagInput}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-
-                      const value = (e.target as HTMLInputElement).value.trim();
-                      if (!value) return;
-
-                      this.setState({
-                        uploadTags: [...this.state.uploadTags, value],
-                      });
-
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }}
-                />
-              </div>
-
-              <button onClick={() => this.setState({ isUploadOpen: false })}>
-                Schließen
-              </button>
-              {this.state.isUploading && (
-                <div style={{ marginTop: 20 }}>
-                  <div>
-                    Datei {this.state.uploadCurrentFile} von{" "}
-                    {this.state.uploadTotalFiles}
-                  </div>
-
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "12px",
-                      background: "#ddd",
-                      marginTop: "10px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${this.state.uploadProgress}%`,
-                        height: "100%",
-                        background: "#ecdd04",
-                        transition: "width 0.2s ease",
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginTop: 6 }}>
-                    {this.state.uploadProgress}%
-                  </div>
-                </div>
-              )}
-              <button
-                onClick={() => this.uploadItem()}
-                disabled={
-                  this.state.isUploading ||
-                  !this.state.uploadBucket ||
-                  this.state.uploadBucket.length === 0 ||
-                  !this.state.uploadCategory
-                }
-                className={`${styles.uploadBtn} ${
-                  this.state.isUploading ||
-                  !this.state.uploadBucket ||
-                  this.state.uploadBucket.length === 0 ||
-                  !this.state.uploadCategory
-                    ? styles.disabled
-                    : ""
-                }`}
-              >
-                {this.state.isUploading
-                  ? "⏳ Wird hochgeladen..."
-                  : "Hochladen"}
-              </button>
-            </div>
-          </div>
-        )}
         {this.state.showScrollTop && (
           <a href="#top">
             <div
