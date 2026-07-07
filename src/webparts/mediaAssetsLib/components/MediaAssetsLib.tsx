@@ -6,7 +6,7 @@ import styles from "./MediaAssetsLib.module.scss";
 import BucketDropdown from "./BucketDropdown";
 
 /*******************************************************
- * MEDIA ASSETS LIB V7
+ * MEDIA ASSETS LIB V8
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
