@@ -34,6 +34,26 @@ interface IMediaItem {
 
   format?: string;
 }
+
+interface ISPFile {
+  Name: string;
+  ServerRelativeUrl: string;
+  TimeCreated: string;
+
+  ListItemAllFields: {
+    Id: number;
+    Kategorie?: string;
+    Notizen?: string;
+    Tags?: string[] | string;
+    Bucket?: string[] | string;
+    Format?: string;
+
+    File?: {
+      VroomDriveID?: string;
+      VroomItemID?: string;
+    };
+  };
+}
 /********************* STATE ***************************
  * Enthält alle UI Zustände (Filter, Modals, Form Daten)
  ******************************************************/
@@ -102,14 +122,14 @@ const BucketDropdown = ({
   options: string[];
   selected: string[];
   onChange: (values: string[]) => void;
-}) => {
+}): React.ReactElement => {
   /**************** LOCAL STATE ****************/
   const [input, setInput] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent): void => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
@@ -188,7 +208,7 @@ const BucketDropdown = ({
                 }}
                 onClick={() => addValue(input)}
               >
-                + "{input}" hinzufügen
+                {`+ "${input}" hinzufügen`}
               </div>
             )}
 
@@ -287,6 +307,14 @@ export default class MediaAssetsLib extends React.Component<
       uploadTotalFiles: 0,
     };
   }
+
+  /* CHANGE SHAREPOINT URL */
+  private readonly libraryName = "Medienbibliothek";
+
+  private getLibraryPath(): string {
+    return `${new URL(this.props.siteUrl).pathname}/${this.libraryName}`;
+  }
+
   private observer?: IntersectionObserver;
 
   private detectFormat(fileName: string): string {
@@ -442,7 +470,7 @@ export default class MediaAssetsLib extends React.Component<
   private async uploadFileWithProgress(
     url: string,
     fileBuffer: ArrayBuffer,
-  ): Promise<any> {
+  ): Promise<{ ServerRelativeUrl: string }> {
     const digest = await this.getRequestDigest();
 
     return new Promise((resolve, reject) => {
@@ -514,11 +542,8 @@ export default class MediaAssetsLib extends React.Component<
         const fileBuffer = await uploadFile.arrayBuffer();
 
         const uploadUrl =
-          this.props.siteUrl +
-          "/_api/web/GetFolderByServerRelativeUrl('/sites/IntranetSpielwiese/Medienbibliothek')" +
-          "/Files/add(overwrite=true,url='" +
-          uploadFile.name +
-          "')";
+          `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${this.getLibraryPath()}')` +
+          `/Files/add(overwrite=true,url='${uploadFile.name}')`;
 
         console.log("⬆️ Starte Upload:", uploadFile.name);
 
@@ -534,11 +559,7 @@ export default class MediaAssetsLib extends React.Component<
         const itemData = await itemResponse.json();
         const itemId = itemData.Id;
 
-        const updateUrl =
-          this.props.siteUrl +
-          "/_api/web/lists/getbytitle('Medienbibliothek')/items(" +
-          itemId +
-          ")";
+        const updateUrl = `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/items(${itemId})`;
 
         const cleanTags = uploadTags
           .map((t) => t.toLowerCase().trim())
@@ -633,8 +654,7 @@ export default class MediaAssetsLib extends React.Component<
     if (!confirmDelete) return;
 
     try {
-      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/items(${selectedItem.id})`;
-
+      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/items(${selectedItem.id})`;
       const response = await this.props.spHttpClient.post(
         url,
         SPHttpClient.configurations.v1,
@@ -650,7 +670,7 @@ export default class MediaAssetsLib extends React.Component<
       if (response.ok) {
         console.log("✅ Element gelöscht");
 
-        const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
+        const rootFolder = this.getLibraryPath();
         const items = await this.getFolderContent(rootFolder);
 
         // ✅ Buckets neu berechnen
@@ -710,6 +730,9 @@ export default class MediaAssetsLib extends React.Component<
   public async componentDidMount(): Promise<void> {
     console.log("MOUNTED ✅");
 
+    console.log("Aktuelle Site:");
+    console.log(this.props.siteUrl);
+
     await this.loadAllMedia();
 
     const target = document.getElementById("top");
@@ -738,8 +761,6 @@ export default class MediaAssetsLib extends React.Component<
    ******************************************************/
 
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
-    /* const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,ListItemAllFields/Id,ListItemAllFields/Kategorie,ListItemAllFields/Notizen,ListItemAllFields/UniqueId,ListItemAllFields/Tags`;*/
-
     const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')?$expand=Folders,Files,Files/ListItemAllFields&$select=Name,ServerRelativeUrl,TimeCreated,Files/Name,Files/ServerRelativeUrl,Files/TimeCreated,Files/ListItemAllFields/Id,Files/ListItemAllFields/Kategorie,Files/ListItemAllFields/Notizen,Files/ListItemAllFields/UniqueId,Files/ListItemAllFields/Tags,Files/ListItemAllFields/Format,Files/ListItemAllFields/Bucket`;
 
     const response = await this.props.spHttpClient.get(
@@ -751,8 +772,8 @@ export default class MediaAssetsLib extends React.Component<
 
     let results: IMediaItem[] = [];
 
-    data.Files.forEach((file: unknown) => {
-      const f = file as any;
+    data.Files.forEach((file: unknown): void => {
+      const f = file as ISPFile;
 
       results.push({
         id: f.ListItemAllFields.Id,
@@ -798,8 +819,7 @@ export default class MediaAssetsLib extends React.Component<
 
   private async loadAllMedia(): Promise<void> {
     try {
-      const rootFolder = "/sites/IntranetSpielwiese/Medienbibliothek";
-
+      const rootFolder = this.getLibraryPath();
       const items = await this.getFolderContent(rootFolder);
 
       const uniqueBuckets = this.getBucketsSortedByNewest(items);
@@ -834,8 +854,7 @@ export default class MediaAssetsLib extends React.Component<
 
     try {
       /* BIBLIOTHEK ÄNDERN */
-      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('Medienbibliothek')/items(${selectedItem.id})`;
-
+      const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/items(${selectedItem.id})`;
       const tagsArray = editTags;
 
       const bucketsArray = editBucket;
