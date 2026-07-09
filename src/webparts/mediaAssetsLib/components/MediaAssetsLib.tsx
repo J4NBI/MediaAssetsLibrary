@@ -1171,6 +1171,7 @@ Files/ListItemAllFields/Ersteller`;
               FileLeafRef: editName,
 
               Kategorie: editCategory,
+              Dienste: editDienst,
 
               Tags: tagsArray,
 
@@ -1448,7 +1449,7 @@ Files/ListItemAllFields/Ersteller`;
     return (
       <div className={styles.container}>
         {/* **************** HEADER **************** */}
-        <h2 id="top">Media Library</h2>
+        <h2 id="top">Caritas Media Library</h2>
 
         <div className={styles.header}>
           {!this.state.selectedBucket && (
