@@ -1,4 +1,5 @@
 import * as React from "react";
+import styles from "./MediaAssetsLib.module.scss";
 
 interface IFilterBarProps {
   filterCategory?: string;
@@ -39,7 +40,7 @@ const FilterBar: React.FC<IFilterBarProps> = ({
   onChange,
 }) => {
   return (
-    <>
+    <div className={styles.filterRow}>
       <select
         value={filterCategory || ""}
         onChange={(e) =>
@@ -154,7 +155,7 @@ const FilterBar: React.FC<IFilterBarProps> = ({
           </option>
         ))}
       </select>
-    </>
+    </div>
   );
 };
 
