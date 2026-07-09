@@ -3,11 +3,11 @@ import { SPHttpClient } from "@microsoft/sp-http";
 import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
 import styles from "./MediaAssetsLib.module.scss";
 
-import BucketDropdown from "./BucketDropdown";
 import UploadModal from "./UploadModal";
 import FilterBar from "./FilterBar";
 import FileCard from "./FileCard";
 import PreviewModal from "./PreviewModal";
+import EditModal from "./EditModal";
 
 /*******************************************************
  * MEDIA ASSETS LIB V8
@@ -177,6 +177,7 @@ export interface IMediaAssetsLibState {
   editTags: string[];
   editCategory: string;
   editFormat: string;
+  editDienst: string;
 
   editBucket: string[];
   uploadBucket: string[];
@@ -282,6 +283,7 @@ export default class MediaAssetsLib extends React.Component<
       editCategory: "",
       editFormat: "",
       editBucket: [],
+      editDienst: "",
 
       isUploadOpen: false,
       uploadName: "",
@@ -1143,6 +1145,7 @@ Files/ListItemAllFields/Ersteller`;
       editName,
       editTags,
       editCategory,
+      editDienst,
       editFormat,
       editBucket,
     } = this.state;
@@ -1163,6 +1166,7 @@ Files/ListItemAllFields/Ersteller`;
           {
             FileLeafRef: editName,
             Kategorie: editCategory,
+            Dienste: editDienst,
             body: JSON.stringify({
               FileLeafRef: editName,
 
@@ -1196,6 +1200,7 @@ Files/ListItemAllFields/Ersteller`;
           body: JSON.stringify({
             FileLeafRef: editName,
             Kategorie: editCategory,
+            Dienste: editDienst,
             Tags: tagsArray,
             Format: editFormat,
             Bucket: bucketsArray,
@@ -1690,6 +1695,7 @@ Files/ListItemAllFields/Ersteller`;
                       editCategory: item.category || "",
                       editFormat: item.format || "",
                       editBucket: item.bucket || [],
+                      editDienst: item.dienst || "",
                     })
                   }
                   onDownload={() => {
@@ -1764,146 +1770,56 @@ Files/ListItemAllFields/Ersteller`;
           }
         />
         {/* **************** EDIT MODAL **************** */}
-        {this.state.isEditOpen && this.state.selectedItem && (
-          <div className={`${styles.modalOverlay} ${styles.modalOverlayEdit}`}>
-            <div className={styles.modalBox}>
-              <h3>Element bearbeiten</h3>
-              {/* PREVIEW */}
-              {(() => {
-                const item = this.state.selectedItem!;
-                const fileUrl = `${window.location.origin}${item.fileRef}`;
-
-                const fileType = item.fileRef?.split(".").pop()?.toLowerCase();
-
-                const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(
-                  fileType || "",
-                );
-                const isVideo = ["mp4", "mov", "webm"].includes(fileType || "");
-
-                if (isImage) {
-                  return <img src={fileUrl} className={styles.editPreview} />;
-                }
-
-                if (isVideo) {
-                  return (
-                    <video
-                      src={fileUrl}
-                      controls
-                      className={styles.editPreview}
-                    />
-                  );
-                }
-
-                return (
-                  <div className={styles.editFallback}>📄 {item.name}</div>
-                );
-              })()}
-              <input
-                type="text"
-                value={this.state.editName}
-                onChange={(e) => this.setState({ editName: e.target.value })}
-                placeholder="Name"
-              />
-              {/* TAGS */}
-              <div>
-                <div className={styles.tagList}>
-                  {this.state.editTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className={`${styles.tag} ${styles.editTag}`}
-                    >
-                      {tag}
-                      <span
-                        onClick={() => {
-                          const newTags = [...this.state.editTags];
-                          newTags.splice(index, 1);
-                          this.setState({ editTags: newTags });
-                        }}
-                        className={styles.tagRemove}
-                      >
-                        ✕
-                      </span>
-                    </span>
-                  ))}
-                </div>
-
-                <input
-                  type="text"
-                  className={styles.tagInput}
-                  placeholder="Tag hinzufügen + Enter"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const value = (e.target as HTMLInputElement).value.trim();
-                      if (!value) return;
-
-                      this.setState({
-                        editTags: [...this.state.editTags, value],
-                      });
-
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }}
-                />
-              </div>
-              <select
-                value={this.state.editCategory}
-                onChange={(e) =>
-                  this.setState({ editCategory: e.target.value })
-                }
-              >
-                <option value="">Kategorie wählen</option>
-
-                {this.state.categoryOptions.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={this.state.editFormat}
-                onChange={(e) => this.setState({ editFormat: e.target.value })}
-              >
-                <option value="">Format wählen</option>
-                <option value="Bild">Bild</option>
-                <option value="Video">Video</option>
-                <option value="Audio">Audio</option>
-              </select>
-              <BucketDropdown
-                options={this.state.bucketOptions}
-                selected={this.state.editBucket}
-                onChange={(values) =>
-                  this.setState({
-                    editBucket: values,
-                  })
-                }
-              />
-
-              <div className={styles.modalActions}>
-                <button
-                  onClick={() => this.setState({ isEditOpen: false })}
-                  style={{ flex: 1 }}
-                >
-                  Abbrechen
-                </button>
-
-                <button
-                  onClick={() => this.updateItem()}
-                  className={styles.btnFlex}
-                >
-                  Speichern
-                </button>
-
-                <button
-                  onClick={() => this.deleteItem()}
-                  className={styles.btnDelete}
-                >
-                  Löschen
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <EditModal
+          isOpen={this.state.isEditOpen}
+          item={this.state.selectedItem}
+          editName={this.state.editName}
+          editTags={this.state.editTags}
+          editCategory={this.state.editCategory}
+          editDienst={this.state.editDienst}
+          editFormat={this.state.editFormat}
+          editBucket={this.state.editBucket}
+          categoryOptions={this.state.categoryOptions}
+          dienstOptions={this.state.dienstOptions}
+          bucketOptions={this.state.bucketOptions}
+          onClose={() =>
+            this.setState({
+              isEditOpen: false,
+            })
+          }
+          onSave={() => this.updateItem()}
+          onDelete={() => this.deleteItem()}
+          onNameChange={(value) =>
+            this.setState({
+              editName: value,
+            })
+          }
+          onCategoryChange={(value) =>
+            this.setState({
+              editCategory: value,
+            })
+          }
+          onDienstChange={(value) =>
+            this.setState({
+              editDienst: value,
+            })
+          }
+          onFormatChange={(value) =>
+            this.setState({
+              editFormat: value,
+            })
+          }
+          onBucketChange={(values) =>
+            this.setState({
+              editBucket: values,
+            })
+          }
+          onTagsChange={(values) =>
+            this.setState({
+              editTags: values,
+            })
+          }
+        />
         {/* **************** UPLOAD MODAL **************** */}
 
         <UploadModal
