@@ -7,6 +7,7 @@ import BucketDropdown from "./BucketDropdown";
 import UploadModal from "./UploadModal";
 import FilterBar from "./FilterBar";
 import FileCard from "./FileCard";
+import PreviewModal from "./PreviewModal";
 
 /*******************************************************
  * MEDIA ASSETS LIB V8
@@ -1752,94 +1753,16 @@ Files/ListItemAllFields/Ersteller`;
           )}
 
         {/* **************** PREVIEW MODAL **************** */}
-        {this.state.isModalOpen && this.state.selectedItem && (
-          <div
-            className={`${styles.modalOverlay} ${styles.modalOverlayPreview}`}
-          >
-            {/* CLOSE BUTTON */}
-            <button
-              onClick={() =>
-                this.setState({ isModalOpen: false, selectedItem: undefined })
-              }
-              className={styles.modalClose}
-            >
-              ✕
-            </button>
-            {/* CONTENT MODAL */}
-            <div className={styles.modalContent}>
-              {(() => {
-                const item = this.state.selectedItem;
-                const fileType = item?.name.split(".").pop()?.toLowerCase();
-                const isVideo = fileType === "mp4" || fileType === "mov";
-                const isAudio = [
-                  "mp3",
-                  "wav",
-                  "aiff",
-                  "aac",
-                  "flac",
-                  "ogg",
-                  "m4a",
-                  "wma",
-                ].includes(fileType || "");
-
-                const fileUrl = `${window.location.origin}${item?.fileRef}`;
-                const downloadUrl = `${window.location.origin}${item?.fileRef}`;
-
-                return (
-                  <>
-                    {/* IMAGE */}
-                    {!isVideo && !isAudio && (
-                      <img src={fileUrl} className={styles.modalMedia} />
-                    )}
-
-                    {/* VIDEO */}
-                    {isVideo && (
-                      <video
-                        controls
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "80vh",
-                        }}
-                      >
-                        <source src={fileUrl} />
-                      </video>
-                    )}
-
-                    {isAudio && (
-                      <audio
-                        controls
-                        style={{
-                          minWidth: "200px",
-                          marginTop: "20px",
-                        }}
-                      >
-                        <source src={fileUrl} />
-                      </audio>
-                    )}
-
-                    {/* DOWNLOAD BUTTON */}
-                    <button
-                      onClick={() => {
-                        const link = document.createElement("a");
-
-                        link.href = downloadUrl;
-                        link.target = "_blank";
-                        link.download = item?.name || "file";
-
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                      className={`${styles.downloadBtn} ${styles.modalDownload}`}
-                    >
-                      Download
-                    </button>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        )}
+        <PreviewModal
+          isOpen={this.state.isModalOpen}
+          item={this.state.selectedItem}
+          onClose={() =>
+            this.setState({
+              isModalOpen: false,
+              selectedItem: undefined,
+            })
+          }
+        />
         {/* **************** EDIT MODAL **************** */}
         {this.state.isEditOpen && this.state.selectedItem && (
           <div className={`${styles.modalOverlay} ${styles.modalOverlayEdit}`}>
