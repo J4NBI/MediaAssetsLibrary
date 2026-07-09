@@ -6,6 +6,7 @@ import styles from "./MediaAssetsLib.module.scss";
 import BucketDropdown from "./BucketDropdown";
 import UploadModal from "./UploadModal";
 import FilterBar from "./FilterBar";
+import FileCard from "./FileCard";
 
 /*******************************************************
  * MEDIA ASSETS LIB V8
@@ -1668,166 +1669,55 @@ Files/ListItemAllFields/Ersteller`;
 
             {this.state.visibleItems
               .slice(0, this.state.visibleItemsCount)
-              .map((item) => {
-                const fileUrl = `${window.location.origin}${item.fileRef}`;
-                const downloadUrl = `${window.location.origin}${item.fileRef}`;
+              .map((item) => (
+                <FileCard
+                  key={item.id}
+                  item={item}
+                  downloadingItemId={this.state.downloadingItemId}
+                  onPreview={() =>
+                    this.setState({
+                      isModalOpen: true,
+                      selectedItem: item,
+                    })
+                  }
+                  onEdit={() =>
+                    this.setState({
+                      isEditOpen: true,
+                      selectedItem: item,
+                      editName: item.name || "",
+                      editTags: item.tags || [],
+                      editCategory: item.category || "",
+                      editFormat: item.format || "",
+                      editBucket: item.bucket || [],
+                    })
+                  }
+                  onDownload={() => {
+                    this.setState({
+                      downloadingItemId: item.id,
+                    });
 
-                const fileType = item.name?.split(".").pop()?.toLowerCase();
+                    const downloadUrl = `${window.location.origin}${item.fileRef}`;
 
-                const isVideo = fileType === "mp4" || fileType === "mov";
-                const isAudio = [
-                  "mp3",
-                  "wav",
-                  "aiff",
-                  "aac",
-                  "flac",
-                  "ogg",
-                  "m4a",
-                ].includes(fileType || "");
+                    const link = document.createElement("a");
 
-                if (isAudio) {
-                  console.log("Audio URL:", fileUrl);
-                }
-                return (
-                  <div key={item.id} className={styles.itemCard}>
-                    {isVideo && (
-                      <div
-                        className={styles.itemImg}
-                        onClick={() =>
-                          this.setState({
-                            isModalOpen: true,
-                            selectedItem: item,
-                          })
-                        }
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "50px",
-                          background: "#f3f2f1",
-                          cursor: "pointer",
-                        }}
-                      >
-                        🎬
-                      </div>
-                    )}
+                    link.href = downloadUrl;
+                    link.download = item.name;
+                    link.target = "_blank";
 
-                    {isAudio && (
-                      <>
-                        <div
-                          className={styles.itemImg}
-                          onClick={() =>
-                            this.setState({
-                              isModalOpen: true,
-                              selectedItem: item,
-                            })
-                          }
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "50px",
-                            background: "#f3f2f1",
-                            cursor: "pointer",
-                          }}
-                        >
-                          🔊
-                        </div>
-                      </>
-                    )}
-                    {/* IMAGE */}
-                    {!isVideo && !isAudio && (
-                      <img
-                        src={fileUrl}
-                        className={styles.modalMedia}
-                        onClick={() =>
-                          this.setState({
-                            isModalOpen: true,
-                            selectedItem: item,
-                          })
-                        }
-                      />
-                    )}
+                    document.body.appendChild(link);
 
-                    <div className={styles.itemContent}>
-                      <h3>{item.name}</h3>
-                      <p>Ersteller: {item.createdBy || "-"}</p>
+                    link.click();
 
-                      <p>Kategorie: {item.category || "-"}</p>
+                    document.body.removeChild(link);
 
-                      <p>Dienst: {item.dienst || "-"}</p>
-
-                      {/* ✅ TAG CHIPS HIER */}
-                      <div className={styles.tagList}>
-                        {(item.tags || []).map((tag, i) => (
-                          <span
-                            key={i}
-                            onClick={() =>
-                              this.setState(
-                                { searchText: tag.toLowerCase() },
-                                this.applyFilters,
-                              )
-                            }
-                            className={styles.tag}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <p className={styles.itemDate}>
-                        Erstellt am:{" "}
-                        {item.created
-                          ? new Date(item.created).toLocaleDateString()
-                          : "-"}
-                      </p>
-                      <div className={styles.itemActions}>
-                        {/* DOWNLOAD */}
-                        <button
-                          onClick={() => {
-                            this.setState({ downloadingItemId: item.id });
-
-                            const link = document.createElement("a");
-                            link.href = downloadUrl;
-                            link.target = "_blank";
-                            link.download = item.name;
-
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-
-                            setTimeout(() => {
-                              this.setState({ downloadingItemId: undefined });
-                            }, 1500);
-                          }}
-                          className={styles.downloadBtn}
-                        >
-                          {this.state.downloadingItemId === item.id
-                            ? "⏳ Lädt..."
-                            : "Download"}
-                        </button>
-
-                        {/* EDIT BUTTON (neu) */}
-                        <button
-                          onClick={() => {
-                            this.setState({
-                              isEditOpen: true,
-                              selectedItem: item,
-                              editName: item.name || "",
-                              editTags: item.tags || [],
-                              editCategory: item.category || "",
-                              editFormat: item.format || "",
-                              editBucket: item.bucket || [],
-                            });
-                          }}
-                          className={styles.editBtn}
-                        >
-                          Editieren
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    setTimeout(() => {
+                      this.setState({
+                        downloadingItemId: undefined,
+                      });
+                    }, 1500);
+                  }}
+                />
+              ))}
           </div>
         )}
 
