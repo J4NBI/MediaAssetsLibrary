@@ -1,11 +1,12 @@
 import * as React from "react";
 import styles from "./MediaAssetsLib.module.scss";
 import BucketDropdown from "./BucketDropdown";
+import type { IMediaAssetsLibState } from "./MediaAssetsLib";
 
 interface IUploadModalProps {
   isOpen: boolean;
-  setState: any;
-  state: any;
+  setState: (state: Partial<IMediaAssetsLibState>) => void;
+  state: IMediaAssetsLibState;
   onClose: () => void;
   onUpload: () => void;
 }
@@ -122,6 +123,19 @@ const UploadModal: React.FC<IUploadModalProps> = ({
               {state.categoryOptions.map((cat: string) => (
                 <option key={cat} value={cat}>
                   {cat}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={state.uploadDienst}
+              onChange={(e) => setState({ uploadDienst: e.target.value })}
+            >
+              <option value="">Dienst wählen</option>
+
+              {state.dienstOptions?.map((dienst: string) => (
+                <option key={dienst} value={dienst}>
+                  {dienst}
                 </option>
               ))}
             </select>

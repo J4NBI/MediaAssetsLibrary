@@ -38,6 +38,7 @@ interface IMediaItem {
 
   format?: string;
   createdBy?: string;
+  dienst?: string;
 }
 
 interface ISPFile {
@@ -48,6 +49,7 @@ interface ISPFile {
   ListItemAllFields: {
     Id: number;
     Kategorie?: string;
+    Dienste?: string;
     Notizen?: string;
     Tags?: string[] | string;
     Bucket?: string[] | string;
@@ -67,7 +69,7 @@ interface ISPFile {
 /********************* STATE ***************************
  * Enthält alle UI Zustände (Filter, Modals, Form Daten)
  ******************************************************/
-interface IMediaAssetsLibState {
+export interface IMediaAssetsLibState {
   allItems: IMediaItem[];
   visibleItems: IMediaItem[];
   searchText: string;
@@ -92,6 +94,7 @@ interface IMediaAssetsLibState {
   uploadName: string;
   uploadTags: string[];
   uploadCategory: string;
+  uploadDienst: string;
   uploadFiles?: File[];
   uploadPreviewUrl?: string;
 
@@ -118,8 +121,10 @@ interface IMediaAssetsLibState {
   uploadTotalFiles: number;
 
   categoryOptions: string[];
+  filterDienst?: string;
 
   filterCreator?: string;
+  dienstOptions: string[];
 }
 
 /********************* HAUPTKOMPNENTE ******************
@@ -159,6 +164,7 @@ export default class MediaAssetsLib extends React.Component<
       uploadName: "",
       uploadTags: [],
       uploadCategory: "",
+      uploadDienst: "",
       uploadBucket: [],
       uploadFiles: [],
 
@@ -182,6 +188,9 @@ export default class MediaAssetsLib extends React.Component<
       uploadTotalFiles: 0,
 
       categoryOptions: [],
+
+      filterDienst: undefined,
+      dienstOptions: [],
     };
   }
 
@@ -209,6 +218,23 @@ export default class MediaAssetsLib extends React.Component<
 
   private getLibraryPath(): string {
     return `${new URL(this.props.siteUrl).pathname}/${this.libraryName}`;
+  }
+
+  private async loadDienste(): Promise<void> {
+    try {
+      const response = await this.props.spHttpClient.get(
+        `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/fields/getbyinternalnameortitle('Dienste')`,
+        SPHttpClient.configurations.v1,
+      );
+
+      const data = await response.json();
+
+      this.setState({
+        dienstOptions: data.Choices || [],
+      });
+    } catch (error) {
+      console.error("Fehler beim Laden der Dienste", error);
+    }
   }
 
   private observer?: IntersectionObserver;
@@ -271,6 +297,7 @@ export default class MediaAssetsLib extends React.Component<
     const {
       searchText,
       filterCategory,
+      filterDienst,
       filterFormat,
       filterYear,
       filterMonth,
@@ -298,6 +325,8 @@ export default class MediaAssetsLib extends React.Component<
         const matchesCategory =
           !filterCategory || item.category === filterCategory;
 
+        const matchesDienst = !filterDienst || item.dienst === filterDienst;
+
         // FORMAT
         const matchesFormat = !filterFormat || item.format === filterFormat;
 
@@ -316,6 +345,7 @@ export default class MediaAssetsLib extends React.Component<
         return (
           matchesText &&
           matchesCategory &&
+          matchesDienst &&
           matchesCreator &&
           matchesFormat &&
           matchesYear &&
@@ -447,8 +477,13 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   private async uploadItem(): Promise<void> {
-    const { uploadFiles, uploadTags, uploadCategory, uploadBucket } =
-      this.state;
+    const {
+      uploadFiles,
+      uploadTags,
+      uploadCategory,
+      uploadDienst,
+      uploadBucket,
+    } = this.state;
 
     this.setState({
       isUploading: true,
@@ -531,6 +566,7 @@ export default class MediaAssetsLib extends React.Component<
         const bodyData = {
           FileLeafRef: finalName,
           Kategorie: uploadCategory || null,
+          Dienste: uploadDienst || null,
           Tags: cleanTags,
           Format: detectedFormat, // ✅ AUTO!
           Bucket: cleanBuckets,
@@ -643,6 +679,7 @@ export default class MediaAssetsLib extends React.Component<
                   selectedBucket: undefined,
                   searchText: "",
                   filterCategory: undefined,
+                  filterDienst: undefined,
                   filterFormat: undefined,
                   filterYear: undefined,
                   filterMonth: undefined,
@@ -655,6 +692,7 @@ export default class MediaAssetsLib extends React.Component<
                   selectedBucket: selectedBucket,
                   searchText: "",
                   filterCategory: undefined,
+                  filterDienst: undefined,
                   filterFormat: undefined,
                   filterYear: undefined,
                   filterMonth: undefined,
@@ -683,6 +721,7 @@ export default class MediaAssetsLib extends React.Component<
 
     await this.loadAllMedia();
     await this.loadCategories();
+    await this.loadDienste();
 
     const target = document.getElementById("top");
 
@@ -721,6 +760,7 @@ Files/ServerRelativeUrl,
 Files/TimeCreated,
 Files/ListItemAllFields/Id,
 Files/ListItemAllFields/Kategorie,
+Files/ListItemAllFields/Dienste,
 Files/ListItemAllFields/Notizen,
 Files/ListItemAllFields/UniqueId,
 Files/ListItemAllFields/Tags,
@@ -745,6 +785,7 @@ Files/ListItemAllFields/Ersteller`;
         name: f.Name,
         fileRef: f.ServerRelativeUrl,
         category: f.ListItemAllFields?.Kategorie,
+        dienst: f.ListItemAllFields?.Dienste,
         notes: f.ListItemAllFields?.Notizen,
         created: f.TimeCreated,
         tags: Array.isArray(f.ListItemAllFields?.Tags)
@@ -895,6 +936,7 @@ Files/ListItemAllFields/Ersteller`;
       allItems,
       searchText,
       filterCategory,
+      filterDienst,
       filterFormat,
       filterCreator,
       selectedBucket,
@@ -930,6 +972,10 @@ Files/ListItemAllFields/Ersteller`;
 
     if (filterCategory) {
       filtered = filtered.filter((item) => item.category === filterCategory);
+    }
+
+    if (filterDienst) {
+      filtered = filtered.filter((item) => item.dienst === filterDienst);
     }
 
     if (filterFormat) {
@@ -1019,6 +1065,14 @@ Files/ListItemAllFields/Ersteller`;
     return Array.from(new Set(values)) as string[];
   }
 
+  private getUniqueDienste(): string[] {
+    const values = this.state.allItems
+      .map((item) => item.dienst)
+      .filter((v) => v);
+
+    return Array.from(new Set(values)) as string[];
+  }
+
   private getUniqueFormats(): string[] {
     const values = this.state.allItems
       .map((item) => item.format)
@@ -1054,6 +1108,8 @@ Files/ListItemAllFields/Ersteller`;
 
   public render(): React.ReactElement<IMediaAssetsLibProps> {
     const categoryOptions = this.getUniqueCategories();
+
+    const dienstOptions = this.getUniqueDienste();
 
     const yearOptions = this.getUniqueYears();
 
@@ -1130,6 +1186,7 @@ Files/ListItemAllFields/Ersteller`;
                   selectedBucket: undefined,
                   searchText: "",
                   filterCategory: undefined,
+                  filterDienst: undefined,
                   filterFormat: undefined,
                   filterYear: undefined,
                   filterMonth: undefined,
@@ -1160,6 +1217,26 @@ Files/ListItemAllFields/Ersteller`;
               <option value="">Kategorie</option>
               {categoryOptions.map((cat) => (
                 <option key={cat}>{cat}</option>
+              ))}
+            </select>
+
+            <select
+              value={this.state.filterDienst || ""}
+              onChange={(e) =>
+                this.setState(
+                  {
+                    filterDienst: e.target.value || undefined,
+                  },
+                  this.applyFilters,
+                )
+              }
+            >
+              <option value="">Dienst</option>
+
+              {dienstOptions.map((dienst) => (
+                <option key={dienst} value={dienst}>
+                  {dienst}
+                </option>
               ))}
             </select>
             <select
@@ -1476,6 +1553,11 @@ Files/ListItemAllFields/Ersteller`;
                     <div className={styles.itemContent}>
                       <h3>{item.name}</h3>
                       <p>Ersteller: {item.createdBy || "-"}</p>
+
+                      <p>Kategorie: {item.category || "-"}</p>
+
+                      <p>Dienst: {item.dienst || "-"}</p>
+
                       {/* ✅ TAG CHIPS HIER */}
                       <div className={styles.tagList}>
                         {(item.tags || []).map((tag, i) => (
@@ -1815,7 +1897,14 @@ Files/ListItemAllFields/Ersteller`;
         <UploadModal
           isOpen={this.state.isUploadOpen}
           state={this.state}
-          setState={(newState: any) => this.setState(newState as any)}
+          setState={(newState: Partial<IMediaAssetsLibState>) =>
+            this.setState(
+              newState as Pick<
+                IMediaAssetsLibState,
+                keyof IMediaAssetsLibState
+              >,
+            )
+          }
           onClose={() => this.setState({ isUploadOpen: false })}
           onUpload={() => this.uploadItem()}
         />
