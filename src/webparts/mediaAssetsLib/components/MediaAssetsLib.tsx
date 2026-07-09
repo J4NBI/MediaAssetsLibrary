@@ -22,6 +22,25 @@ import UploadModal from "./UploadModal";
  * SharePoint List Item Struktur
  ******************************************************/
 
+/**
+ * Schnittstelle für ein Medienelement in der Bibliothek
+ * Repräsentiert ein SharePoint-Listenelement mit Metadaten
+ * @interface IMediaItem
+ * @property {number} id - Eindeutige ID des Elements in SharePoint
+ * @property {string} name - Dateiname des Mediums
+ * @property {string} fileRef - Relative URL zur Datei im SharePoint
+ * @property {string} [category] - Kategorisierung des Mediums
+ * @property {string} [notes] - Zusätzliche Notizen zum Element
+ * @property {string} [created] - ISO-Datum der Erstellung
+ * @property {string} [uniqueId] - Eindeutige GUID des Elements
+ * @property {string[]} [tags] - Array von Tags für Suchfunktion
+ * @property {string[]} [bucket] - Array von Bucket-/Ordner-Namen
+ * @property {string} [driveId] - OneDrive Drive ID (VroomDriveID)
+ * @property {string} [driveItemId] - OneDrive Item ID (VroomItemID)
+ * @property {string} [format] - Dateityp (Bild, Video, Audio, Dokument)
+ * @property {string} [createdBy] - Name des Erstellers
+ * @property {string} [dienst] - Zugeordneter Dienst/Service
+ */
 interface IMediaItem {
   id: number;
   name: string;
@@ -41,6 +60,28 @@ interface IMediaItem {
   dienst?: string;
 }
 
+/**
+ * SharePoint REST-API Responseschnittstelle für Dateien
+ * Repräsentiert die Struktur einer Datei aus der SharePoint REST API
+ * @interface ISPFile
+ * @property {string} Name - Dateiname
+ * @property {string} ServerRelativeUrl - Relative URL der Datei im SharePoint
+ * @property {string} TimeCreated - ISO-Zeitstempel der Erstellung
+ * @property {Object} ListItemAllFields - Metadaten des Listenelements
+ * @property {number} ListItemAllFields.Id - Element-ID
+ * @property {string} [ListItemAllFields.Kategorie] - Kategoriefeld
+ * @property {string} [ListItemAllFields.Dienste] - Dienstfeld
+ * @property {string} [ListItemAllFields.Notizen] - Notizfeld
+ * @property {string[]|string} [ListItemAllFields.Tags] - Tags als Array oder String
+ * @property {string[]|string} [ListItemAllFields.Bucket] - Buckets als Array oder String
+ * @property {string} [ListItemAllFields.Format] - Formattyp
+ * @property {Object} [ListItemAllFields.Author] - Autor-Informationen
+ * @property {string} [ListItemAllFields.Author.Title] - Autorenname
+ * @property {Object} [ListItemAllFields.File] - Datei-Metadaten
+ * @property {string} [ListItemAllFields.File.VroomDriveID] - OneDrive Drive ID
+ * @property {string} [ListItemAllFields.File.VroomItemID] - OneDrive Item ID
+ * @property {string} [ListItemAllFields.Ersteller] - Ersteller-Name
+ */
 interface ISPFile {
   Name: string;
   ServerRelativeUrl: string;
@@ -66,9 +107,57 @@ interface ISPFile {
     Ersteller?: string;
   };
 }
+
 /********************* STATE ***************************
  * Enthält alle UI Zustände (Filter, Modals, Form Daten)
  ******************************************************/
+
+/**
+ * Zustandsschnittstelle für die MediaAssetsLib Komponente
+ * Verwaltet alle UI-Zustände, Filter, Modal-Zustände und Formulardaten
+ * @interface IMediaAssetsLibState
+ * @property {IMediaItem[]} allItems - Alle geladenen Medienelemente
+ * @property {IMediaItem[]} visibleItems - Nach Filtern gefilterte Elemente
+ * @property {string} searchText - Aktueller Suchtext
+ * @property {string} [filterCategory] - Ausgewählte Kategoriefilter
+ * @property {number} [filterYear] - Ausgewähltes Filterjahr
+ * @property {number} [filterMonth] - Ausgewählter Filtermonat (1-12)
+ * @property {string} [filterFormat] - Ausgewählter Formatfilter (Bild, Video, Audio)
+ * @property {boolean} isModalOpen - Preview-Modal sichtbar?
+ * @property {IMediaItem} [selectedItem] - Aktuell ausgewähltes Element
+ * @property {boolean} isEditOpen - Bearbeitungs-Modal sichtbar?
+ * @property {string} editName - Name bei Bearbeitung
+ * @property {string[]} editTags - Tags bei Bearbeitung
+ * @property {string} editCategory - Kategorie bei Bearbeitung
+ * @property {string} editFormat - Format bei Bearbeitung
+ * @property {string[]} editBucket - Buckets bei Bearbeitung
+ * @property {string[]} uploadBucket - Buckets für Upload
+ * @property {boolean} isUploadOpen - Upload-Modal sichtbar?
+ * @property {string} uploadName - Name für Upload
+ * @property {string[]} uploadTags - Tags für Upload
+ * @property {string} uploadCategory - Kategorie für Upload
+ * @property {string} uploadDienst - Dienst für Upload
+ * @property {File[]} [uploadFiles] - Ausgewählte Dateien zum Upload
+ * @property {string} [uploadPreviewUrl] - Vorschau-URL für Upload
+ * @property {string[]} bucketOptions - Verfügbare Bucket-Namen
+ * @property {string} newBucketInputEdit - Neuer Bucket-Name bei Bearbeitung
+ * @property {string} newBucketInputUpload - Neuer Bucket-Name bei Upload
+ * @property {"buckets"|"items"} viewMode - Aktuelle Ansicht (Ordner oder Dateien)
+ * @property {"folders"|"files"} resultMode - Ergebnis-Anzeigemodus
+ * @property {string} [selectedBucket] - Aktuell ausgewählter Bucket
+ * @property {boolean} isUploading - Upload läuft?
+ * @property {number} [downloadingItemId] - ID der gerade heruntergeladenen Datei
+ * @property {boolean} showScrollTop - "Nach oben"-Button sichtbar?
+ * @property {number} bucketsToShow - Anzahl anzuzeigender Buckets (Pagination)
+ * @property {number} visibleItemsCount - Anzahl anzuzeigender Elemente (Pagination)
+ * @property {number} uploadProgress - Upload-Fortschritt (0-100%)
+ * @property {number} uploadCurrentFile - Index der aktuellen Upload-Datei
+ * @property {number} uploadTotalFiles - Gesamtzahl der Upload-Dateien
+ * @property {string[]} categoryOptions - Verfügbare Kategorieoptionen
+ * @property {string} [filterDienst] - Ausgewählter Dienst-Filter
+ * @property {string} [filterCreator] - Ausgewählter Ersteller-Filter
+ * @property {string[]} dienstOptions - Verfügbare Dienst-Optionen
+ */
 export interface IMediaAssetsLibState {
   allItems: IMediaItem[];
   visibleItems: IMediaItem[];
@@ -135,11 +224,43 @@ export interface IMediaAssetsLibState {
  * - Rendering
  ******************************************************/
 
+/**
+ * MediaAssetsLib - SharePoint Media Assets Verwaltungskomponente
+ *
+ * Vollständige Medienbibliothek-Komponente für SharePoint mit folgenden Funktionen:
+ * - Rekursives Laden aller Dateien und Ordner aus einer SharePoint-Dokumentbibliothek
+ * - Organisierung von Dateien in Buckets (Ordner-basierte Kategorisierung)
+ * - Upload von Dateien mit automatischer Metadaten-Erkennung
+ * - Bearbeitung von Metadaten (Name, Tags, Kategorie, Format, Bucket)
+ * - Löschen von Elementen
+ * - Erweiterte Filterung (Text, Kategorie, Dienst, Format, Datum, Ersteller)
+ * - Suchfunktion mit Tag-Unterstützung
+ * - Vorschau von Bildern, Videos und Audio-Dateien
+ * - Download-Funktionalität
+ * - Pagination für Buckets und Elemente
+ * - Intersection Observer für "Nach oben"-Button
+ *
+ * @class MediaAssetsLib
+ * @extends {React.Component<IMediaAssetsLibProps, IMediaAssetsLibState>}
+ * @example
+ * <MediaAssetsLib
+ *   siteUrl="https://tenant.sharepoint.com/sites/mysite"
+ *   spHttpClient={spHttpClient}
+ *   isDarkTheme={false}
+ * />
+ */
 export default class MediaAssetsLib extends React.Component<
   IMediaAssetsLibProps,
   IMediaAssetsLibState
 > {
   /********************* INITIAL STATE *******************/
+
+  /**
+   * Konstruktor der Komponente
+   * Initialisiert alle State-Properties mit Standardwerten
+   * @constructor
+   * @param {IMediaAssetsLibProps} props - Komponenten-Props mit siteUrl und spHttpClient
+   */
   constructor(props: IMediaAssetsLibProps) {
     super(props);
 
@@ -195,8 +316,22 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   /* CHANGE SHAREPOINT URL */
+  /**
+   * Name der SharePoint-Dokumentbibliothek
+   * Wird für alle REST-API-Aufrufe verwendet
+   * @private
+   * @type {string}
+   */
   private readonly libraryName = "Medienbibliothek";
 
+  /**
+   * Lädt die verfügbaren Kategorieoptionen aus dem Kategorie-Feld der SharePoint-Liste
+   * Speichert die Optionen im State für die Kategoriefilter-Dropdown
+   * @private
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} Wenn der REST-API-Aufruf fehlschlägt
+   */
   private async loadCategories(): Promise<void> {
     try {
       const response = await this.props.spHttpClient.get(
@@ -216,10 +351,27 @@ export default class MediaAssetsLib extends React.Component<
     }
   }
 
+  /**
+   * Gibt den Bibliotheks-Pfad für REST-API-Aufrufe zurück
+   * Kombiniert die Site-URL mit dem Bibliotheksnamen
+   * @private
+   * @returns {string} Relativer Pfad zur Bibliothek
+   * @example
+   * // Returns: "/sites/mysite/Medienbibliothek"
+   * getLibraryPath();
+   */
   private getLibraryPath(): string {
     return `${new URL(this.props.siteUrl).pathname}/${this.libraryName}`;
   }
 
+  /**
+   * Lädt die verfügbaren Dienstoptionen aus dem Dienste-Feld der SharePoint-Liste
+   * Speichert die Optionen im State für die Dienste-Filter-Dropdown
+   * @private
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} Wenn der REST-API-Aufruf fehlschlägt
+   */
   private async loadDienste(): Promise<void> {
     try {
       const response = await this.props.spHttpClient.get(
@@ -237,8 +389,26 @@ export default class MediaAssetsLib extends React.Component<
     }
   }
 
+  /**
+   * IntersectionObserver für das "Nach oben"-Button-Verhalten
+   * Beobachtet die Sichtbarkeit des Header-Elements
+   * @private
+   * @type {IntersectionObserver|undefined}
+   */
   private observer?: IntersectionObserver;
 
+  /**
+   * Erkennt den Dateityp basierend auf der Dateiendung
+   * Kategorisiert Dateien in: Bild, Video, Audio oder Dokument
+   * @private
+   * @param {string} fileName - Der Dateiname mit Erweiterung
+   * @returns {string} Der erkannte Dateityp (Bild, Video, Audio oder Dokument)
+   * @example
+   * detectFormat('photo.jpg')  // Returns: "Bild"
+   * detectFormat('video.mp4')  // Returns: "Video"
+   * detectFormat('song.mp3')   // Returns: "Audio"
+   * detectFormat('doc.pdf')    // Returns: "Dokument"
+   */
   private detectFormat(fileName: string): string {
     const ext = fileName.split(".").pop()?.toLowerCase();
 
@@ -275,6 +445,11 @@ export default class MediaAssetsLib extends React.Component<
 
     return "Dokument";
   }
+  /**
+   * Sammelt alle einzigartigen Bucket-Namen aus allen Elementen
+   * @private
+   * @returns {string[]} Array aller Bucket-Namen
+   */
   private getAllBuckets(): string[] {
     const map: { [key: string]: number } = {};
 
@@ -289,10 +464,22 @@ export default class MediaAssetsLib extends React.Component<
     return Object.keys(map);
   }
 
+  /**
+   * Findet das erste Element eines bestimmten Buckets für die Vorschau
+   * @private
+   * @param {string} bucket - Der Bucket-Name
+   * @returns {IMediaItem|undefined} Das erste Element des Buckets oder undefined
+   */
   private getBucketPreview(bucket: string): IMediaItem | undefined {
     return this.state.allItems.find((item) => item.bucket?.includes(bucket));
   }
 
+  /**
+   * Filtert Buckets basierend auf aktiven Filtern und Suchtext
+   * Ein Bucket wird angezeigt, wenn er mindestens ein gefordertes Element enthält
+   * @private
+   * @returns {string[]} Array der gefilterten Bucket-Namen
+   */
   private getFilteredBuckets(): string[] {
     const {
       searchText,
@@ -367,6 +554,11 @@ export default class MediaAssetsLib extends React.Component<
     });
   }
 
+  /**
+   * Zählt die Anzahl der Elemente in jedem Bucket
+   * @private
+   * @returns {{ [key: string]: number }} Objekt mit Bucket-Namen als Schlüssel und Elementanzahl als Wert
+   */
   private getBucketCounts(): { [key: string]: number } {
     const counts: { [key: string]: number } = {};
 
@@ -381,6 +573,12 @@ export default class MediaAssetsLib extends React.Component<
     return counts;
   }
 
+  /**
+   * Sortiert Buckets nach dem neuesten Element in jedem Bucket (absteigend)
+   * @private
+   * @param {IMediaItem[]} items - Array von Medienelementen
+   * @returns {string[]} Sortierte Bucket-Namen (neueste zuerst)
+   */
   private getBucketsSortedByNewest(items: IMediaItem[]): string[] {
     const map: { [key: string]: number } = {};
 
@@ -401,6 +599,14 @@ export default class MediaAssetsLib extends React.Component<
     });
   }
 
+  /**
+   * Holt das FormDigestValue von SharePoint für POST/MERGE-Operationen
+   * Erforderlich für Schreibzugriff auf SharePoint REST API
+   * @private
+   * @async
+   * @returns {Promise<string>} Das FormDigestValue Token
+   * @throws {Error} Wenn der Digest-Abruf fehlschlägt
+   */
   private async getRequestDigest(): Promise<string> {
     const response = await this.props.spHttpClient.post(
       `${this.props.siteUrl}/_api/contextinfo`,
@@ -417,6 +623,14 @@ export default class MediaAssetsLib extends React.Component<
     return data.FormDigestValue;
   }
 
+  /**
+   * Ruft Informationen des aktuellen angemeldeten Benutzers ab
+   * Wird verwendet, um den Ersteller bei Upload zu speichern
+   * @private
+   * @async
+   * @returns {Promise<{id: number, title: string}>} Benutzer-ID und Name
+   * @throws {Error} Wenn der Benutzerabruf fehlschlägt
+   */
   private async getCurrentUser(): Promise<{ id: number; title: string }> {
     const response = await this.props.spHttpClient.get(
       `${this.props.siteUrl}/_api/web/currentuser`,
@@ -435,6 +649,16 @@ export default class MediaAssetsLib extends React.Component<
    * Lädt Dateien hoch und setzt Metadaten
    ******************************************************/
 
+  /**
+   * Lädt eine Datei zu SharePoint hoch mit Upload-Fortschrittsanzeige
+   * Verwendet XMLHttpRequest für genaue Fortschrittsüberwachung
+   * @private
+   * @async
+   * @param {string} url - Die SharePoint REST-API URL für den Upload
+   * @param {ArrayBuffer} fileBuffer - Der Datei-Buffer
+   * @returns {Promise<{ServerRelativeUrl: string}>} Die relative URL der hochgeladenen Datei
+   * @throws {Error} Bei Upload-Fehler
+   */
   private async uploadFileWithProgress(
     url: string,
     fileBuffer: ArrayBuffer,
@@ -476,6 +700,18 @@ export default class MediaAssetsLib extends React.Component<
     });
   }
 
+  /**
+   * Orchestriert den Upload aller ausgewählten Dateien
+   * - Validiert Input (Bucket, Kategorie, Dateien)
+   * - Lädt jede Datei einzeln hoch
+   * - Setzt Metadaten für jede Datei
+   * - Zeigt Upload-Fortschritt an
+   * - Lädt alle Daten neu nach Upload
+   * @private
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} Wenn Upload fehlschlägt
+   */
   private async uploadItem(): Promise<void> {
     const {
       uploadFiles,
@@ -624,6 +860,16 @@ export default class MediaAssetsLib extends React.Component<
    * Löscht ein Element aus SharePoint
    ******************************************************/
 
+  /**
+   * Löscht das ausgewählte Element aus SharePoint
+   * - Fordert Bestätigung vom Benutzer an
+   * - Löscht das Element über REST API
+   * - Aktualisiert State (Rückkehr zur Bucket-Ansicht wenn Bucket leer)
+   * @private
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} Wenn Delete fehlschlägt
+   */
   private async deleteItem(): Promise<void> {
     const { selectedItem, selectedBucket } = this.state;
 
@@ -713,6 +959,15 @@ export default class MediaAssetsLib extends React.Component<
    * Lädt Daten beim Start
    ******************************************************/
 
+  /**
+   * React-Lifecycle-Methode: Wird aufgerufen nachdem die Komponente bereitgestellt wurde
+   * - Lädt alle Mediendateien rekursiv
+   * - Lädt verfügbare Kategorien und Dienste
+   * - Setzt up IntersectionObserver für "Nach oben"-Button
+   * @public
+   * @async
+   * @returns {Promise<void>}
+   */
   public async componentDidMount(): Promise<void> {
     console.log("MOUNTED ✅");
 
@@ -748,6 +1003,18 @@ export default class MediaAssetsLib extends React.Component<
    * Lädt alle Dateien + Unterordner
    ******************************************************/
 
+  /**
+   * Lädt rekursiv alle Dateien und Unterordner eines SharePoint-Ordners
+   * - Verwendet SharePoint REST API mit $expand für Dateien und Ordner
+   * - Konvertiert SharePoint-Felder in IMediaItem-Objekte
+   * - Behandelt mehrzeilige Text- und Choice-Felder (Tags, Buckets)
+   * - Ignoriert den "Forms"-Ordner (System-Ordner)
+   * @private
+   * @async
+   * @param {string} folderUrl - Relative URL des Ordners
+   * @returns {Promise<IMediaItem[]>} Array aller Medienelemente im Ordner und Unterordnern
+   * @throws {Error} Wenn REST-API-Aufruf fehlschlägt
+   */
   private async getFolderContent(folderUrl: string): Promise<IMediaItem[]> {
     const url = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderUrl}')
 ?$expand=Folders,Files,Files/ListItemAllFields
@@ -825,6 +1092,16 @@ Files/ListItemAllFields/Ersteller`;
 
   /********************* LOAD MEDIA **********************/
 
+  /**
+   * Hauptmethode zum Laden aller Mediendateien aus der Bibliothek
+   * - Ruft die Root-Bibliothek auf
+   * - Sortiert Buckets nach neuesten Elementen
+   * - Aktualisiert State und wendet Filter an
+   * @private
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} Wenn Laden fehlschlägt
+   */
   private async loadAllMedia(): Promise<void> {
     try {
       const rootFolder = this.getLibraryPath();
@@ -848,6 +1125,16 @@ Files/ListItemAllFields/Ersteller`;
    * Aktualisiert Metadaten eines Elements
    ******************************************************/
 
+  /**
+   * Aktualisiert die Metadaten des ausgewählten Elements
+   * - Ändert Name, Tags, Kategorie, Format und Buckets
+   * - Sendet MERGE-Request an SharePoint REST API
+   * - Lädt alle Daten neu nach Update
+   * @private
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} Wenn Update fehlschlägt
+   */
   private async updateItem(): Promise<void> {
     const {
       selectedItem,
@@ -931,6 +1218,17 @@ Files/ListItemAllFields/Ersteller`;
    * Suche + Kategorie + Datum + Format
    ******************************************************/
 
+  /**
+   * Wendet alle aktiven Filter auf die Elemente an und aktualisiert visibleItems
+   * Filtert nach:
+   * - Bucket (wenn ausgewählt)
+   * - Suchtext (Name, Notes, Tags mit AND-Logik)
+   * - Kategorie, Dienst, Format, Ersteller
+   * - Jahr und Monat
+   * Sortiert Ergebnisse nach Erstellungsdatum (neueste zuerst)
+   * @private
+   * @returns {void}
+   */
   private applyFilters = (): void => {
     const {
       allItems,
@@ -1043,6 +1341,15 @@ Files/ListItemAllFields/Ersteller`;
 
   /* +++++++++  SUCHE ++++++++ */
 
+  /**
+   * Event-Handler für Suchtext-Eingabe
+   * - Aktualisiert Suchtext im State
+   * - Wechselt zur Artikel-Ansicht (viewMode = "items")
+   * - Wendet Filter an
+   * @private
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input-Change-Event
+   * @returns {void}
+   */
   private onSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const value = e.target.value;
 
@@ -1056,6 +1363,11 @@ Files/ListItemAllFields/Ersteller`;
     );
   };
 
+  /**
+   * Extrahiert alle einzigartigen Kategorien aus den geladenen Elementen
+   * @private
+   * @returns {string[]} Array eindeutiger Kategoriewerte
+   */
   private getUniqueCategories(): string[] {
     const values = this.state.allItems
       .map((item) => item.category)
@@ -1065,6 +1377,11 @@ Files/ListItemAllFields/Ersteller`;
     return Array.from(new Set(values)) as string[];
   }
 
+  /**
+   * Extrahiert alle einzigartigen Dienste aus den geladenen Elementen
+   * @private
+   * @returns {string[]} Array eindeutiger Dienst-Werte
+   */
   private getUniqueDienste(): string[] {
     const values = this.state.allItems
       .map((item) => item.dienst)
@@ -1073,6 +1390,11 @@ Files/ListItemAllFields/Ersteller`;
     return Array.from(new Set(values)) as string[];
   }
 
+  /**
+   * Extrahiert alle einzigartigen Dateiformate aus den geladenen Elementen
+   * @private
+   * @returns {string[]} Array eindeutiger Format-Werte
+   */
   private getUniqueFormats(): string[] {
     const values = this.state.allItems
       .map((item) => item.format)
@@ -1081,6 +1403,12 @@ Files/ListItemAllFields/Ersteller`;
     return Array.from(new Set(values));
   }
 
+  /**
+   * Extrahiert alle einzigartigen Jahre aus den geladenen Elementen
+   * Sortiert sie in absteigender Reihenfolge (neueste zuerst)
+   * @private
+   * @returns {number[]} Array einzigartiger Jahre
+   */
   private getUniqueYears(): number[] {
     const years = this.state.allItems
       .map((item) => {
@@ -1095,6 +1423,12 @@ Files/ListItemAllFields/Ersteller`;
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }
 
+  /**
+   * Extrahiert alle einzigartigen Ersteller aus den geladenen Elementen
+   * Sortiert sie alphabetisch
+   * @private
+   * @returns {string[]} Array eindeutiger Ersteller-Namen
+   */
   private getUniqueCreators(): string[] {
     const values = this.state.allItems
       .map((item) => item.createdBy)
@@ -1106,6 +1440,16 @@ Files/ListItemAllFields/Ersteller`;
    * Lädt Choice Werte aus SharePoint
    ******************************************************/
 
+  /**
+   * React-Render-Methode: Erzeugt die komplette Benutzeroberfläche
+   * - Header mit Upload-Button und View-Toggles
+   * - Suchleiste und Filter-Selects
+   * - Grid-Ansicht für Buckets oder Elemente
+   * - Modals für Preview, Bearbeitung und Upload
+   * - "Nach oben"-Button bei Bedarf
+   * @public
+   * @returns {React.ReactElement<IMediaAssetsLibProps>} Die JSX-Komponente
+   */
   public render(): React.ReactElement<IMediaAssetsLibProps> {
     const categoryOptions = this.getUniqueCategories();
 
