@@ -45,12 +45,12 @@ import EditModal from "./EditModal";
  */
 interface IMediaItem {
   id: number;
+  uniqueId?: string;
   name: string;
   fileRef: string;
   category?: string;
   notes?: string;
   created?: string;
-  uniqueId?: string;
   tags?: string[];
   bucket?: string[];
 
@@ -60,6 +60,8 @@ interface IMediaItem {
   format?: string;
   createdBy?: string;
   dienst?: string;
+
+  thumbnailUrl?: string;
 }
 
 /**
@@ -89,6 +91,8 @@ interface ISPFile {
   ServerRelativeUrl: string;
   TimeCreated: string;
 
+  UniqueId?: string;
+
   ListItemAllFields: {
     Id: number;
     Kategorie?: string;
@@ -106,6 +110,7 @@ interface ISPFile {
       VroomDriveID?: string;
       VroomItemID?: string;
     };
+
     Ersteller?: string;
   };
 }
@@ -840,6 +845,7 @@ export default class MediaAssetsLib extends React.Component<
     }
 
     await this.loadAllMedia();
+    await this.loadVideoThumbnails();
 
     this.setState({
       isUploading: false,
@@ -875,7 +881,7 @@ export default class MediaAssetsLib extends React.Component<
    * @throws {Error} Wenn Delete fehlschlägt
    */
   private async deleteItem(): Promise<void> {
-    const { selectedItem, selectedBucket } = this.state;
+    const { selectedItem } = this.state;
 
     if (!selectedItem) return;
 
@@ -902,55 +908,13 @@ export default class MediaAssetsLib extends React.Component<
       if (response.ok) {
         console.log("✅ Element gelöscht");
 
-        const rootFolder = this.getLibraryPath();
-        const items = await this.getFolderContent(rootFolder);
+        await this.loadAllMedia();
+        await this.loadVideoThumbnails();
 
-        // ✅ Buckets neu berechnen
-        const sortedBuckets = this.getBucketsSortedByNewest(items);
-
-        // ✅ Prüfen ob noch Dateien im aktuellen Ordner sind
-        const remainingInBucket = items.filter((i) =>
-          selectedBucket ? i.bucket?.includes(selectedBucket) : false,
-        );
-
-        this.setState(
-          {
-            allItems: items,
-            bucketOptions: sortedBuckets,
-
-            isEditOpen: false,
-            selectedItem: undefined,
-
-            // ✅ FALL 1: Ordner jetzt leer → zurück zur Übersicht
-            ...(selectedBucket && remainingInBucket.length === 0
-              ? {
-                  viewMode: "buckets",
-                  resultMode: "folders",
-                  selectedBucket: undefined,
-                  searchText: "",
-                  filterCategory: undefined,
-                  filterDienst: undefined,
-                  filterFormat: undefined,
-                  filterYear: undefined,
-                  filterMonth: undefined,
-                  filterCreator: undefined,
-                }
-              : // ✅ FALL 2: Ordner hat noch Dateien → drin bleiben
-                {
-                  viewMode: "items",
-                  resultMode: "files",
-                  selectedBucket: selectedBucket,
-                  searchText: "",
-                  filterCategory: undefined,
-                  filterDienst: undefined,
-                  filterFormat: undefined,
-                  filterYear: undefined,
-                  filterMonth: undefined,
-                  filterCreator: undefined,
-                }),
-          },
-          this.applyFilters,
-        );
+        this.setState({
+          isEditOpen: false,
+          selectedItem: undefined,
+        });
       } else {
         console.error("❌ Fehler beim Löschen", response);
       }
@@ -972,13 +936,10 @@ export default class MediaAssetsLib extends React.Component<
    * @async
    * @returns {Promise<void>}
    */
+
   public async componentDidMount(): Promise<void> {
-    console.log("MOUNTED ✅");
-
-    console.log("Aktuelle Site:");
-    console.log(this.props.siteUrl);
-
     await this.loadAllMedia();
+    await this.loadVideoThumbnails();
     await this.loadCategories();
     await this.loadDienste();
 
@@ -987,8 +948,6 @@ export default class MediaAssetsLib extends React.Component<
     if (target) {
       this.observer = new IntersectionObserver(
         ([entry]) => {
-          console.log("HEADER VISIBLE:", entry.isIntersecting);
-
           this.setState({
             showScrollTop: !entry.isIntersecting,
           });
@@ -1037,14 +996,14 @@ Files/ListItemAllFields/UniqueId,
 Files/ListItemAllFields/Tags,
 Files/ListItemAllFields/Bucket,
 Files/ListItemAllFields/Format,
-Files/ListItemAllFields/Ersteller`;
+Files/ListItemAllFields/Ersteller,
+Files/UniqueId`;
     const response = await this.props.spHttpClient.get(
       url,
       SPHttpClient.configurations.v1,
     );
 
     const data = await response.json();
-    console.log("DATA", data);
 
     let results: IMediaItem[] = [];
 
@@ -1053,6 +1012,7 @@ Files/ListItemAllFields/Ersteller`;
 
       results.push({
         id: f.ListItemAllFields.Id,
+        uniqueId: f.UniqueId,
         name: f.Name,
         fileRef: f.ServerRelativeUrl,
         category: f.ListItemAllFields?.Kategorie,
@@ -1081,7 +1041,6 @@ Files/ListItemAllFields/Ersteller`;
         format: f.ListItemAllFields?.Format,
         createdBy: f.ListItemAllFields?.Ersteller,
       });
-      console.log(f.ListItemAllFields);
     });
 
     for (const folder of data.Folders) {
@@ -1123,6 +1082,77 @@ Files/ListItemAllFields/Ersteller`;
     } catch (error) {
       console.error(error);
     }
+  }
+  private async loadVideoThumbnails(): Promise<void> {
+    console.log("THUMB ITEMS", this.state.allItems.length);
+    const drivesResponse = await this.props.spHttpClient.get(
+      `${this.props.siteUrl}/_api/v2.1/drives`,
+      SPHttpClient.configurations.v1,
+    );
+
+    const drivesData = await drivesResponse.json();
+
+    const mediaDrive = drivesData.value.find(
+      (d: { name: string; id: string }) => d.name === "Medienbibliothek",
+    );
+
+    if (!mediaDrive) {
+      return;
+    }
+
+    const childrenResponse = await this.props.spHttpClient.get(
+      `${this.props.siteUrl}/_api/v2.1/drives/${mediaDrive.id}/root/children`,
+      SPHttpClient.configurations.v1,
+    );
+
+    const childrenData = await childrenResponse.json();
+
+    const driveItemMap: { [key: string]: string } = {};
+
+    childrenData.value.forEach((item: { id: string; name: string }) => {
+      driveItemMap[item.name] = item.id;
+    });
+
+    const updatedItems = await Promise.all(
+      this.state.allItems.map(async (item) => {
+        const driveItemId = driveItemMap[item.name];
+
+        if (!item.name.toLowerCase().endsWith(".mp4") || !driveItemId) {
+          return item;
+        }
+
+        try {
+          const thumbnailResponse = await this.props.spHttpClient.get(
+            `${this.props.siteUrl}/_api/v2.1/drives/${mediaDrive.id}/items/${driveItemId}/thumbnails`,
+            SPHttpClient.configurations.v1,
+          );
+
+          const thumbnailData = await thumbnailResponse.json();
+
+          const thumbUrl = thumbnailData.value?.[0]?.medium?.url;
+
+          return {
+            ...item,
+            driveId: mediaDrive.id,
+            driveItemId,
+            thumbnailUrl: thumbUrl,
+          };
+        } catch {
+          return item;
+        }
+      }),
+    );
+
+    this.setState(
+      {
+        allItems: updatedItems,
+      },
+      this.applyFilters,
+    );
+
+    const videoCount = updatedItems.filter((i) => i.thumbnailUrl).length;
+
+    console.log("ITEMS MIT THUMBNAIL", videoCount);
   }
 
   /********************* UPDATE **************************
@@ -1216,6 +1246,7 @@ Files/ListItemAllFields/Ersteller`;
 
       // neu laden → damit UI sofort aktualisiert wird
       await this.loadAllMedia();
+      await this.loadVideoThumbnails();
 
       this.setState({ isEditOpen: false });
     } catch (error) {
@@ -1256,8 +1287,6 @@ Files/ListItemAllFields/Ersteller`;
         item.bucket?.includes(selectedBucket),
       );
     }
-    console.log("SELECTED BUCKET:", selectedBucket);
-    console.log("ITEMS NACH BUCKET FILTER:", filtered.length);
 
     const search = searchText.toLowerCase();
 
@@ -1630,19 +1659,11 @@ Files/ListItemAllFields/Ersteller`;
                     )}
 
                     {preview && isVideo && (
-                      <div
-                        className={styles.itemImg}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "50px",
-                          background: "#f3f2f1",
-                          cursor: "pointer",
-                        }}
-                      >
-                        🎬
-                      </div>
+                      <img
+                        src={preview.thumbnailUrl}
+                        className={styles.videoImg}
+                        style={{ cursor: "pointer" }}
+                      />
                     )}
                     {preview && isAudio && (
                       <div

@@ -11,6 +11,7 @@ interface IFileCardProps {
     createdBy?: string;
     created?: string;
     tags?: string[];
+    thumbnailUrl?: string;
   };
 
   downloadingItemId?: number;
@@ -37,23 +38,19 @@ const FileCard: React.FC<IFileCardProps> = ({
     fileType || "",
   );
 
+  if (isVideo) {
+    console.log("FILECARD VIDEO", item.name, item.thumbnailUrl);
+  }
+
   return (
     <div className={styles.itemCard}>
       {isVideo && (
-        <div
-          className={styles.itemImg}
+        <img
+          src={item.thumbnailUrl}
+          className={styles.videoImg}
           onClick={onPreview}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "50px",
-            background: "#f3f2f1",
-            cursor: "pointer",
-          }}
-        >
-          🎬
-        </div>
+          style={{ cursor: "pointer" }}
+        />
       )}
 
       {isAudio && (
