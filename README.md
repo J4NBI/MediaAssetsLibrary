@@ -1,73 +1,352 @@
-# media-assets-library
+# Media Assets Library (SPFx)
 
-## Summary
+Eine SharePoint Framework (SPFx) Anwendung zur Verwaltung von Medieninhalten in einer SharePoint-Dokumentbibliothek.
 
-Short summary on functionality and used technologies.
+## Funktionen
 
-[picture of the solution in action, if possible]
-
-## Used SharePoint Framework Version
-
-![version](https://img.shields.io/badge/version-1.20.0-green.svg)
-
-## Applies to
-
-- [SharePoint Framework](https://aka.ms/spfx)
-- [Microsoft 365 tenant](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/set-up-your-developer-tenant)
-
-> Get your own free development tenant by subscribing to [Microsoft 365 developer program](http://aka.ms/o365devprogram)
-
-## Prerequisites
-
-> Any special pre-requisites?
-
-## Solution
-
-| Solution    | Author(s)                                               |
-| ----------- | ------------------------------------------------------- |
-| folder name | Author details (name, company, twitter alias with link) |
-
-## Version history
-
-| Version | Date             | Comments        |
-| ------- | ---------------- | --------------- |
-| 1.1     | March 10, 2021   | Update comment  |
-| 1.0     | January 29, 2021 | Initial release |
-
-## Disclaimer
-
-**THIS CODE IS PROVIDED _AS IS_ WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.**
+- Upload von Bildern, Videos, Audio- und Dokumentdateien
+- Vorschau von Medien direkt im Browser
+- Bearbeitung von Metadaten
+- Bucket-/Ordnerverwaltung
+- Suche und Filter
+- Download von Dateien
+- Löschen von Dateien
+- SharePoint REST API Integration
+- Automatische Format-Erkennung (Bild, Video, Audio, Dokument)
 
 ---
 
-## Minimal Path to Awesome
+# Voraussetzungen
 
-- Clone this repository
-- Ensure that you are at the solution folder
-- in the command-line run:
-  - **npm install**
-  - **gulp serve**
+Vor der Installation müssen folgende Komponenten installiert sein:
 
-> Include any additional steps as needed.
+- Node.js (zur SPFx-Version passend)
+- npm
+- Gulp CLI
+- Zugriff auf die SharePoint-Zielsite
 
-## Features
+Versionen prüfen:
 
-Description of the extension that expands upon high-level summary above.
+```bash
+node --version
+npm --version
+gulp --version
+```
 
-This extension illustrates the following concepts:
+Falls Gulp noch nicht installiert ist:
 
-- topic 1
-- topic 2
-- topic 3
+```bash
+npm install -g gulp-cli
+```
 
-> Notice that better pictures and documentation will increase the sample usage and the value you are providing for others. Thanks for your submissions advance.
+---
 
-> Share your web part with others through Microsoft 365 Patterns and Practices program to get visibility and exposure. More details on the community, open-source projects and other activities from http://aka.ms/m365pnp.
+# Projekt übernehmen
 
-## References
+## 1. Repository forken
 
-- [Getting started with SharePoint Framework](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/set-up-your-developer-tenant)
-- [Building for Microsoft teams](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/build-for-teams-overview)
-- [Use Microsoft Graph in your solution](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/web-parts/get-started/using-microsoft-graph-apis)
-- [Publish SharePoint Framework applications to the Marketplace](https://docs.microsoft.com/en-us/sharepoint/dev/spfx/publish-to-marketplace-overview)
-- [Microsoft 365 Patterns and Practices](https://aka.ms/m365pnp) - Guidance, tooling, samples and open-source controls for your Microsoft 365 development
+Auf GitHub das Repository öffnen und oben rechts auf **Fork** klicken.
+
+Dadurch wird eine eigene Kopie des Projekts im eigenen GitHub-Account erstellt.
+
+---
+
+## 2. Repository klonen
+
+```bash
+git clone https://github.com/<github-account>/MediaAssetsLibrary.git
+```
+
+Anschließend in das Projektverzeichnis wechseln:
+
+```bash
+cd MediaAssetsLibrary
+```
+
+---
+
+## 3. Abhängigkeiten installieren
+
+Alle Projektabhängigkeiten installieren:
+
+```bash
+npm install
+```
+
+Nach erfolgreicher Installation sollte eine Meldung ähnlich der folgenden erscheinen:
+
+```text
+up to date, audited xxxx packages
+```
+
+Hinweise zu Sicherheitswarnungen können zunächst ignoriert werden, sofern das Projekt erfolgreich startet.
+
+---
+
+## 4. SPFx Entwicklerzertifikat installieren
+
+Für die lokale Entwicklung benötigt SharePoint Framework ein vertrauenswürdiges HTTPS-Zertifikat.
+
+Im Projektordner ausführen:
+
+```bash
+gulp trust-dev-cert
+```
+
+Falls bereits ein altes oder fehlerhaftes Zertifikat vorhanden ist:
+
+```bash
+gulp untrust-dev-cert
+gulp trust-dev-cert
+```
+
+---
+
+# Wichtige Konfiguration
+
+## SharePoint Workbench URL anpassen
+
+Vor dem ersten Start muss die Datei
+
+```text
+config/serve.json
+```
+
+angepasst werden.
+
+Aktueller Inhalt:
+
+```json
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/spfx-serve.schema.json",
+  "port": 4321,
+  "https": true,
+  "initialPage": "https://caritasberlin.sharepoint.com/sites/Medien_dev/_layouts/15/workbench.aspx"
+}
+```
+
+### Wichtig
+
+Der Wert von `initialPage` muss auf die SharePoint-Umgebung angepasst werden, in der das WebPart entwickelt oder getestet werden soll.
+
+Beispiel:
+
+```json
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/spfx-serve.schema.json",
+  "port": 4321,
+  "https": true,
+  "initialPage": "https://tenant.sharepoint.com/sites/meine-site/_layouts/15/workbench.aspx"
+}
+```
+
+### Beispiel Workbench URL
+
+```text
+https://tenant.sharepoint.com/sites/meine-site/_layouts/15/workbench.aspx
+```
+
+---
+
+## Bibliotheksname prüfen
+
+Im Code wird aktuell die SharePoint-Dokumentbibliothek
+
+```typescript
+private readonly libraryName = "Medienbibliothek";
+```
+
+verwendet.
+
+Sollte die Bibliothek in der Zielumgebung anders heißen, muss dieser Wert angepasst werden.
+
+Datei:
+
+```text
+src/webparts/mediaAssetsLib/components/MediaAssetsLib.tsx
+```
+
+Beispiel:
+
+```typescript
+private readonly libraryName = "MediaLibrary";
+```
+
+---
+
+# Projekt starten
+
+Nach erfolgreicher Installation und Konfiguration:
+
+```bash
+gulp serve
+```
+
+Der Build-Prozess startet anschließend lokal.
+
+In der Konsole erscheint eine Ausgabe ähnlich zu:
+
+```text
+Build target: DEBUG
+
+Starting 'serve'...
+
+To load your scripts, use this query string:
+
+?debug=true&noredir=true&debugManifestsFile=https://localhost:4321/temp/manifests.js
+```
+
+Danach öffnet sich die konfigurierte SharePoint Workbench.
+
+---
+
+# Ordnerstruktur
+
+```text
+MediaAssetsLibrary
+│
+├── config
+│   └── serve.json
+│
+├── src
+│   └── webparts
+│       └── mediaAssetsLib
+│           ├── MediaAssetsLib.tsx
+│           ├── FileCard.tsx
+│           ├── UploadModal.tsx
+│           ├── EditModal.tsx
+│           ├── PreviewModal.tsx
+│           └── FilterBar.tsx
+│
+├── gulpfile.js
+├── package.json
+└── README.md
+```
+
+---
+
+# Deployment
+
+Produktionspaket erstellen:
+
+```bash
+gulp bundle --ship
+gulp package-solution --ship
+```
+
+Das fertige SharePoint-Paket befindet sich anschließend unter:
+
+```text
+sharepoint/solution/
+```
+
+Beispiel:
+
+```text
+sharepoint/solution/media-assets-library.sppkg
+```
+
+Dieses Paket kann anschließend in den SharePoint App Catalog hochgeladen werden.
+
+---
+
+# Häufige Fehler
+
+## No development certificate found
+
+Fehlermeldung:
+
+```text
+No development certificate found.
+Generate a new certificate manually...
+```
+
+Lösung:
+
+```bash
+gulp trust-dev-cert
+```
+
+---
+
+## gulp wird nicht erkannt
+
+Fehlermeldung:
+
+```text
+gulp is not recognized as an internal or external command
+```
+
+Lösung:
+
+```bash
+npm install -g gulp-cli
+```
+
+---
+
+## npm Pakete fehlen
+
+Fehlermeldungen wie:
+
+```text
+Cannot find module ...
+```
+
+Lösung:
+
+```bash
+npm install
+```
+
+---
+
+## Port 4321 ist belegt
+
+In der Datei
+
+```text
+config/serve.json
+```
+
+einen anderen Port vergeben:
+
+```json
+{
+  "port": 4322
+}
+```
+
+---
+
+# Quick Start
+
+```bash
+# Repository klonen
+git clone <repository-url>
+
+# Projekt öffnen
+cd MediaAssetsLibrary
+
+# Abhängigkeiten installieren
+npm install
+
+# Entwicklerzertifikat installieren
+gulp trust-dev-cert
+
+# config/serve.json anpassen
+
+# Entwicklungsserver starten
+gulp serve
+```
+
+---
+
+# Ansprechpartner
+
+Bei Fragen zur Architektur, den verwendeten SharePoint-Listenfeldern oder der Deployment-Konfiguration bitte einen Projektverantwortlichen kontaktieren.
+
+---
+
+**Media Assets Library**
+SharePoint Framework (SPFx) Medienverwaltung für die Caritas Berlin.
