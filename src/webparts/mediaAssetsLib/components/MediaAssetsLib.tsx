@@ -854,15 +854,21 @@ export default class MediaAssetsLib extends React.Component<
       uploadTotalFiles: 0,
     });
 
+    const targetBucket =
+      uploadBucket && uploadBucket.length > 0 ? uploadBucket[0] : undefined;
+
     this.setState(
       {
         isUploadOpen: false,
         uploadFiles: [],
-        viewMode: "buckets", // ✅ zurück zur Bucket Ansicht
-        selectedBucket: undefined, // ✅ Reset
-        searchText: "", // ✅ wichtig für Ansicht
+
+        viewMode: targetBucket ? "items" : "buckets",
+        resultMode: targetBucket ? "files" : "folders",
+        selectedBucket: targetBucket,
+
+        searchText: "",
       },
-      this.applyFilters, // ✅ neu berechnen
+      this.applyFilters,
     );
   }
 
