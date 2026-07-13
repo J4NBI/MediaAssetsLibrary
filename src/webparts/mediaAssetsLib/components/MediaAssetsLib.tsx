@@ -10,7 +10,7 @@ import PreviewModal from "./PreviewModal";
 import EditModal from "./EditModal";
 
 /*******************************************************
- * MEDIA ASSETS LIB V8
+ * MEDIA ASSETS LIB V10.1
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
