@@ -9,6 +9,8 @@ import FileCard from "./FileCard";
 import PreviewModal from "./PreviewModal";
 import EditModal from "./EditModal";
 
+import { detectFormat } from "../utils/mediaUtils";
+
 /*******************************************************
  * MEDIA ASSETS LIB V10.1
  * -----------------------------------------------------
@@ -805,7 +807,7 @@ export default class MediaAssetsLib extends React.Component<
           finalName = this.state.uploadName + extension;
         }
 
-        const detectedFormat = this.detectFormat(uploadFile.name);
+        const detectedFormat = detectFormat(uploadFile.name);
         const currentUser = await this.getCurrentUser();
         console.log("CURRENT USER", currentUser);
         const bodyData = {
