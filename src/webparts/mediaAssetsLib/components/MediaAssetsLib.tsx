@@ -699,7 +699,14 @@ export default class MediaAssetsLib extends React.Component<
     this.setState(
       {
         isUploadOpen: false,
+
+        uploadName: "",
+        uploadTags: [],
+        uploadCategory: "",
+        uploadDienst: "",
+        uploadBucket: [],
         uploadFiles: [],
+        uploadPreviewUrl: undefined,
 
         viewMode: targetBucket ? "items" : "buckets",
         resultMode: targetBucket ? "files" : "folders",
@@ -1689,7 +1696,19 @@ Files/UniqueId`;
               >,
             )
           }
-          onClose={() => this.setState({ isUploadOpen: false })}
+          onClose={() =>
+            this.setState({
+              isUploadOpen: false,
+
+              uploadName: "",
+              uploadTags: [],
+              uploadCategory: "",
+              uploadDienst: "",
+              uploadBucket: [],
+              uploadFiles: [],
+              uploadPreviewUrl: undefined,
+            })
+          }
           onUpload={() => this.uploadItem()}
         />
 
