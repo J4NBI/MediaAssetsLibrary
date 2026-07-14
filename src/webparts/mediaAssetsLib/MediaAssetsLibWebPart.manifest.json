@@ -24,7 +24,7 @@
     {
       "groupId": "5c03119e-3074-46fd-976b-c60198311f70", // Advanced
       "group": { "default": "Advanced" },
-      "title": { "default": "V2 MediaAssetsLib" },
+      "title": { "default": "V4 MediaAssetsLib" },
       "description": { "default": "MediaAssetsLib description" },
       "officeFabricIconFontName": "Page",
       "properties": {

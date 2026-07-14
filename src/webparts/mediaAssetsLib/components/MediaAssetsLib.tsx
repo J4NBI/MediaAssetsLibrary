@@ -147,6 +147,12 @@ export interface IMediaAssetsLibState {
 
   filterCreator?: string;
   dienstOptions: string[];
+
+  editingBucket?: string;
+  newBucketName: string;
+
+  isRenameBucketOpen: boolean;
+  bucketToRename?: string;
 }
 
 /********************* HAUPTKOMPNENTE ******************
@@ -245,6 +251,11 @@ export default class MediaAssetsLib extends React.Component<
 
       filterDienst: undefined,
       dienstOptions: [],
+
+      editingBucket: undefined,
+      newBucketName: "",
+      isRenameBucketOpen: false,
+      bucketToRename: undefined,
     };
   }
 
@@ -282,7 +293,7 @@ export default class MediaAssetsLib extends React.Component<
     }
   }
 
-  /**
+  /**git
    * Lädt die verfügbaren Dienstoptionen aus dem Dienste-Feld der SharePoint-Liste
    * Speichert die Optionen im State für die Dienste-Filter-Dropdown
    * @private
@@ -929,6 +940,72 @@ Files/UniqueId`;
       console.error("Update Fehler:", error);
     }
   }
+
+  private async renameBucket(): Promise<void> {
+    const { bucketToRename, newBucketName, allItems } = this.state;
+
+    if (!bucketToRename) {
+      return;
+    }
+
+    if (!newBucketName.trim()) {
+      return;
+    }
+
+    const alreadyExists = this.state.bucketOptions.some(
+      (bucket) =>
+        bucket.toLowerCase().trim() === newBucketName.toLowerCase().trim(),
+    );
+
+    if (
+      alreadyExists &&
+      bucketToRename.toLowerCase().trim() !== newBucketName.toLowerCase().trim()
+    ) {
+      alert("Ein Ordner mit diesem Namen existiert bereits.");
+      return;
+    }
+
+    try {
+      const affectedItems = allItems.filter((item) =>
+        item.bucket?.includes(bucketToRename),
+      );
+
+      for (const item of affectedItems) {
+        const updatedBuckets =
+          item.bucket?.map((bucket) =>
+            bucket === bucketToRename ? newBucketName.trim() : bucket,
+          ) || [];
+
+        const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/items(${item.id})`;
+
+        await this.props.spHttpClient.post(
+          url,
+          SPHttpClient.configurations.v1,
+          {
+            headers: {
+              Accept: "application/json;odata=nometadata",
+              "Content-Type": "application/json;odata=nometadata",
+              "IF-MATCH": "*",
+              "X-HTTP-Method": "MERGE",
+            },
+            body: JSON.stringify({
+              Bucket: updatedBuckets,
+            }),
+          },
+        );
+      }
+
+      await this.loadAllMedia();
+
+      this.setState({
+        isRenameBucketOpen: false,
+        bucketToRename: undefined,
+        newBucketName: "",
+      });
+    } catch (error) {
+      console.error("Bucket umbenennen fehlgeschlagen", error);
+    }
+  }
   /********************* FILTER LOGIK ********************
    * Suche + Kategorie + Datum + Format
    ******************************************************/
@@ -1103,6 +1180,15 @@ Files/UniqueId`;
 
     const bucketCounts = getBucketCounts(this.state.allItems);
 
+    const bucketNameExists = this.state.bucketOptions.some(
+      (bucket) =>
+        bucket.toLowerCase().trim() ===
+          this.state.newBucketName.toLowerCase().trim() &&
+        bucket !== this.state.bucketToRename,
+    );
+
+    const renameDisabled = !this.state.newBucketName.trim() || bucketNameExists;
+
     const filteredBuckets = getFilteredBuckets(
       this.state.bucketOptions,
       this.state.allItems,
@@ -1124,32 +1210,6 @@ Files/UniqueId`;
         <h2 id="top">Caritas Media Library</h2>
 
         <div className={styles.header}>
-          {!this.state.selectedBucket && (
-            <div className={styles.toggleGroup}>
-              <button
-                onClick={() => this.setState({ resultMode: "folders" })}
-                className={`${styles.toggleBtn} ${
-                  this.state.resultMode === "folders"
-                    ? styles.active
-                    : styles.inactive
-                }`}
-              >
-                Ordner
-              </button>
-
-              <button
-                onClick={() => this.setState({ resultMode: "files" })}
-                className={`${styles.toggleBtn} ${
-                  this.state.resultMode === "files"
-                    ? styles.active
-                    : styles.inactive
-                }`}
-              >
-                Dateien
-              </button>
-            </div>
-          )}
-
           {/* ✅ HIER FEHLT ER – EINFÜGEN */}
           <button
             className={styles.uploadMainBtn}
@@ -1324,7 +1384,25 @@ Files/UniqueId`;
                     )}
 
                     <div className={styles.bucketContent}>
-                      <h3>{bucket}</h3>
+                      <div className={styles.bucketHeader}>
+                        <h3>{bucket}</h3>
+
+                        <button
+                          className={styles.bucketEditBtn}
+                          onClick={(e) => {
+                            e.stopPropagation();
+
+                            this.setState({
+                              isRenameBucketOpen: true,
+                              bucketToRename: bucket,
+                              newBucketName: bucket,
+                            });
+                          }}
+                        >
+                          ✏️
+                        </button>
+                      </div>
+
                       <p className={styles.bucketCount}>
                         {bucketCounts[bucket] || 0} Dateien
                       </p>
@@ -1478,6 +1556,49 @@ Files/UniqueId`;
           }
         />
         {/* **************** UPLOAD MODAL **************** */}
+        {this.state.isRenameBucketOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.renameModal}>
+              <h3>Ordner umbenennen</h3>
+
+              <input
+                type="text"
+                value={this.state.newBucketName}
+                onChange={(e) =>
+                  this.setState({
+                    newBucketName: e.target.value,
+                  })
+                }
+              />
+              {bucketNameExists && (
+                <p className={styles.errorText}>
+                  Ein Ordner mit diesem Namen existiert bereits.
+                </p>
+              )}
+
+              <div className={styles.modalActions}>
+                <button
+                  onClick={() =>
+                    this.setState({
+                      isRenameBucketOpen: false,
+                      bucketToRename: undefined,
+                      newBucketName: "",
+                    })
+                  }
+                >
+                  Abbrechen
+                </button>
+
+                <button
+                  disabled={renameDisabled}
+                  onClick={() => this.renameBucket()}
+                >
+                  Speichern
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <UploadModal
           isOpen={this.state.isUploadOpen}
