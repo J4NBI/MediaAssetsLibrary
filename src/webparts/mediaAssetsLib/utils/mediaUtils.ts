@@ -1,3 +1,16 @@
+/**
+ * Erkennt den Dateityp basierend auf der Dateiendung
+ * Kategorisiert Dateien in: Bild, Video, Audio oder Dokument
+ * @private
+ * @param {string} fileName - Der Dateiname mit Erweiterung
+ * @returns {string} Der erkannte Dateityp (Bild, Video, Audio oder Dokument)
+ * @example
+ * detectFormat('photo.jpg')  // Returns: "Bild"
+ * detectFormat('video.mp4')  // Returns: "Video"
+ * detectFormat('song.mp3')   // Returns: "Audio"
+ * detectFormat('doc.pdf')    // Returns: "Dokument"
+ */
+
 export const detectFormat = (fileName: string): string => {
   const ext = fileName.split(".").pop()?.toLowerCase();
 
