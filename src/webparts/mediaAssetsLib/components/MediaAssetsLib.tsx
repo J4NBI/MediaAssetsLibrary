@@ -25,6 +25,7 @@ import {
   getBucketCounts,
   getBucketsSortedByNewest,
   getBucketPreview,
+  getFilteredBuckets,
 } from "../utils/bucketHelpers";
 
 /*******************************************************
@@ -324,86 +325,6 @@ export default class MediaAssetsLib extends React.Component<
    * @type {IntersectionObserver|undefined}
    */
   private observer?: IntersectionObserver;
-
-  /**
-   * Filtert Buckets basierend auf aktiven Filtern und Suchtext
-   * Ein Bucket wird angezeigt, wenn er mindestens ein gefordertes Element enthält
-   * @private
-   * @returns {string[]} Array der gefilterten Bucket-Namen
-   */
-  private getFilteredBuckets(): string[] {
-    const {
-      searchText,
-      filterCategory,
-      filterDienst,
-      filterFormat,
-      filterYear,
-      filterMonth,
-      filterCreator,
-    } = this.state;
-
-    const buckets = this.state.bucketOptions;
-
-    return buckets.filter((bucket) => {
-      const items = this.state.allItems.filter((item) =>
-        item.bucket?.includes(bucket),
-      );
-
-      const search = searchText.toLowerCase();
-
-      // ✅ gleiche Filterlogik wie applyFilters
-      const filteredItems = items.filter((item) => {
-        // TEXT
-        const matchesText =
-          !search ||
-          item.name.toLowerCase().includes(search) ||
-          (item.tags || []).join(" ").toLowerCase().includes(search);
-
-        // KATEGORIE
-        const matchesCategory =
-          !filterCategory || item.category === filterCategory;
-
-        const matchesDienst = !filterDienst || item.dienst === filterDienst;
-
-        // FORMAT
-        const matchesFormat = !filterFormat || item.format === filterFormat;
-
-        // DATUM
-        const date = item.created ? new Date(item.created) : null;
-
-        const matchesYear =
-          !filterYear || (date && date.getFullYear() === filterYear);
-
-        const matchesMonth =
-          !filterMonth || (date && date.getMonth() + 1 === filterMonth);
-
-        const matchesCreator =
-          !filterCreator || item.createdBy === filterCreator;
-
-        return (
-          matchesText &&
-          matchesCategory &&
-          matchesDienst &&
-          matchesCreator &&
-          matchesFormat &&
-          matchesYear &&
-          matchesMonth
-        );
-      });
-
-      const bucketMatchesSearch = search
-        ? bucket.toLowerCase().includes(search)
-        : false;
-
-      // ✅ Wenn Suche aktiv → Name ODER Inhalt
-      if (search) {
-        return bucketMatchesSearch || filteredItems.length > 0;
-      }
-
-      // ✅ Wenn KEINE Suche → nur Inhalt (Filter!)
-      return filteredItems.length > 0;
-    });
-  }
 
   /********************* UPLOAD **************************
    * Lädt Dateien hoch und setzt Metadaten
@@ -1190,6 +1111,20 @@ Files/UniqueId`;
     const creatorOptions = getUniqueCreators(this.state.allItems);
 
     const bucketCounts = getBucketCounts(this.state.allItems);
+
+    const filteredBuckets = getFilteredBuckets(
+      this.state.bucketOptions,
+      this.state.allItems,
+      {
+        searchText: this.state.searchText,
+        filterCategory: this.state.filterCategory,
+        filterDienst: this.state.filterDienst,
+        filterFormat: this.state.filterFormat,
+        filterYear: this.state.filterYear,
+        filterMonth: this.state.filterMonth,
+        filterCreator: this.state.filterCreator,
+      },
+    );
     /********************* RENDER **************************/
 
     return (
@@ -1303,7 +1238,7 @@ Files/UniqueId`;
         )}
         {this.state.resultMode === "folders" ? (
           <div className={styles.grid}>
-            {this.getFilteredBuckets()
+            {filteredBuckets
               .slice(0, this.state.bucketsToShow)
               .map((bucket) => {
                 const preview = getBucketPreview(this.state.allItems, bucket);
@@ -1467,7 +1402,7 @@ Files/UniqueId`;
 
         {/* MEHR LADEN ORDNER */}
         {this.state.resultMode === "folders" &&
-          this.state.bucketsToShow < this.getFilteredBuckets().length && (
+          this.state.bucketsToShow < filteredBuckets.length && (
             <button
               onClick={() =>
                 this.setState({

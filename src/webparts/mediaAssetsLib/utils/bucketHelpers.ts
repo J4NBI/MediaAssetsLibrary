@@ -56,3 +56,84 @@ export const getBucketPreview = (
 ): IMediaItem | undefined => {
   return items.find((item) => item.bucket?.includes(bucket));
 };
+
+/**
+ * Filtert Buckets basierend auf aktiven Filtern und Suchtext
+ * Ein Bucket wird angezeigt, wenn er mindestens ein gefordertes Element enthält
+ * @private
+ * @returns {string[]} Array der gefilterten Bucket-Namen
+ */
+
+export const getFilteredBuckets = (
+  buckets: string[],
+  items: IMediaItem[],
+  filters: {
+    searchText: string;
+    filterCategory?: string;
+    filterDienst?: string;
+    filterFormat?: string;
+    filterYear?: number;
+    filterMonth?: number;
+    filterCreator?: string;
+  },
+): string[] => {
+  const {
+    searchText,
+    filterCategory,
+    filterDienst,
+    filterFormat,
+    filterYear,
+    filterMonth,
+    filterCreator,
+  } = filters;
+
+  return buckets.filter((bucket) => {
+    const bucketItems = items.filter((item) => item.bucket?.includes(bucket));
+
+    const search = searchText.toLowerCase();
+
+    const filteredItems = bucketItems.filter((item) => {
+      const matchesText =
+        !search ||
+        item.name.toLowerCase().includes(search) ||
+        (item.tags || []).join(" ").toLowerCase().includes(search);
+
+      const matchesCategory =
+        !filterCategory || item.category === filterCategory;
+
+      const matchesDienst = !filterDienst || item.dienst === filterDienst;
+
+      const matchesFormat = !filterFormat || item.format === filterFormat;
+
+      const date = item.created ? new Date(item.created) : null;
+
+      const matchesYear =
+        !filterYear || (date && date.getFullYear() === filterYear);
+
+      const matchesMonth =
+        !filterMonth || (date && date.getMonth() + 1 === filterMonth);
+
+      const matchesCreator = !filterCreator || item.createdBy === filterCreator;
+
+      return (
+        matchesText &&
+        matchesCategory &&
+        matchesDienst &&
+        matchesFormat &&
+        matchesYear &&
+        matchesMonth &&
+        matchesCreator
+      );
+    });
+
+    const bucketMatchesSearch = search
+      ? bucket.toLowerCase().includes(search)
+      : false;
+
+    if (search) {
+      return bucketMatchesSearch || filteredItems.length > 0;
+    }
+
+    return filteredItems.length > 0;
+  });
+};
