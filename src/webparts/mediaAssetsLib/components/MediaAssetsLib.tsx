@@ -28,6 +28,8 @@ import {
   getFilteredBuckets,
 } from "../utils/bucketHelpers";
 
+import { getLibraryPath } from "../utils/sharepointHelpers";
+
 /*******************************************************
  * MEDIA ASSETS LIB V11
  * -----------------------------------------------------
@@ -440,8 +442,10 @@ export default class MediaAssetsLib extends React.Component<
         const fileBuffer = await uploadFile.arrayBuffer();
 
         const uploadUrl =
-          `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${this.getLibraryPath()}')` +
-          `/Files/add(overwrite=true,url='${uploadFile.name}')`;
+          `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${getLibraryPath(
+            this.props.siteUrl,
+            this.libraryName,
+          )}')` + `/Files/add(overwrite=true,url='${uploadFile.name}')`;
 
         console.log("⬆️ Starte Upload:", uploadFile.name);
 
@@ -757,7 +761,7 @@ Files/UniqueId`;
    */
   private async loadAllMedia(): Promise<void> {
     try {
-      const rootFolder = this.getLibraryPath();
+      const rootFolder = getLibraryPath(this.props.siteUrl, this.libraryName);
       const items = await this.getFolderContent(rootFolder);
 
       const uniqueBuckets = getBucketsSortedByNewest(items);

@@ -90,14 +90,14 @@ Für die lokale Entwicklung benötigt SharePoint Framework ein vertrauenswürdig
 Im Projektordner ausführen:
 
 ```bash
-gulp trust-dev-cert
+(npx) gulp trust-dev-cert
 ```
 
 Falls bereits ein altes oder fehlerhaftes Zertifikat vorhanden ist:
 
 ```bash
-gulp untrust-dev-cert
-gulp trust-dev-cert
+(npx) gulp untrust-dev-cert
+(npx) gulp trust-dev-cert
 ```
 
 ---
@@ -186,7 +186,7 @@ private readonly libraryName = "MediaLibrary";
 Nach erfolgreicher Installation und Konfiguration:
 
 ```bash
-gulp serve
+(npx) gulp serve
 ```
 
 Der Build-Prozess startet anschließend lokal.
@@ -239,8 +239,8 @@ MediaAssetsLibrary
 Für das Deployment zunächst das SPFx-Paket erstellen:
 
 ```bash
-gulp bundle --ship
-gulp package-solution --ship
+(npx) gulp bundle --ship
+(npx) gulp package-solution --ship
 ```
 
 Das generierte Paket befindet sich anschließend unter:
