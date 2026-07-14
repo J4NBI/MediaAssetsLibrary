@@ -51,3 +51,19 @@ export const getCurrentUser = async (
     title: user.Title,
   };
 };
+
+export const getChoiceFieldOptions = async (
+  siteUrl: string,
+  libraryName: string,
+  fieldName: string,
+  spHttpClient: SPHttpClient,
+): Promise<string[]> => {
+  const response = await spHttpClient.get(
+    `${siteUrl}/_api/web/lists/getbytitle('${libraryName}')/fields/getbyinternalnameortitle('${fieldName}')`,
+    SPHttpClient.configurations.v1,
+  );
+
+  const data = await response.json();
+
+  return data.Choices || [];
+};

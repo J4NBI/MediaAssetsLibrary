@@ -16,7 +16,11 @@ import {
   getUniqueYears,
   getUniqueCreators,
 } from "../utils/mediaHelpers";
-import { getRequestDigest, getCurrentUser } from "../services/spService";
+import {
+  getRequestDigest,
+  getCurrentUser,
+  getChoiceFieldOptions,
+} from "../services/spService";
 import {
   getBucketCounts,
   getBucketsSortedByNewest,
@@ -260,18 +264,16 @@ export default class MediaAssetsLib extends React.Component<
    */
   private async loadCategories(): Promise<void> {
     try {
-      const response = await this.props.spHttpClient.get(
-        `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/fields/getbyinternalnameortitle('Kategorie')`,
-        SPHttpClient.configurations.v1,
+      const categories = await getChoiceFieldOptions(
+        this.props.siteUrl,
+        this.libraryName,
+        "Kategorie",
+        this.props.spHttpClient,
       );
 
-      const data = await response.json();
-
       this.setState({
-        categoryOptions: data.Choices || [],
+        categoryOptions: categories,
       });
-
-      console.log("SHAREPOINT CATEGORIES", data.Choices);
     } catch (error) {
       console.error("Fehler beim Laden der Kategorien", error);
     }
@@ -300,15 +302,15 @@ export default class MediaAssetsLib extends React.Component<
    */
   private async loadDienste(): Promise<void> {
     try {
-      const response = await this.props.spHttpClient.get(
-        `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/fields/getbyinternalnameortitle('Dienste')`,
-        SPHttpClient.configurations.v1,
+      const dienste = await getChoiceFieldOptions(
+        this.props.siteUrl,
+        this.libraryName,
+        "Dienste",
+        this.props.spHttpClient,
       );
 
-      const data = await response.json();
-
       this.setState({
-        dienstOptions: data.Choices || [],
+        dienstOptions: dienste,
       });
     } catch (error) {
       console.error("Fehler beim Laden der Dienste", error);
