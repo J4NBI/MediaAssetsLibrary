@@ -16,6 +16,7 @@ import {
   getUniqueYears,
   getUniqueCreators,
 } from "../utils/mediaHelpers";
+import { getRequestDigest, getCurrentUser } from "../services/spService";
 
 /*******************************************************
  * MEDIA ASSETS LIB V10.1
@@ -452,52 +453,6 @@ export default class MediaAssetsLib extends React.Component<
     });
   }
 
-  /**
-   * Holt das FormDigestValue von SharePoint für POST/MERGE-Operationen
-   * Erforderlich für Schreibzugriff auf SharePoint REST API
-   * @private
-   * @async
-   * @returns {Promise<string>} Das FormDigestValue Token
-   * @throws {Error} Wenn der Digest-Abruf fehlschlägt
-   */
-  private async getRequestDigest(): Promise<string> {
-    const response = await this.props.spHttpClient.post(
-      `${this.props.siteUrl}/_api/contextinfo`,
-      SPHttpClient.configurations.v1,
-      {
-        headers: {
-          Accept: "application/json;odata=nometadata",
-        },
-      },
-    );
-
-    const data = await response.json();
-
-    return data.FormDigestValue;
-  }
-
-  /**
-   * Ruft Informationen des aktuellen angemeldeten Benutzers ab
-   * Wird verwendet, um den Ersteller bei Upload zu speichern
-   * @private
-   * @async
-   * @returns {Promise<{id: number, title: string}>} Benutzer-ID und Name
-   * @throws {Error} Wenn der Benutzerabruf fehlschlägt
-   */
-  private async getCurrentUser(): Promise<{ id: number; title: string }> {
-    const response = await this.props.spHttpClient.get(
-      `${this.props.siteUrl}/_api/web/currentuser`,
-      SPHttpClient.configurations.v1,
-    );
-
-    const user = await response.json();
-
-    return {
-      id: user.Id,
-      title: user.Title,
-    };
-  }
-
   /********************* UPLOAD **************************
    * Lädt Dateien hoch und setzt Metadaten
    ******************************************************/
@@ -516,8 +471,10 @@ export default class MediaAssetsLib extends React.Component<
     url: string,
     fileBuffer: ArrayBuffer,
   ): Promise<{ ServerRelativeUrl: string }> {
-    const digest = await this.getRequestDigest();
-
+    const digest = await getRequestDigest(
+      this.props.siteUrl,
+      this.props.spHttpClient,
+    );
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
 
@@ -650,7 +607,10 @@ export default class MediaAssetsLib extends React.Component<
         }
 
         const detectedFormat = detectFormat(uploadFile.name);
-        const currentUser = await this.getCurrentUser();
+        const currentUser = await getCurrentUser(
+          this.props.siteUrl,
+          this.props.spHttpClient,
+        );
         console.log("CURRENT USER", currentUser);
         const bodyData = {
           FileLeafRef: finalName,
