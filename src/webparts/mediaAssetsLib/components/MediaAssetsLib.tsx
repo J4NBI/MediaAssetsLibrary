@@ -11,6 +11,7 @@ import EditModal from "./EditModal";
 
 import { detectFormat } from "../utils/mediaUtils";
 import { IMediaItem, ISPFile } from "../models/types";
+import { getUniqueFormats } from "../utils/mediaHelpers";
 
 /*******************************************************
  * MEDIA ASSETS LIB V10.1
@@ -1249,19 +1250,6 @@ Files/UniqueId`;
   };
 
   /**
-   * Extrahiert alle einzigartigen Dateiformate aus den geladenen Elementen
-   * @private
-   * @returns {string[]} Array eindeutiger Format-Werte
-   */
-  private getUniqueFormats(): string[] {
-    const values = this.state.allItems
-      .map((item) => item.format)
-      .filter((v): v is string => !!v);
-
-    return Array.from(new Set(values));
-  }
-
-  /**
    * Extrahiert alle einzigartigen Jahre aus den geladenen Elementen
    * Sortiert sie in absteigender Reihenfolge (neueste zuerst)
    * @private
@@ -1315,7 +1303,7 @@ Files/UniqueId`;
 
     const yearOptions = this.getUniqueYears();
 
-    const formatOptions = this.getUniqueFormats();
+    const formatOptions = getUniqueFormats(this.state.allItems);
 
     const creatorOptions = this.getUniqueCreators();
 
