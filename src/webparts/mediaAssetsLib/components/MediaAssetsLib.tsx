@@ -20,6 +20,7 @@ import { getRequestDigest, getCurrentUser } from "../services/spService";
 import {
   getBucketCounts,
   getBucketsSortedByNewest,
+  getBucketPreview,
 } from "../utils/bucketHelpers";
 
 /*******************************************************
@@ -321,16 +322,6 @@ export default class MediaAssetsLib extends React.Component<
    * @type {IntersectionObserver|undefined}
    */
   private observer?: IntersectionObserver;
-
-  /**
-   * Findet das erste Element eines bestimmten Buckets für die Vorschau
-   * @private
-   * @param {string} bucket - Der Bucket-Name
-   * @returns {IMediaItem|undefined} Das erste Element des Buckets oder undefined
-   */
-  private getBucketPreview(bucket: string): IMediaItem | undefined {
-    return this.state.allItems.find((item) => item.bucket?.includes(bucket));
-  }
 
   /**
    * Filtert Buckets basierend auf aktiven Filtern und Suchtext
@@ -1313,8 +1304,7 @@ Files/UniqueId`;
             {this.getFilteredBuckets()
               .slice(0, this.state.bucketsToShow)
               .map((bucket) => {
-                const preview = this.getBucketPreview(bucket);
-
+                const preview = getBucketPreview(this.state.allItems, bucket);
                 const fileType = preview?.name?.split(".").pop()?.toLowerCase();
                 const isVideo = fileType === "mp4" || fileType === "mov";
                 const isAudio = [

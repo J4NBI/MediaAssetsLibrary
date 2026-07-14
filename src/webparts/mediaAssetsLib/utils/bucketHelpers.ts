@@ -43,3 +43,16 @@ export const getBucketsSortedByNewest = (items: IMediaItem[]): string[] => {
 
   return Object.keys(map).sort((a, b) => map[b] - map[a]);
 };
+
+/**
+ * Findet das erste Element eines bestimmten Buckets für die Vorschau
+ * @private
+ * @param {string} bucket - Der Bucket-Name
+ * @returns {IMediaItem|undefined} Das erste Element des Buckets oder undefined
+ */
+export const getBucketPreview = (
+  items: IMediaItem[],
+  bucket: string,
+): IMediaItem | undefined => {
+  return items.find((item) => item.bucket?.includes(bucket));
+};
