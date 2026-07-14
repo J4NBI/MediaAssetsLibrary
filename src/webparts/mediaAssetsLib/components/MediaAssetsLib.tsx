@@ -17,6 +17,10 @@ import {
   getUniqueCreators,
 } from "../utils/mediaHelpers";
 import { getRequestDigest, getCurrentUser } from "../services/spService";
+import {
+  getBucketCounts,
+  getBucketsSortedByNewest,
+} from "../utils/bucketHelpers";
 
 /*******************************************************
  * MEDIA ASSETS LIB V10.1
@@ -405,51 +409,6 @@ export default class MediaAssetsLib extends React.Component<
 
       // ✅ Wenn KEINE Suche → nur Inhalt (Filter!)
       return filteredItems.length > 0;
-    });
-  }
-
-  /**
-   * Zählt die Anzahl der Elemente in jedem Bucket
-   * @private
-   * @returns {{ [key: string]: number }} Objekt mit Bucket-Namen als Schlüssel und Elementanzahl als Wert
-   */
-  private getBucketCounts(): { [key: string]: number } {
-    const counts: { [key: string]: number } = {};
-
-    this.state.allItems.forEach((item) => {
-      if (item.bucket) {
-        item.bucket.forEach((b) => {
-          counts[b] = (counts[b] || 0) + 1;
-        });
-      }
-    });
-
-    return counts;
-  }
-
-  /**
-   * Sortiert Buckets nach dem neuesten Element in jedem Bucket (absteigend)
-   * @private
-   * @param {IMediaItem[]} items - Array von Medienelementen
-   * @returns {string[]} Sortierte Bucket-Namen (neueste zuerst)
-   */
-  private getBucketsSortedByNewest(items: IMediaItem[]): string[] {
-    const map: { [key: string]: number } = {};
-
-    items.forEach((item) => {
-      if (item.bucket && item.created) {
-        const time = new Date(item.created).getTime();
-
-        item.bucket.forEach((b) => {
-          if (!map[b] || map[b] < time) {
-            map[b] = time;
-          }
-        });
-      }
-    });
-    console.log("BUCKET MAP", map);
-    return Object.keys(map).sort((a, b) => {
-      return map[b] - map[a]; // neueste zuerst
     });
   }
 
@@ -887,8 +846,7 @@ Files/UniqueId`;
       const rootFolder = this.getLibraryPath();
       const items = await this.getFolderContent(rootFolder);
 
-      const uniqueBuckets = this.getBucketsSortedByNewest(items);
-
+      const uniqueBuckets = getBucketsSortedByNewest(items);
       this.setState(
         {
           allItems: items,
@@ -1238,8 +1196,7 @@ Files/UniqueId`;
 
     const creatorOptions = getUniqueCreators(this.state.allItems);
 
-    const bucketCounts = this.getBucketCounts();
-
+    const bucketCounts = getBucketCounts(this.state.allItems);
     /********************* RENDER **************************/
 
     return (
