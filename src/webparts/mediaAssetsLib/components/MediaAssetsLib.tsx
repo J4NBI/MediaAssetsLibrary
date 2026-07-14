@@ -11,7 +11,11 @@ import EditModal from "./EditModal";
 
 import { detectFormat } from "../utils/mediaUtils";
 import { IMediaItem, ISPFile } from "../models/types";
-import { getUniqueFormats } from "../utils/mediaHelpers";
+import {
+  getUniqueFormats,
+  getUniqueYears,
+  getUniqueCreators,
+} from "../utils/mediaHelpers";
 
 /*******************************************************
  * MEDIA ASSETS LIB V10.1
@@ -1249,39 +1253,6 @@ Files/UniqueId`;
     );
   };
 
-  /**
-   * Extrahiert alle einzigartigen Jahre aus den geladenen Elementen
-   * Sortiert sie in absteigender Reihenfolge (neueste zuerst)
-   * @private
-   * @returns {number[]} Array einzigartiger Jahre
-   */
-  private getUniqueYears(): number[] {
-    const years = this.state.allItems
-      .map((item) => {
-        if (!item.created) return null;
-
-        const date = new Date(item.created);
-        return date.getFullYear();
-      })
-      .filter((y) => y !== null) as number[];
-
-    // Duplikate entfernen + sortieren (neueste zuerst)
-    return Array.from(new Set(years)).sort((a, b) => b - a);
-  }
-
-  /**
-   * Extrahiert alle einzigartigen Ersteller aus den geladenen Elementen
-   * Sortiert sie alphabetisch
-   * @private
-   * @returns {string[]} Array eindeutiger Ersteller-Namen
-   */
-  private getUniqueCreators(): string[] {
-    const values = this.state.allItems
-      .map((item) => item.createdBy)
-      .filter((v): v is string => !!v);
-
-    return Array.from(new Set(values)).sort();
-  }
   /********************* BUCKET LADEN ********************
    * Lädt Choice Werte aus SharePoint
    ******************************************************/
@@ -1301,11 +1272,11 @@ Files/UniqueId`;
 
     const dienstOptions = this.state.dienstOptions;
 
-    const yearOptions = this.getUniqueYears();
+    const yearOptions = getUniqueYears(this.state.allItems);
 
     const formatOptions = getUniqueFormats(this.state.allItems);
 
-    const creatorOptions = this.getUniqueCreators();
+    const creatorOptions = getUniqueCreators(this.state.allItems);
 
     const bucketCounts = this.getBucketCounts();
 
