@@ -8,10 +8,10 @@
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
     "developer": {
-      "name": "",
-      "websiteUrl": "",
-      "privacyUrl": "",
-      "termsOfUseUrl": "",
+      "name": "Caritas Berlin",
+      "websiteUrl": "https://www.caritas-berlin.de",
+      "privacyUrl": "https://www.caritas-berlin.de/datenschutz",
+      "termsOfUseUrl": "https://www.caritas-berlin.de",
       "mpnId": "Undefined-1.20.0"
     },
     "metadata": {
