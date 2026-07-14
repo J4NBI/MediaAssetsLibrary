@@ -313,25 +313,6 @@ export default class MediaAssetsLib extends React.Component<
   private observer?: IntersectionObserver;
 
   /**
-   * Sammelt alle einzigartigen Bucket-Namen aus allen Elementen
-   * @private
-   * @returns {string[]} Array aller Bucket-Namen
-   */
-  private getAllBuckets(): string[] {
-    const map: { [key: string]: number } = {};
-
-    this.state.allItems.forEach((item) => {
-      if (item.bucket) {
-        item.bucket.forEach((b) => {
-          map[b] = (map[b] || 0) + 1;
-        });
-      }
-    });
-
-    return Object.keys(map);
-  }
-
-  /**
    * Findet das erste Element eines bestimmten Buckets für die Vorschau
    * @private
    * @param {string} bucket - Der Bucket-Name
@@ -358,7 +339,7 @@ export default class MediaAssetsLib extends React.Component<
       filterCreator,
     } = this.state;
 
-    const buckets = this.getAllBuckets();
+    const buckets = this.state.bucketOptions;
 
     return buckets.filter((bucket) => {
       const items = this.state.allItems.filter((item) =>
@@ -460,7 +441,7 @@ export default class MediaAssetsLib extends React.Component<
         });
       }
     });
-
+    console.log("BUCKET MAP", map);
     return Object.keys(map).sort((a, b) => {
       return map[b] - map[a]; // neueste zuerst
     });
