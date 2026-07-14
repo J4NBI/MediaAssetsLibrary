@@ -23,7 +23,7 @@ import {
 } from "../utils/bucketHelpers";
 
 /*******************************************************
- * MEDIA ASSETS LIB V10.1
+ * MEDIA ASSETS LIB V11
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
