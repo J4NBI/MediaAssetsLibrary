@@ -283,19 +283,6 @@ export default class MediaAssetsLib extends React.Component<
   }
 
   /**
-   * Gibt den Bibliotheks-Pfad für REST-API-Aufrufe zurück
-   * Kombiniert die Site-URL mit dem Bibliotheksnamen
-   * @private
-   * @returns {string} Relativer Pfad zur Bibliothek
-   * @example
-   * // Returns: "/sites/mysite/Medienbibliothek"
-   * getLibraryPath();
-   */
-  private getLibraryPath(): string {
-    return `${new URL(this.props.siteUrl).pathname}/${this.libraryName}`;
-  }
-
-  /**
    * Lädt die verfügbaren Dienstoptionen aus dem Dienste-Feld der SharePoint-Liste
    * Speichert die Optionen im State für die Dienste-Filter-Dropdown
    * @private
