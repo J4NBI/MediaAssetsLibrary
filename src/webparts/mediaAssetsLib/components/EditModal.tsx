@@ -25,7 +25,6 @@ interface IEditModalProps {
   editName: string;
   editTags: string[];
   editCategory: string;
-  editFormat: string;
   editBucket: string[];
 
   categoryOptions: string[];
@@ -37,7 +36,6 @@ interface IEditModalProps {
 
   onNameChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
-  onFormatChange: (value: string) => void;
   onBucketChange: (values: string[]) => void;
   onTagsChange: (values: string[]) => void;
 
@@ -55,7 +53,6 @@ const EditModal: React.FC<IEditModalProps> = ({
   editName,
   editTags,
   editCategory,
-  editFormat,
   editBucket,
   editDienst,
   dienstOptions,
@@ -71,7 +68,6 @@ const EditModal: React.FC<IEditModalProps> = ({
 
   onNameChange,
   onCategoryChange,
-  onFormatChange,
   onBucketChange,
   onTagsChange,
 }) => {
@@ -187,21 +183,6 @@ const EditModal: React.FC<IEditModalProps> = ({
               {dienst}
             </option>
           ))}
-        </select>
-
-        {/* FORMAT */}
-
-        <select
-          value={editFormat}
-          onChange={(e) => onFormatChange(e.target.value)}
-        >
-          <option value="">Format wählen</option>
-
-          <option value="Bild">Bild</option>
-
-          <option value="Video">Video</option>
-
-          <option value="Audio">Audio</option>
         </select>
 
         {/* BUCKETS */}
