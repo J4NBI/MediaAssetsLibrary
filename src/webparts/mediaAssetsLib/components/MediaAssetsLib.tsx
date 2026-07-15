@@ -1293,17 +1293,24 @@ Files/UniqueId`;
                   <div
                     key={bucket}
                     className={styles.bucketCard}
-                    onClick={() =>
+                    onClick={() => {
+                      const shouldClearSearch =
+                        this.state.searchText.trim().toLowerCase() ===
+                        bucket.trim().toLowerCase();
+
                       this.setState(
                         {
                           viewMode: "items",
                           resultMode: "files",
                           selectedBucket: bucket,
                           visibleItemsCount: 20,
+                          searchText: shouldClearSearch
+                            ? ""
+                            : this.state.searchText,
                         },
                         this.applyFilters,
-                      )
-                    }
+                      );
+                    }}
                   >
                     {/* +++++++++++ UPLOAD BUTTON BOTTOM RIGHT +++++++++++ */}
                     <button
