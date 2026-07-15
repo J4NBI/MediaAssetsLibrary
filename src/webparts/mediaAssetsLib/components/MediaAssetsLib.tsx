@@ -2,6 +2,7 @@ import * as React from "react";
 import { SPHttpClient } from "@microsoft/sp-http";
 import type { IMediaAssetsLibProps } from "./IMediaAssetsLibProps";
 import styles from "./MediaAssetsLib.module.scss";
+import { Icon } from "@fluentui/react";
 
 import UploadModal from "./UploadModal";
 import FilterBar from "./FilterBar";
@@ -1084,28 +1085,6 @@ Files/UniqueId`;
       });
     }
 
-    /*
-    if (this.state.filterYear) {
-      filtered = filtered.filter((item) => {
-        console.log("CREATED RAW:", item.created);
-
-        if (!item.created) return false;
-
-        const date = new Date(item.created);
-
-        console.log("PARSED DATE:", date);
-        console.log("YEAR:", date.getFullYear());
-
-        const itemYear = date.getFullYear();
-        const selectedYear = this.state.filterYear;
-
-        console.log("COMPARE:", itemYear, selectedYear);
-
-        return itemYear == selectedYear;
-      });
-    }
-      */
-
     if (this.state.filterMonth) {
       filtered = filtered.filter((item) => {
         if (!item.created) return false;
@@ -1400,7 +1379,7 @@ Files/UniqueId`;
                             });
                           }}
                         >
-                          ✏️
+                          <Icon iconName="Edit" />
                         </button>
                       </div>
 
