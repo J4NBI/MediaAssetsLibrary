@@ -32,7 +32,7 @@ import {
 import { getLibraryPath } from "../utils/sharepointHelpers";
 
 /*******************************************************
- * MEDIA ASSETS LIB V11.1
+ * MEDIA ASSETS LIB V12
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
