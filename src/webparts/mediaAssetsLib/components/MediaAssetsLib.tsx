@@ -293,7 +293,7 @@ export default class MediaAssetsLib extends React.Component<
     }
   }
 
-  /**git
+  /**
    * Lädt die verfügbaren Dienstoptionen aus dem Dienste-Feld der SharePoint-Liste
    * Speichert die Optionen im State für die Dienste-Filter-Dropdown
    * @private
@@ -381,6 +381,11 @@ export default class MediaAssetsLib extends React.Component<
 
       xhr.send(fileBuffer);
     });
+  }
+
+  private async reloadMedia(): Promise<void> {
+    await this.loadAllMedia();
+    await this.loadVideoThumbnails();
   }
 
   /**
@@ -523,8 +528,7 @@ export default class MediaAssetsLib extends React.Component<
       }
     }
 
-    await this.loadAllMedia();
-    await this.loadVideoThumbnails();
+    await this.reloadMedia();
 
     this.setState({
       isUploading: false,
@@ -600,8 +604,7 @@ export default class MediaAssetsLib extends React.Component<
       if (response.ok) {
         console.log("✅ Element gelöscht");
 
-        await this.loadAllMedia();
-        await this.loadVideoThumbnails();
+        await this.reloadMedia();
 
         this.setState({
           isEditOpen: false,
@@ -630,8 +633,7 @@ export default class MediaAssetsLib extends React.Component<
    */
 
   public async componentDidMount(): Promise<void> {
-    await this.loadAllMedia();
-    await this.loadVideoThumbnails();
+    await this.reloadMedia();
     await this.loadCategories();
     await this.loadDienste();
 
@@ -932,8 +934,7 @@ Files/UniqueId`;
       console.log("Update erfolgreich");
 
       // neu laden → damit UI sofort aktualisiert wird
-      await this.loadAllMedia();
-      await this.loadVideoThumbnails();
+      await this.reloadMedia();
 
       this.setState({ isEditOpen: false });
     } catch (error) {
