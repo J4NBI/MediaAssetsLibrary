@@ -1200,7 +1200,7 @@ Files/UniqueId`;
         </div>
 
         {/* **************** SEARCH **************** */}
-        <div>
+        <div className={styles.filterRow}>
           <input
             type="text"
             placeholder={

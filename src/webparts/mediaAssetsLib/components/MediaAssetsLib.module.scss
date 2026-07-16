@@ -150,6 +150,7 @@ html {
 .searchContainer {
   display: flex;
   flex-direction: column;
+
   align-items: flex-start; // 👈 DAS FIXT ES
 }
 
@@ -217,9 +218,12 @@ html {
 }
 
 .filterGroup {
-  margin-top: 10px;
   display: flex;
   gap: 8px;
+}
+
+.filterGroup select {
+  flex: 1;
 }
 
 /* GRID */
@@ -428,7 +432,17 @@ html {
 }
 
 .itemContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   padding: 32px;
+}
+
+.itemContent h3,
+.itemContent p {
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .tagList {

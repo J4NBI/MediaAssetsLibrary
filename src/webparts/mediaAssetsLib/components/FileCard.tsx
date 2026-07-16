@@ -75,26 +75,28 @@ const FileCard: React.FC<IFileCardProps> = ({
       )}
 
       <div className={styles.itemContent}>
-        <h3>{item.name}</h3>
+        <div>
+          <h3>{item.name}</h3>
 
-        <p>Ersteller: {item.createdBy || "-"}</p>
+          <p>Ersteller: {item.createdBy || "-"}</p>
 
-        <p>Kategorie: {item.category || "-"}</p>
+          <p>Kategorie: {item.category || "-"}</p>
 
-        <p>Dienst: {item.dienst || "-"}</p>
+          <p>Dienst: {item.dienst || "-"}</p>
 
-        <div className={styles.tagList}>
-          {(item.tags || []).map((tag: string, i: number) => (
-            <span key={i} className={styles.tag}>
-              {tag}
-            </span>
-          ))}
+          <div className={styles.tagList}>
+            {(item.tags || []).map((tag: string, i: number) => (
+              <span key={i} className={styles.tag}>
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <p className={styles.itemDate}>
+            Erstellt am:{" "}
+            {item.created ? new Date(item.created).toLocaleDateString() : "-"}
+          </p>
         </div>
-
-        <p className={styles.itemDate}>
-          Erstellt am:{" "}
-          {item.created ? new Date(item.created).toLocaleDateString() : "-"}
-        </p>
 
         <div className={styles.itemActions}>
           <button onClick={onDownload} className={styles.downloadBtn}>
