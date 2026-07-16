@@ -1325,7 +1325,7 @@ Files/UniqueId`;
                         });
                       }}
                     >
-                      <span className={styles.plusIcon}>+</span>
+                      <Icon iconName="Add" className={styles.plusIcon} />
                     </button>
 
                     {preview && !isVideo && !isAudio && (

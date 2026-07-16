@@ -287,29 +287,47 @@ html {
 
 .bucketUploadBtn {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
+  bottom: 20px;
+  right: 16px;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   background: var(--accent);
   color: white;
   border: none;
-  font-size: 18px;
-  font-weight: bold;
   cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  z-index: 20;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    transform: scale(1.15);
+    box-shadow: 0 6px 16px rgba(206, 30, 27, 0.4);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 .plusIcon {
-  margin-bottom: 4px;
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 16px;
   color: white;
+
+  transition: transform 0.2s ease;
+}
+
+.bucketUploadBtn:hover .plusIcon {
+  transform: rotate(90deg) scale(1.1);
+}
+
+.bucketUploadBtn:active .plusIcon {
+  transform: rotate(90deg) scale(0.9);
 }
 
 .previewImg {
@@ -706,6 +724,30 @@ html {
   cursor: pointer;
   font-size: 16px;
   padding: 4px;
+
+  transition: transform 0.2s ease;
+}
+
+.bucketEditBtn:hover {
+  animation: pencilBounce 0.5s ease;
+}
+
+@keyframes pencilBounce {
+  0% {
+    transform: translateY(0);
+  }
+
+  30% {
+    transform: translateY(-4px);
+  }
+
+  60% {
+    transform: translateY(1px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
 }
 
 .modalOverlay {
