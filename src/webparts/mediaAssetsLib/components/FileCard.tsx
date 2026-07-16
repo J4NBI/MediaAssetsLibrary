@@ -71,7 +71,7 @@ const FileCard: React.FC<IFileCardProps> = ({
       )}
 
       {!isVideo && !isAudio && (
-        <img src={fileUrl} className={styles.modalMedia} onClick={onPreview} />
+        <img src={fileUrl} className={styles.itemImg} onClick={onPreview} />
       )}
 
       <div className={styles.itemContent}>
