@@ -1565,6 +1565,7 @@ Files/UniqueId`;
 
               <div className={styles.modalActions}>
                 <button
+                  className={styles.editBtn}
                   onClick={() =>
                     this.setState({
                       isRenameBucketOpen: false,
@@ -1577,6 +1578,9 @@ Files/UniqueId`;
                 </button>
 
                 <button
+                  className={`${styles.downloadBtn} ${
+                    renameDisabled ? styles.disabled : ""
+                  }`}
                   disabled={renameDisabled}
                   onClick={() => this.renameBucket()}
                 >

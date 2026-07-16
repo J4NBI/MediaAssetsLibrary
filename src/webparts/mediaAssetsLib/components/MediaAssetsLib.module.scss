@@ -15,6 +15,9 @@ html {
   --accent-hover: #a11614;
   --btn-gray: #e5e5e5;
 
+  --danger: #bca6a7;
+  --danger-hover: #8e7e7f;
+
   --shadow-striking:
     0 30px 60px rgba(0, 0, 0, 0.12), 0 10px 20px rgba(0, 0, 0, 0.08);
   --shadow-hover:
@@ -125,6 +128,18 @@ html {
     transform: translateY(-8px) scale(1.1) rotate(90deg);
     background: var(--accent-hover);
   }
+}
+
+.uploadBtn:hover:not(.disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(206, 30, 27, 0.25);
+}
+
+.uploadBtn:active:not(.disabled) {
+  transform: translateY(0) scale(0.98);
 }
 
 .btnFlex {
@@ -319,11 +334,15 @@ html {
   font-size: 16px;
   color: white;
 
+  position: relative;
+  left: 0px;
+  transform: translateX(1px);
   transition: transform 0.2s ease;
 }
 
 .bucketUploadBtn:hover .plusIcon {
   transform: rotate(90deg) scale(1.1);
+  left: 0px;
 }
 
 .bucketUploadBtn:active .plusIcon {
@@ -436,6 +455,30 @@ html {
   width: auto; // ✅ verhindert full width
 }
 
+.bucketTag {
+  background: var(--accent);
+  color: var(--surface);
+
+  padding: 6px 12px;
+
+  border: 1px solid var(--accent);
+
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  cursor: pointer;
+
+  transition: all 0.3s ease;
+}
+
+.bucketTag:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
 .itemDate {
   font-size: 0.85rem;
   color: var(--muted);
@@ -525,6 +568,9 @@ html {
 
 .modalOverlayEdit {
   background: rgba(0, 0, 0, 0.7);
+
+  overflow-y: auto;
+  padding: 20px;
 }
 
 .modalOverlayUpload {
@@ -564,13 +610,64 @@ html {
 }
 
 .modalBox {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  width: 400px;
+  background: var(--surface);
+  width: 600px;
+  max-width: 90vw;
+
+  max-height: 90vh;
+  overflow-y: auto;
+
+  padding: 32px;
+
+  border-radius: 0;
+  border: 0;
+
+  box-shadow: var(--shadow-striking);
+
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+
+  animation: modalEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fileSelectBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 14px;
+
+  background: var(--surface);
+  color: var(--text);
+
+  border: 1px solid var(--border);
+  border-radius: 0;
+
+  cursor: pointer;
+
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fileSelectBtn:hover {
+  background: var(--text);
+  color: var(--surface);
 }
 
 .editPreview {
@@ -600,7 +697,30 @@ html {
 
 .tagInput {
   width: 100%;
-  margin-top: 10px;
+
+  padding: 14px 16px;
+
+  border: 2px solid var(--border);
+  border-radius: 0;
+
+  background: var(--surface);
+
+  font-family: inherit;
+  font-size: 14px;
+
+  box-sizing: border-box;
+
+  transition: all 0.3s ease;
+}
+
+.tagInput:hover {
+  border-color: var(--text);
+}
+
+.tagInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
 }
 
 .modalActions {
@@ -611,12 +731,29 @@ html {
 
 .btnDelete {
   flex: 1;
-  background: #d13438;
-  color: white;
-  border: none;
-  border-radius: 6px;
+
+  padding: 14px;
+
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: var(--surface);
+
+  border-radius: 0;
+
   cursor: pointer;
-  font-weight: bold;
+
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btnDelete:hover {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+
+  transform: translateY(-3px);
 }
 
 .uploadBox {
@@ -643,15 +780,30 @@ html {
 }
 
 .uploadBtn {
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
+  width: 100%;
+
+  padding: 14px;
+
+  background: var(--accent);
+  color: var(--surface);
+
+  border: 1px solid var(--accent);
+  border-radius: 0;
+
   cursor: pointer;
 
-  &.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.uploadBtn:hover:not(.disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+
+  transform: translateY(-3px);
 }
 
 /* SCROLL */
@@ -691,6 +843,10 @@ html {
 .disabled {
   opacity: 0.5;
   cursor: not-allowed;
+
+  background: var(--btn-gray) !important;
+  border-color: var(--btn-gray) !important;
+  color: var(--text) !important;
 }
 
 .visible {
@@ -702,14 +858,32 @@ html {
 }
 
 .loadMoreBtn {
-  padding: 10px 16px;
-  font-size: 16px;
-  background: #0078d4;
-  color: white;
-  border: none;
-  border-radius: 8px;
+  padding: 14px 24px;
+
+  background: var(--text);
+  color: var(--surface);
+
+  border: 1px solid var(--text);
+  border-radius: 0;
+
   cursor: pointer;
+
+  font-family: inherit;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
   margin-top: 20px;
+
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loadMoreBtn:hover {
+  background: var(--surface);
+  color: var(--text);
+
+  transform: translateY(-3px);
 }
 
 .bucketHeader {
@@ -763,20 +937,84 @@ html {
 }
 
 .renameModal {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  min-width: 400px;
+  background: var(--surface);
+
+  padding: 32px;
+
+  border-radius: 0;
+  box-shadow: var(--shadow-striking);
+
+  min-width: 500px;
 
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  animation: modalEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .renameModal input {
   width: 100%;
-  padding: 10px;
+
+  padding: 14px 16px;
+
   box-sizing: border-box;
+
+  border: 2px solid var(--border);
+  border-radius: 0;
+
+  background: var(--surface-muted);
+
+  transition: all 0.3s ease;
+}
+
+.renameModal input:hover {
+  border-color: var(--text);
+}
+
+.renameModal input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.renameModal h3,
+.modalBox h3 {
+  margin: 0;
+
+  font-size: 1.6rem;
+  font-weight: 800;
+
+  letter-spacing: -0.02em;
+
+  color: var(--text);
+}
+
+.modalBox select {
+  width: 100%;
+
+  padding: 14px 16px;
+
+  border: 2px solid var(--border);
+  border-radius: 0;
+
+  background: var(--surface);
+
+  font-family: inherit;
+  font-size: 14px;
+
+  transition: all 0.3s ease;
+
+  cursor: pointer;
+}
+
+.modalBox select:hover {
+  border-color: var(--text);
+}
+
+.modalBox select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .modalActions {

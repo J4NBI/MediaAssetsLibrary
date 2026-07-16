@@ -106,6 +106,7 @@ const EditModal: React.FC<IEditModalProps> = ({
 
         <input
           type="text"
+          className={styles.tagInput}
           value={editName}
           onChange={(e) => onNameChange(e.target.value)}
           placeholder="Name"
@@ -196,11 +197,11 @@ const EditModal: React.FC<IEditModalProps> = ({
         {/* BUTTONS */}
 
         <div className={styles.modalActions}>
-          <button onClick={onClose} style={{ flex: 1 }}>
+          <button onClick={onClose} className={styles.editBtn}>
             Abbrechen
           </button>
 
-          <button onClick={onSave} className={styles.btnFlex}>
+          <button onClick={onSave} className={styles.downloadBtn}>
             Speichern
           </button>
 

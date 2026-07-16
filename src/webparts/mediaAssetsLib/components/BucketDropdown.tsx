@@ -1,4 +1,5 @@
 import * as React from "react";
+import styles from "./MediaAssetsLib.module.scss";
 
 export interface IBucketDropdownProps {
   options: string[];
@@ -50,9 +51,8 @@ const BucketDropdown = ({
 
   return (
     <div ref={ref} style={{ position: "relative", width: "100%" }}>
-      <label>Ordner</label>
-
       <input
+        className={styles.tagInput}
         type="text"
         style={{ width: "100%" }}
         value={input}
@@ -123,13 +123,7 @@ const BucketDropdown = ({
         {selected.map((b) => (
           <span
             key={b}
-            style={{
-              background: "#ecdd04",
-              color: "black",
-              padding: "4px 8px",
-              borderRadius: 0,
-              cursor: "pointer",
-            }}
+            className={styles.bucketTag}
             onClick={() => onChange(selected.filter((x) => x !== b))}
           >
             {b} ✕

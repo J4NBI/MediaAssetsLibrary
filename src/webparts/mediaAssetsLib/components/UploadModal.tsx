@@ -70,8 +70,10 @@ const UploadModal: React.FC<IUploadModalProps> = ({
               </div>
             )}
             <input
+              id="uploadFileInput"
               type="file"
               multiple
+              style={{ display: "none" }}
               onChange={(e) => {
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
@@ -94,9 +96,13 @@ const UploadModal: React.FC<IUploadModalProps> = ({
                 });
               }}
             />
+            <label htmlFor="uploadFileInput" className={styles.fileSelectBtn}>
+              Datei auswählen
+            </label>
             <div>{state.uploadFiles?.length} Dateien gewählt</div>
             {(!state.uploadFiles || state.uploadFiles.length <= 1) && (
               <input
+                className={styles.tagInput}
                 type="text"
                 placeholder="Name"
                 value={state.uploadName}
@@ -183,8 +189,9 @@ const UploadModal: React.FC<IUploadModalProps> = ({
               />
             </div>
 
-            <button onClick={onClose}>Schließen</button>
-
+            <button onClick={onClose} className={styles.editBtn}>
+              Schließen
+            </button>
             {state.isUploading && (
               <div style={{ marginTop: 20 }}>
                 <div>
