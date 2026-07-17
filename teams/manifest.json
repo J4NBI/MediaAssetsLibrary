@@ -1,0 +1,45 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "1.0.0",
+
+  "id": "9c296475-0bab-4e93-8d33-a238922417d4",
+
+  "developer": {
+    "name": "Caritas Berlin",
+    "websiteUrl": "https://www.caritas-berlin.de",
+    "privacyUrl": "https://www.caritas-berlin.de/datenschutz",
+    "termsOfUseUrl": "https://www.caritas-berlin.de/nutzungsbedingungen"
+  },
+
+  "name": {
+    "short": "Media Library",
+    "full": "Caritas Media Library"
+  },
+
+  "description": {
+    "short": "Zentrale Medienbibliothek",
+    "full": "Verwaltung von Bildern, Videos und Dokumenten der Caritas Berlin."
+  },
+
+  "accentColor": "#CE1E1B",
+
+  "icons": {
+    "outline": "outline.png",
+    "color": "color.png"
+  },
+
+  "staticTabs": [
+    {
+      "entityId": "media-library",
+      "name": "Media Library",
+      "contentUrl": "https://caritasberlin.sharepoint.com/sites/Medien_dev/SitePages/Medienbibliothek_Medien_dev.aspx",
+      "websiteUrl": "https://caritasberlin.sharepoint.com/sites/Medien_dev/SitePages/Medienbibliothek_Medien_dev.aspx",
+      "scopes": ["personal"]
+    }
+  ],
+
+  "permissions": ["identity"],
+
+  "validDomains": ["caritasberlin.sharepoint.com"]
+}
