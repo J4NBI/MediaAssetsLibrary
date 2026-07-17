@@ -445,11 +445,10 @@ export default class MediaAssetsLib extends React.Component<
       try {
         const fileBuffer = await uploadFile.arrayBuffer();
 
-        const uploadUrl =
-          `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${getLibraryPath(
-            this.props.siteUrl,
-            this.libraryName,
-          )}')` + `/Files/add(overwrite=true,url='${uploadFile.name}')`;
+        const uploadUrl = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${getLibraryPath(
+          this.props.siteUrl,
+          this.libraryName,
+        )}')/Files/add(overwrite=true,url='${uploadFile.name}')`;
 
         console.log("⬆️ Starte Upload:", uploadFile.name);
 
