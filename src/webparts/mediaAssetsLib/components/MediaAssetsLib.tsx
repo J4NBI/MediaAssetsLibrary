@@ -782,7 +782,122 @@ Files/UniqueId`;
   private async loadAllMedia(): Promise<void> {
     try {
       const rootFolder = getLibraryPath(this.props.siteUrl, this.libraryName);
-      const items = await this.getFolderContent(rootFolder);
+      // const items = await this.getFolderContent(rootFolder);
+      const realItems = await this.getFolderContent(rootFolder);
+
+      const testItems: IMediaItem[] = [
+        {
+          id: 9001,
+          uniqueId: "1",
+          name: "Juli.jpg",
+          fileRef: "",
+          created: "2026-07-15T10:00:00Z",
+          modified: "2026-07-15T10:00:00Z",
+          bucket: ["Juli Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9002,
+          uniqueId: "2",
+          name: "Juni.jpg",
+          fileRef: "",
+          created: "2026-06-15T10:00:00Z",
+          modified: "2026-06-15T10:00:00Z",
+          bucket: ["Juni Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9003,
+          uniqueId: "3",
+          name: "Mai.jpg",
+          fileRef: "",
+          created: "2026-05-15T10:00:00Z",
+          modified: "2026-05-15T10:00:00Z",
+          bucket: ["Mai Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9004,
+          uniqueId: "4",
+          name: "April.jpg",
+          fileRef: "",
+          created: "2026-04-15T10:00:00Z",
+          modified: "2026-04-15T10:00:00Z",
+          bucket: ["April Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9005,
+          uniqueId: "5",
+          name: "Maerz.jpg",
+          fileRef: "",
+          created: "2026-03-15T10:00:00Z",
+          modified: "2026-03-15T10:00:00Z",
+          bucket: ["März Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9006,
+          uniqueId: "6",
+          name: "Februar.jpg",
+          fileRef: "",
+          created: "2026-02-15T10:00:00Z",
+          modified: "2026-02-15T10:00:00Z",
+          bucket: ["Februar Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9007,
+          uniqueId: "7",
+          name: "Januar.jpg",
+          fileRef: "",
+          created: "2026-01-15T10:00:00Z",
+          modified: "2026-01-15T10:00:00Z",
+          bucket: ["Januar Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9008,
+          uniqueId: "8",
+          name: "Dezember.jpg",
+          fileRef: "",
+          created: "2025-12-15T10:00:00Z",
+          modified: "2025-12-15T10:00:00Z",
+          bucket: ["Dezember Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9009,
+          uniqueId: "9",
+          name: "November.jpg",
+          fileRef: "",
+          created: "2025-11-15T10:00:00Z",
+          modified: "2025-11-15T10:00:00Z",
+          bucket: ["November Ordner"],
+          tags: [],
+        } as IMediaItem,
+
+        {
+          id: 9010,
+          uniqueId: "10",
+          name: "Oktober.jpg",
+          fileRef: "",
+          created: "2025-10-15T10:00:00Z",
+          modified: "2025-10-15T10:00:00Z",
+          bucket: ["Oktober Ordner"],
+          tags: [],
+        } as IMediaItem,
+      ];
+
+      const items = [...realItems, ...testItems];
 
       const uniqueBuckets = getBucketsSortedByNewest(items);
       this.setState(
@@ -1192,7 +1307,18 @@ Files/UniqueId`;
       this.state.allItems,
       this.state.bucketOptions,
     );
-
+    const bucketsByMonth = monthGroups.map((group) => ({
+      group,
+      buckets: getBucketsForMonth(
+        this.state.allItems,
+        visibleBuckets,
+        group.year,
+        group.month,
+      ),
+    }));
+    console.log("Monate:", bucketsByMonth.length);
+    console.log("Angezeigt:", this.state.monthsToShow);
+    console.log("MONTH GROUPS", monthGroups);
     /********************* RENDER **************************/
 
     return (
@@ -1290,71 +1416,90 @@ Files/UniqueId`;
         )}
 
         {this.state.resultMode === "folders" ? (
-          <div className={styles.grid}>
-            {visibleBuckets.slice(0, this.state.bucketsToShow).map((bucket) => {
-              const preview = getBucketPreview(this.state.allItems, bucket);
-              const fileType = preview?.name?.split(".").pop()?.toLowerCase();
-              const isVideo = fileType === "mp4" || fileType === "mov";
-              const isAudio = [
-                "mp3",
-                "wav",
-                "aiff",
-                "aac",
-                "flac",
-                "ogg",
-                "m4a",
-              ].includes(fileType || "");
+          <>
+            {bucketsByMonth
+              .slice(0, this.state.monthsToShow)
+              .map(({ group, buckets }) => (
+                <div key={group.key}>
+                  <h2>{group.label}</h2>
 
-              const imageUrl = preview
-                ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
-                : "";
+                  <div className={styles.grid}>
+                    {buckets
+                      .slice(0, this.state.bucketsToShow)
+                      .map((bucket) => {
+                        const preview = getBucketPreview(
+                          this.state.allItems,
+                          bucket,
+                        );
+                        const fileType = preview?.name
+                          ?.split(".")
+                          .pop()
+                          ?.toLowerCase();
+                        const isVideo =
+                          fileType === "mp4" || fileType === "mov";
+                        const isAudio = [
+                          "mp3",
+                          "wav",
+                          "aiff",
+                          "aac",
+                          "flac",
+                          "ogg",
+                          "m4a",
+                        ].includes(fileType || "");
 
-              return (
-                <div
-                  key={bucket}
-                  className={styles.bucketCard}
-                  onClick={() => {
-                    const shouldClearSearch =
-                      this.state.searchText.trim().toLowerCase() ===
-                      bucket.trim().toLowerCase();
+                        const imageUrl = preview
+                          ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
+                          : "";
 
-                    this.setState(
-                      {
-                        viewMode: "items",
-                        resultMode: "files",
-                        selectedBucket: bucket,
-                        visibleItemsCount: 20,
-                        searchText: shouldClearSearch
-                          ? ""
-                          : this.state.searchText,
-                      },
-                      this.applyFilters,
-                    );
-                  }}
-                >
-                  <button
-                    className={styles.bucketUploadBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
+                        return (
+                          <div
+                            key={bucket}
+                            className={styles.bucketCard}
+                            onClick={() => {
+                              const shouldClearSearch =
+                                this.state.searchText.trim().toLowerCase() ===
+                                bucket.trim().toLowerCase();
 
-                      this.setState({
-                        isUploadOpen: true,
-                        uploadBucket: [bucket],
-                      });
-                    }}
-                  >
-                    <Icon iconName="Add" className={styles.plusIcon} />
-                  </button>
+                              this.setState(
+                                {
+                                  viewMode: "items",
+                                  resultMode: "files",
+                                  selectedBucket: bucket,
+                                  visibleItemsCount: 20,
+                                  searchText: shouldClearSearch
+                                    ? ""
+                                    : this.state.searchText,
+                                },
+                                this.applyFilters,
+                              );
+                            }}
+                          >
+                            <button
+                              className={styles.bucketUploadBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
 
-                  {preview && !isVideo && !isAudio && (
-                    <img
-                      src={imageUrl}
-                      className={styles.previewImg}
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "data:image/svg+xml;charset=UTF-8," +
-                          encodeURIComponent(`
+                                this.setState({
+                                  isUploadOpen: true,
+                                  uploadBucket: [bucket],
+                                });
+                              }}
+                            >
+                              <Icon
+                                iconName="Add"
+                                className={styles.plusIcon}
+                              />
+                            </button>
+
+                            {preview && !isVideo && !isAudio && (
+                              <img
+                                src={imageUrl}
+                                className={styles.previewImg}
+                                onError={(e) => {
+                                  e.currentTarget.src =
+                                    "data:image/svg+xml;charset=UTF-8," +
+                                    encodeURIComponent(`
         <svg width="250" height="150" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="#f3f2f1"/>
           <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c">
@@ -1362,61 +1507,64 @@ Files/UniqueId`;
           </text>
         </svg>
       `);
-                      }}
-                    />
-                  )}
+                                }}
+                              />
+                            )}
 
-                  {preview && isVideo && (
-                    <img
-                      src={preview.thumbnailUrl}
-                      className={styles.videoImg}
-                      style={{ cursor: "pointer" }}
-                    />
-                  )}
-                  {preview && isAudio && (
-                    <div
-                      className={styles.itemImg}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "50px",
-                        background: "#f3f2f1",
-                        cursor: "pointer",
-                      }}
-                    >
-                      🔊
-                    </div>
-                  )}
+                            {preview && isVideo && (
+                              <img
+                                src={preview.thumbnailUrl}
+                                className={styles.videoImg}
+                                style={{ cursor: "pointer" }}
+                              />
+                            )}
+                            {preview && isAudio && (
+                              <div
+                                className={styles.itemImg}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "50px",
+                                  background: "#f3f2f1",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                🔊
+                              </div>
+                            )}
 
-                  <div className={styles.bucketContent}>
-                    <div className={styles.bucketHeader}>
-                      <h3>{bucket}</h3>
+                            <div className={styles.bucketContent}>
+                              <div className={styles.bucketHeader}>
+                                <h3>{bucket}</h3>
 
-                      <button
-                        className={styles.bucketEditBtn}
-                        onClick={(e) => {
-                          e.stopPropagation();
+                                <button
+                                  className={styles.bucketEditBtn}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
 
-                          this.setState({
-                            isRenameBucketOpen: true,
-                            bucketToRename: bucket,
-                            newBucketName: bucket,
-                          });
-                        }}
-                      >
-                        <Icon iconName="Edit" />
-                      </button>
-                    </div>
+                                    this.setState({
+                                      isRenameBucketOpen: true,
+                                      bucketToRename: bucket,
+                                      newBucketName: bucket,
+                                    });
+                                  }}
+                                >
+                                  <Icon iconName="Edit" />
+                                </button>
+                              </div>
 
-                    <p className={styles.bucketCount}>
-                      {bucketCounts[bucket] || 0} Dateien
-                    </p>
+                              <p className={styles.bucketCount}>
+                                {bucketCounts[bucket] || 0} Dateien
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+          </>
         ) : (
           <div className={styles.grid}>
             {/* **************** MEDIA GRID **************** */}
@@ -1476,21 +1624,7 @@ Files/UniqueId`;
         )}
         {/* MEHR LADEN ORDNER */}
         {this.state.resultMode === "folders" &&
-          this.state.viewMode === "buckets" &&
-          this.state.bucketsToShow < visibleBuckets.length && (
-            <button
-              onClick={() =>
-                this.setState({
-                  bucketsToShow: this.state.bucketsToShow + 5,
-                })
-              }
-              className={styles.loadMoreBtn}
-            >
-              Mehr laden
-            </button>
-          )}
-        {this.state.viewMode === "months" &&
-          this.state.monthsToShow < monthGroups.length && (
+          visibleBuckets.length > this.state.bucketsToShow && (
             <button
               onClick={() =>
                 this.setState({
