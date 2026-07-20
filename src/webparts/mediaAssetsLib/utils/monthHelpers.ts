@@ -40,7 +40,7 @@ export function getBucketLatestDate(
 ): Date | undefined {
   const dates = items
     .filter((item) => item.bucket?.includes(bucket))
-    .map((item) => (item.created ? new Date(item.created) : undefined))
+    .map((item) => (item.modified ? new Date(item.modified) : undefined))
     .filter((d): d is Date => !!d);
 
   if (dates.length === 0) return undefined;
@@ -109,16 +109,21 @@ export function getMonthPreview(
   month: number,
 ): IMediaItem | undefined {
   const monthItems = items.filter((item) => {
-    if (!item.created) return false;
-    const date = new Date(item.created);
+    if (!item.modified) return false;
+
+    const date = new Date(item.modified);
+
     return date.getFullYear() === year && date.getMonth() + 1 === month;
   });
 
   if (monthItems.length === 0) return undefined;
 
   return monthItems.reduce((latest, item) => {
-    const latestTime = latest.created ? new Date(latest.created).getTime() : 0;
-    const itemTime = item.created ? new Date(item.created).getTime() : 0;
+    const latestTime = latest.modified
+      ? new Date(latest.modified).getTime()
+      : 0;
+
+    const itemTime = item.modified ? new Date(item.modified).getTime() : 0;
     return itemTime > latestTime ? item : latest;
   });
 }

@@ -30,9 +30,8 @@ export const getBucketsSortedByNewest = (items: IMediaItem[]): string[] => {
   const map: { [key: string]: number } = {};
 
   items.forEach((item) => {
-    if (item.bucket && item.created) {
-      const time = new Date(item.created).getTime();
-
+    if (item.bucket && item.modified) {
+      const time = new Date(item.modified).getTime();
       item.bucket.forEach((bucket) => {
         if (!map[bucket] || map[bucket] < time) {
           map[bucket] = time;
@@ -54,7 +53,17 @@ export const getBucketPreview = (
   items: IMediaItem[],
   bucket: string,
 ): IMediaItem | undefined => {
-  return items.find((item) => item.bucket?.includes(bucket));
+  const bucketItems = items.filter((item) => item.bucket?.includes(bucket));
+
+  bucketItems.sort((a, b) => {
+    const dateA = a.modified ? new Date(a.modified).getTime() : 0;
+
+    const dateB = b.modified ? new Date(b.modified).getTime() : 0;
+
+    return dateB - dateA;
+  });
+
+  return bucketItems[0];
 };
 
 /**

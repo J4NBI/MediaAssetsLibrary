@@ -29,6 +29,7 @@ export interface IMediaItem {
   category?: string;
   notes?: string;
   created?: string;
+  modified?: string;
   tags?: string[];
   bucket?: string[];
 
@@ -68,6 +69,7 @@ export interface ISPFile {
   Name: string;
   ServerRelativeUrl: string;
   TimeCreated: string;
+  TimeLastModified: string;
 
   UniqueId?: string;
 

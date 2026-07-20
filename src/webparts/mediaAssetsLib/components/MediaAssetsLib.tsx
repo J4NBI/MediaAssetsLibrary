@@ -476,11 +476,18 @@ export default class MediaAssetsLib extends React.Component<
 
       try {
         const fileBuffer = await uploadFile.arrayBuffer();
+        const extension = uploadFile.name.includes(".")
+          ? uploadFile.name.substring(uploadFile.name.lastIndexOf("."))
+          : "";
+
+        const basename = uploadFile.name.replace(extension, "");
+
+        const uniqueFileName = `${basename}_${Date.now()}${extension}`;
 
         const uploadUrl = `${this.props.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${getLibraryPath(
           this.props.siteUrl,
           this.libraryName,
-        )}')/Files/add(overwrite=true,url='${uploadFile.name}')`;
+        )}')/Files/add(overwrite=false,url='${uniqueFileName}')`;
 
         const result = await this.uploadFileWithProgress(uploadUrl, fileBuffer);
 
@@ -697,6 +704,7 @@ TimeCreated,
 Files/Name,
 Files/ServerRelativeUrl,
 Files/TimeCreated,
+Files/TimeLastModified,
 Files/ListItemAllFields/Id,
 Files/ListItemAllFields/Kategorie,
 Files/ListItemAllFields/Dienste,
@@ -728,6 +736,7 @@ Files/UniqueId`;
         dienst: f.ListItemAllFields?.Dienste,
         notes: f.ListItemAllFields?.Notizen,
         created: f.TimeCreated,
+        modified: f.TimeLastModified,
         tags: Array.isArray(f.ListItemAllFields?.Tags)
           ? f.ListItemAllFields.Tags
           : f.ListItemAllFields?.Tags
@@ -883,27 +892,48 @@ Files/UniqueId`;
     } = this.state;
 
     if (!selectedItem) return;
+    const nameExists = this.state.allItems.some(
+      (item) =>
+        item.id !== selectedItem.id &&
+        item.name?.toLowerCase().trim() === editName.toLowerCase().trim(),
+    );
+
+    if (nameExists) {
+      alert("Eine Datei mit diesem Namen existiert bereits.");
+      return;
+    }
 
     try {
       const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/items(${selectedItem.id})`;
       const tagsArray = editTags;
       const bucketsArray = editBucket;
 
-      await this.props.spHttpClient.post(url, SPHttpClient.configurations.v1, {
-        headers: {
-          Accept: "application/json;odata=nometadata",
-          "Content-Type": "application/json;odata=nometadata",
-          "IF-MATCH": "*",
-          "X-HTTP-Method": "MERGE",
+      const response = await this.props.spHttpClient.post(
+        url,
+        SPHttpClient.configurations.v1,
+        {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-Type": "application/json;odata=nometadata",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+          },
+          body: JSON.stringify({
+            FileLeafRef: editName,
+            Kategorie: editCategory,
+            Dienste: editDienst,
+            Tags: tagsArray,
+            Bucket: bucketsArray,
+          }),
         },
-        body: JSON.stringify({
-          FileLeafRef: editName,
-          Kategorie: editCategory,
-          Dienste: editDienst,
-          Tags: tagsArray,
-          Bucket: bucketsArray,
-        }),
-      });
+      );
+
+      console.log("UPDATE STATUS", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(errorText);
+      }
 
       await this.reloadMedia();
 
@@ -1068,12 +1098,13 @@ Files/UniqueId`;
       });
     }
 
-    // SORTIERUNG (neueste zuerst)
+    // Neueste Uploads zuerst
     filtered.sort((a, b) => {
-      const dateA = a.created ? new Date(a.created).getTime() : 0;
-      const dateB = b.created ? new Date(b.created).getTime() : 0;
+      const dateA = a.modified ? new Date(a.modified).getTime() : 0;
 
-      return dateB - dateA; // neueste zuerst
+      const dateB = b.modified ? new Date(b.modified).getTime() : 0;
+
+      return dateB - dateA;
     });
 
     this.setState({ visibleItems: filtered, visibleItemsCount: 20 });
