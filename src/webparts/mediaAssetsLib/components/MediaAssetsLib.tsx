@@ -419,7 +419,7 @@ export default class MediaAssetsLib extends React.Component<
 
     if (!uploadBucket || uploadBucket.length === 0) {
       alert("Bitte wählen Sie mindestens einen Ordner aus.");
-      this.setState({ isUploading: false }); // ✅ FIX!!
+      this.setState({ isUploading: false });
       return;
     }
 
@@ -430,8 +430,7 @@ export default class MediaAssetsLib extends React.Component<
     }
 
     if (!uploadFiles || uploadFiles.length === 0) {
-      console.log("❌ Keine Files gewählt");
-      this.setState({ isUploading: false }); // ✅ FIX!!
+      this.setState({ isUploading: false });
       return;
     }
 
@@ -449,8 +448,6 @@ export default class MediaAssetsLib extends React.Component<
           this.props.siteUrl,
           this.libraryName,
         )}')/Files/add(overwrite=true,url='${uploadFile.name}')`;
-
-        console.log("⬆️ Starte Upload:", uploadFile.name);
 
         const result = await this.uploadFileWithProgress(uploadUrl, fileBuffer);
 
@@ -491,19 +488,16 @@ export default class MediaAssetsLib extends React.Component<
           this.props.siteUrl,
           this.props.spHttpClient,
         );
-        console.log("CURRENT USER", currentUser);
+
         const bodyData = {
           FileLeafRef: finalName,
           Kategorie: uploadCategory || null,
           Dienste: uploadDienst || null,
           Tags: cleanTags,
-          Format: detectedFormat, // ✅ AUTO!
+          Format: detectedFormat,
           Bucket: cleanBuckets,
           Ersteller: currentUser.title,
         };
-
-        console.log("UPLOAD BUCKET RAW:", uploadBucket);
-        console.log("CLEAN BUCKET:", cleanBuckets);
 
         await this.props.spHttpClient.post(
           updateUrl,
@@ -518,8 +512,7 @@ export default class MediaAssetsLib extends React.Component<
             body: JSON.stringify(bodyData),
           },
         );
-        console.log("FINAL BODY:", bodyData);
-        console.log("✅ Fertig:", uploadFile.name);
+
         this.setState({
           uploadProgress: 100,
         });
@@ -543,7 +536,6 @@ export default class MediaAssetsLib extends React.Component<
     this.setState(
       {
         isUploadOpen: false,
-
         uploadName: "",
         uploadTags: [],
         uploadCategory: "",
@@ -551,11 +543,9 @@ export default class MediaAssetsLib extends React.Component<
         uploadBucket: [],
         uploadFiles: [],
         uploadPreviewUrl: undefined,
-
         viewMode: targetBucket ? "items" : "buckets",
         resultMode: targetBucket ? "files" : "folders",
         selectedBucket: targetBucket,
-
         searchText: "",
       },
       this.applyFilters,
@@ -602,8 +592,6 @@ export default class MediaAssetsLib extends React.Component<
       );
 
       if (response.ok) {
-        console.log("✅ Element gelöscht");
-
         await this.reloadMedia();
 
         this.setState({
@@ -777,7 +765,6 @@ Files/UniqueId`;
     }
   }
   private async loadVideoThumbnails(): Promise<void> {
-    console.log("THUMB ITEMS", this.state.allItems.length);
     const drivesResponse = await this.props.spHttpClient.get(
       `${this.props.siteUrl}/_api/v2.1/drives`,
       SPHttpClient.configurations.v1,
@@ -842,10 +829,6 @@ Files/UniqueId`;
       },
       this.applyFilters,
     );
-
-    const videoCount = updatedItems.filter((i) => i.thumbnailUrl).length;
-
-    console.log("ITEMS MIT THUMBNAIL", videoCount);
   }
 
   /********************* UPDATE **************************
@@ -875,65 +858,26 @@ Files/UniqueId`;
     if (!selectedItem) return;
 
     try {
-      /* BIBLIOTHEK ÄNDERN */
       const url = `${this.props.siteUrl}/_api/web/lists/getbytitle('${this.libraryName}')/items(${selectedItem.id})`;
       const tagsArray = editTags;
-
       const bucketsArray = editBucket;
 
-      // DEBBUG ___________________________________________________
-      console.log(
-        "🧪 UPDATE BODY:",
-        JSON.stringify(
-          {
-            FileLeafRef: editName,
-            Kategorie: editCategory,
-            Dienste: editDienst,
-            body: JSON.stringify({
-              FileLeafRef: editName,
-
-              Kategorie: editCategory,
-              Dienste: editDienst,
-
-              Tags: tagsArray,
-
-              Bucket: bucketsArray,
-            }),
-          },
-          null,
-          2,
-        ),
-      );
-
-      console.log("🧪 EDIT BUCKET:", editBucket);
-
-      const response = await this.props.spHttpClient.post(
-        url,
-        SPHttpClient.configurations.v1,
-        {
-          headers: {
-            Accept: "application/json;odata=nometadata",
-            "Content-Type": "application/json;odata=nometadata",
-            "IF-MATCH": "*",
-            "X-HTTP-Method": "MERGE",
-          },
-          /* _______________________________________________________________________ */
-          body: JSON.stringify({
-            FileLeafRef: editName,
-            Kategorie: editCategory,
-            Dienste: editDienst,
-            Tags: tagsArray,
-            Bucket: bucketsArray,
-          }),
+      await this.props.spHttpClient.post(url, SPHttpClient.configurations.v1, {
+        headers: {
+          Accept: "application/json;odata=nometadata",
+          "Content-Type": "application/json;odata=nometadata",
+          "IF-MATCH": "*",
+          "X-HTTP-Method": "MERGE",
         },
-      );
+        body: JSON.stringify({
+          FileLeafRef: editName,
+          Kategorie: editCategory,
+          Dienste: editDienst,
+          Tags: tagsArray,
+          Bucket: bucketsArray,
+        }),
+      });
 
-      const errorText = await response.text();
-      console.log("🧪 UPDATE RESPONSE:", errorText);
-
-      console.log("Update erfolgreich");
-
-      // neu laden → damit UI sofort aktualisiert wird
       await this.reloadMedia();
 
       this.setState({ isEditOpen: false });

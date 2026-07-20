@@ -38,10 +38,6 @@ const FileCard: React.FC<IFileCardProps> = ({
     fileType || "",
   );
 
-  if (isVideo) {
-    console.log("FILECARD VIDEO", item.name, item.thumbnailUrl);
-  }
-
   return (
     <div className={styles.itemCard}>
       {isVideo && (
