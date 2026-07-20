@@ -1255,12 +1255,22 @@ Files/UniqueId`;
         {this.state.viewMode === "buckets" && (
           <button
             onClick={() =>
-              this.setState({
-                viewMode: "months",
-                resultMode: "folders",
-                selectedMonth: undefined,
-                searchText: "",
-              })
+              this.setState(
+                {
+                  viewMode: "months",
+                  resultMode: "folders",
+                  selectedMonth: undefined,
+
+                  searchText: "",
+                  filterCategory: undefined,
+                  filterDienst: undefined,
+                  filterFormat: undefined,
+                  filterYear: undefined,
+                  filterMonth: undefined,
+                  filterCreator: undefined,
+                },
+                this.applyFilters,
+              )
             }
             className={styles.backBtn}
           >
@@ -1281,7 +1291,17 @@ Files/UniqueId`;
               creatorOptions={creatorOptions}
               formatOptions={formatOptions}
               yearOptions={yearOptions}
-              onChange={(values) => this.setState(values, this.applyFilters)}
+              onChange={(values) =>
+                this.setState(
+                  {
+                    ...values,
+                    viewMode: "buckets",
+                    resultMode: "folders",
+                    selectedMonth: undefined,
+                  },
+                  this.applyFilters,
+                )
+              }
             />
           </div>
         </div>
