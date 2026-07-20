@@ -38,7 +38,7 @@ import {
   getMonthPreview,
 } from "../utils/monthHelpers";
 /*******************************************************
- * MEDIA ASSETS LIB V12
+ * MEDIA ASSETS LIB V6
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
