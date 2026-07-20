@@ -389,6 +389,29 @@ export default class MediaAssetsLib extends React.Component<
     await this.loadVideoThumbnails();
   }
 
+  private getEmptyUploadState(): Pick<
+    IMediaAssetsLibState,
+    | "isUploadOpen"
+    | "uploadName"
+    | "uploadTags"
+    | "uploadCategory"
+    | "uploadDienst"
+    | "uploadBucket"
+    | "uploadFiles"
+    | "uploadPreviewUrl"
+  > {
+    return {
+      isUploadOpen: false,
+      uploadName: "",
+      uploadTags: [],
+      uploadCategory: "",
+      uploadDienst: "",
+      uploadBucket: [],
+      uploadFiles: [],
+      uploadPreviewUrl: undefined,
+    };
+  }
+
   /**
    * Orchestriert den Upload aller ausgewählten Dateien
    * - Validiert Input (Bucket, Kategorie, Dateien)
@@ -535,13 +558,7 @@ export default class MediaAssetsLib extends React.Component<
 
     this.setState(
       {
-        isUploadOpen: false,
-        uploadName: "",
-        uploadTags: [],
-        uploadCategory: "",
-        uploadDienst: "",
-        uploadBucket: [],
-        uploadFiles: [],
+        ...this.getEmptyUploadState(),
         uploadPreviewUrl: undefined,
         viewMode: targetBucket ? "items" : "buckets",
         resultMode: targetBucket ? "files" : "folders",
@@ -1545,19 +1562,7 @@ Files/UniqueId`;
               >,
             )
           }
-          onClose={() =>
-            this.setState({
-              isUploadOpen: false,
-
-              uploadName: "",
-              uploadTags: [],
-              uploadCategory: "",
-              uploadDienst: "",
-              uploadBucket: [],
-              uploadFiles: [],
-              uploadPreviewUrl: undefined,
-            })
-          }
+          onClose={() => this.setState(this.getEmptyUploadState())}
           onUpload={() => this.uploadItem()}
         />
 
