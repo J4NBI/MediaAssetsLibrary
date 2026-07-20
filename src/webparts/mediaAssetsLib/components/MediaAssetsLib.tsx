@@ -32,11 +32,7 @@ import {
 import { getLibraryPath } from "../utils/sharepointHelpers";
 
 import RenameBucketModal from "./RenameBucketModal";
-import {
-  getMonthGroups,
-  getBucketsForMonth,
-  getMonthPreview,
-} from "../utils/monthHelpers";
+import { getMonthGroups, getBucketsForMonth } from "../utils/monthHelpers";
 /*******************************************************
  * MEDIA ASSETS LIB V6
  * -----------------------------------------------------
@@ -242,7 +238,7 @@ export default class MediaAssetsLib extends React.Component<
       newBucketInputEdit: "",
       newBucketInputUpload: "",
 
-      viewMode: "months",
+      viewMode: "buckets",
       resultMode: "folders",
       selectedBucket: undefined,
       selectedMonth: undefined,
@@ -1252,31 +1248,6 @@ Files/UniqueId`;
             ← Zurück zu Ordnern
           </button>
         )}
-        {this.state.viewMode === "buckets" && (
-          <button
-            onClick={() =>
-              this.setState(
-                {
-                  viewMode: "months",
-                  resultMode: "folders",
-                  selectedMonth: undefined,
-
-                  searchText: "",
-                  filterCategory: undefined,
-                  filterDienst: undefined,
-                  filterFormat: undefined,
-                  filterYear: undefined,
-                  filterMonth: undefined,
-                  filterCreator: undefined,
-                },
-                this.applyFilters,
-              )
-            }
-            className={styles.backBtn}
-          >
-            ← Zurück zur Monatsübersicht
-          </button>
-        )}
         <div className={styles.filterRow}>
           <div className={styles.filterGroup}>
             <FilterBar
@@ -1318,97 +1289,7 @@ Files/UniqueId`;
           </p>
         )}
 
-        {this.state.viewMode === "months" ? (
-          <div className={styles.grid}>
-            {monthGroups.slice(0, this.state.monthsToShow).map((group) => {
-              const preview = getMonthPreview(
-                this.state.allItems,
-                group.year,
-                group.month,
-              );
-              const fileType = preview?.name?.split(".").pop()?.toLowerCase();
-              const isVideo = fileType === "mp4" || fileType === "mov";
-              const isAudio = [
-                "mp3",
-                "wav",
-                "aiff",
-                "aac",
-                "flac",
-                "ogg",
-                "m4a",
-              ].includes(fileType || "");
-              const imageUrl = preview
-                ? `${window.location.origin}/_layouts/15/getpreview.ashx?path=${encodeURIComponent(preview.fileRef)}`
-                : "";
-              const itemCount = this.state.allItems.filter((item) => {
-                if (!item.created) return false;
-                const date = new Date(item.created);
-                return (
-                  date.getFullYear() === group.year &&
-                  date.getMonth() + 1 === group.month
-                );
-              }).length;
-
-              return (
-                <div
-                  key={group.key}
-                  className={styles.bucketCard}
-                  onClick={() =>
-                    this.setState({
-                      viewMode: "buckets",
-                      resultMode: "folders",
-                      selectedMonth: { year: group.year, month: group.month },
-                      bucketsToShow: 5,
-                    })
-                  }
-                >
-                  {preview && !isVideo && !isAudio && (
-                    <img
-                      src={imageUrl}
-                      className={styles.previewImg}
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "data:image/svg+xml;charset=UTF-8," +
-                          encodeURIComponent(`
-        <svg width="250" height="150" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#f3f2f1"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#605e5c">
-            Kein Preview
-          </text>
-        </svg>
-      `);
-                      }}
-                    />
-                  )}
-                  {preview && isVideo && (
-                    <img
-                      src={preview.thumbnailUrl}
-                      className={styles.videoImg}
-                    />
-                  )}
-                  {preview && isAudio && (
-                    <div
-                      className={styles.itemImg}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "50px",
-                        background: "#f3f2f1",
-                      }}
-                    >
-                      🔊
-                    </div>
-                  )}
-                  <div className={styles.bucketContent}>
-                    <h3>{group.label}</h3>
-                    <p className={styles.bucketCount}>{itemCount} Dateien</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : this.state.resultMode === "folders" ? (
+        {this.state.resultMode === "folders" ? (
           <div className={styles.grid}>
             {visibleBuckets.slice(0, this.state.bucketsToShow).map((bucket) => {
               const preview = getBucketPreview(this.state.allItems, bucket);
