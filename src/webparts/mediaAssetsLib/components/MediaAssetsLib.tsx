@@ -1221,7 +1221,7 @@ Files/UniqueId`;
             className={styles.uploadMainBtn}
             onClick={() => this.setState({ isUploadOpen: true })}
           >
-            ＋
+            <Icon iconName="Add" className={styles.plusIcon} />
           </button>
         </div>
 
@@ -1618,7 +1618,16 @@ Files/UniqueId`;
           onClose={() => this.setState(this.getEmptyUploadState())}
           onUpload={() => this.uploadItem()}
         />
-
+        {this.state.showScrollTop && (
+          <button
+            className={`${styles.floatingUploadBtn} ${
+              this.state.showScrollTop ? styles.visible : styles.hidden
+            }`}
+            onClick={() => this.setState({ isUploadOpen: true })}
+          >
+            <Icon iconName="Add" className={styles.plusIcon} />
+          </button>
+        )}
         {this.state.showScrollTop && (
           <a href="#top">
             <div

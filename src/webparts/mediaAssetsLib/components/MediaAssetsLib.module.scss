@@ -850,6 +850,42 @@ html {
   }
 }
 
+/* FLOATING UPLOAD BUTTON */
+/* FLOATING UPLOAD BUTTON */
+.floatingUploadBtn {
+  position: fixed;
+  bottom: 90px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+
+  &:hover {
+    transform: scale(1.1) rotate(90deg);
+  }
+
+  &.visible {
+    right: 40px;
+    opacity: 1;
+  }
+
+  &.hidden {
+    right: -80px;
+    opacity: 0;
+  }
+}
+
 .preview {
   background: red !important;
 }
