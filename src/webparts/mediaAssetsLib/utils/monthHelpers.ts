@@ -1,10 +1,17 @@
 import { IMediaItem } from "../models/types";
 
+/**
+ * Struktur für eine gruppierten Monatssicht in der Bucket-Übersicht.
+ */
 export interface IMonthGroup {
-  key: string; // z.B. "2026-06", zum Sortieren/Vergleichen
+  /** Eindeutiger Schlüssel im Format JJJJ-MM. */
+  key: string;
+  /** Kalenderjahr des Monats. */
   year: number;
-  month: number; // 1–12
-  label: string; // z.B. "Juni 2026"
+  /** Kalendermonat von 1 bis 12. */
+  month: number;
+  /** Benutzerfreundliche Monatsbezeichnung. */
+  label: string;
 }
 
 const MONTH_NAMES_DE = [
@@ -33,6 +40,10 @@ function getMonthLabel(year: number, month: number): string {
 /**
  * Findet das Datum des neuesten Elements innerhalb eines Buckets.
  * Gibt undefined zurück, wenn der Bucket keine Elemente mit Datum hat.
+ *
+ * @param {IMediaItem[]} items - Liste aller Medienelemente.
+ * @param {string} bucket - Name des Buckets.
+ * @returns {Date|undefined} Das neueste Änderungsdatum des Buckets oder undefined.
  */
 export function getBucketLatestDate(
   items: IMediaItem[],
@@ -52,6 +63,10 @@ export function getBucketLatestDate(
  * Gruppiert alle Buckets nach Jahr/Monat ihres jeweils neuesten Elements.
  * Buckets ohne verwertbares Datum werden ausgelassen.
  * Sortiert absteigend (neuester Monat zuerst).
+ *
+ * @param {IMediaItem[]} items - Liste aller Medienelemente.
+ * @param {string[]} buckets - Verfügbare Bucket-Namen.
+ * @returns {IMonthGroup[]} Array gruppierter Monate mit Bucket-Zuordnung.
  */
 export function getMonthGroups(
   items: IMediaItem[],
@@ -82,6 +97,12 @@ export function getMonthGroups(
 
 /**
  * Liefert alle Bucket-Namen, deren neuestes Element in den angegebenen Monat fällt.
+ *
+ * @param {IMediaItem[]} items - Liste aller Medienelemente.
+ * @param {string[]} buckets - Verfügbare Bucket-Namen.
+ * @param {number} year - Zieljahr.
+ * @param {number} month - Zielmonat (1-12).
+ * @returns {string[]} Buckets, deren neuestes Element in den angegebenen Monat fällt.
  */
 export function getBucketsForMonth(
   items: IMediaItem[],
@@ -100,8 +121,13 @@ export function getBucketsForMonth(
 }
 
 /**
- * Liefert das neueste Element innerhalb eines Jahr/Monats (für die Vorschau-Kachel),
+ * Liefert das neueste Element innerhalb eines Jahr/Monats für die Vorschau-Kachel,
  * unabhängig davon, in welchem Bucket es liegt.
+ *
+ * @param {IMediaItem[]} items - Liste aller Medienelemente.
+ * @param {number} year - Zieljahr.
+ * @param {number} month - Zielmonat (1-12).
+ * @returns {IMediaItem|undefined} Das neueste Element des Monats oder undefined.
  */
 export function getMonthPreview(
   items: IMediaItem[],

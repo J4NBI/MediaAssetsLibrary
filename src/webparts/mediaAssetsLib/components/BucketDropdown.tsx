@@ -1,12 +1,26 @@
 import * as React from "react";
 import styles from "./MediaAssetsLib.module.scss";
 
+/**
+ * Props für die Bucket-Auswahl-Komponente.
+ * Ermöglicht die Auswahl und Pflege von Bucket-/Ordnernamen.
+ */
 export interface IBucketDropdownProps {
+  /** Verfügbare Bucket-Optionen. */
   options: string[];
+  /** Aktuell ausgewählte Bucket-Namen. */
   selected: string[];
+  /** Callback, der nach Änderungen an der Auswahl aufgerufen wird. */
   onChange: (values: string[]) => void;
 }
 
+/**
+ * Dropdown-basierte Auswahlkomponente für Bucket-Namen.
+ * Unterstützt die Eingabe eines neuen Werts und das Entfernen vorhandener Einträge.
+ *
+ * @param {IBucketDropdownProps} props - Konfiguration und Callback-Funktionen.
+ * @returns {React.ReactElement} Die renderbare Bucket-Auswahl.
+ */
 const BucketDropdown = ({
   options,
   selected,

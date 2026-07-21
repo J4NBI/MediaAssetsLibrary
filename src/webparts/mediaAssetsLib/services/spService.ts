@@ -52,6 +52,15 @@ export const getCurrentUser = async (
   };
 };
 
+/**
+ * Lädt die verfügbaren Optionen eines Choice-Feldes aus einer SharePoint-Bibliothek.
+ *
+ * @param {string} siteUrl - Absolute SharePoint-Site-URL.
+ * @param {string} libraryName - Titel der Zielbibliothek.
+ * @param {string} fieldName - Interner Name oder Titel des Choice-Feldes.
+ * @param {SPHttpClient} spHttpClient - Client für REST-Aufrufe.
+ * @returns {Promise<string[]>} Array mit den verfügbaren Feldoptionen.
+ */
 export const getChoiceFieldOptions = async (
   siteUrl: string,
   libraryName: string,

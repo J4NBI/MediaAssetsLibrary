@@ -12,10 +12,18 @@ import * as strings from "MediaAssetsLibWebPartStrings";
 import MediaAssetsLib from "./components/MediaAssetsLib";
 import { IMediaAssetsLibProps } from "./components/IMediaAssetsLibProps";
 
+/**
+ * Props für das SharePoint-Webpart.
+ */
 export interface IMediaAssetsLibWebPartProps {
+  /** Kurzbeschreibung des Webparts. */
   description: string;
 }
 
+/**
+ * SharePoint-Webpart für die Medienbibliothek.
+ * Rendert die React-Komponente und übernimmt Theme- und Umgebungsinformationen.
+ */
 export default class MediaAssetsLibWebPart extends BaseClientSideWebPart<IMediaAssetsLibWebPartProps> {
   private _isDarkTheme: boolean = false;
   private _environmentMessage: string = "";

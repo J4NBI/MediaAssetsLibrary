@@ -1,9 +1,10 @@
 import { IMediaItem } from "../models/types";
 
 /**
- * Extrahiert alle einzigartigen Dateiformate aus den geladenen Elementen
- * @private
- * @returns {string[]} Array eindeutiger Format-Werte
+ * Extrahiert alle einzigartigen Dateiformate aus den geladenen Elementen.
+ *
+ * @param {IMediaItem[]} items - Liste aller geladenen Medienelemente.
+ * @returns {string[]} Array eindeutiger Format-Werte.
  */
 
 export const getUniqueFormats = (items: IMediaItem[]): string[] => {
@@ -15,10 +16,11 @@ export const getUniqueFormats = (items: IMediaItem[]): string[] => {
 };
 
 /**
- * Extrahiert alle einzigartigen Jahre aus den geladenen Elementen
- * Sortiert sie in absteigender Reihenfolge (neueste zuerst)
- * @private
- * @returns {number[]} Array einzigartiger Jahre
+ * Extrahiert alle einzigartigen Jahre aus den geladenen Elementen.
+ * Sortiert sie in absteigender Reihenfolge (neueste zuerst).
+ *
+ * @param {IMediaItem[]} items - Liste aller geladenen Medienelemente.
+ * @returns {number[]} Array einzigartiger Jahre.
  */
 export const getUniqueYears = (items: IMediaItem[]): number[] => {
   const years = items
@@ -36,10 +38,11 @@ export const getUniqueYears = (items: IMediaItem[]): number[] => {
   return Array.from(new Set(years)).sort((a, b) => b - a);
 };
 /**
- * Extrahiert alle einzigartigen Ersteller aus den geladenen Elementen
- * Sortiert sie alphabetisch
- * @private
- * @returns {string[]} Array eindeutiger Ersteller-Namen
+ * Extrahiert alle einzigartigen Ersteller aus den geladenen Elementen.
+ * Sortiert sie alphabetisch.
+ *
+ * @param {IMediaItem[]} items - Liste aller geladenen Medienelemente.
+ * @returns {string[]} Array eindeutiger Ersteller-Namen.
  */
 
 export const getUniqueCreators = (items: IMediaItem[]): string[] => {

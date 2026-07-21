@@ -1,8 +1,9 @@
 import { IMediaItem } from "../models/types";
 /**
- * Zählt die Anzahl der Elemente in jedem Bucket
- * @private
- * @returns {{ [key: string]: number }} Objekt mit Bucket-Namen als Schlüssel und Elementanzahl als Wert
+ * Zählt die Anzahl der Elemente in jedem Bucket.
+ *
+ * @param {IMediaItem[]} items - Liste aller Medienelemente.
+ * @returns {{ [key: string]: number }} Objekt mit Bucket-Namen als Schlüssel und Elementanzahl als Wert.
  */
 
 export const getBucketCounts = (
@@ -20,10 +21,10 @@ export const getBucketCounts = (
 };
 
 /**
- * Sortiert Buckets nach dem neuesten Element in jedem Bucket (absteigend)
- * @private
- * @param {IMediaItem[]} items - Array von Medienelementen
- * @returns {string[]} Sortierte Bucket-Namen (neueste zuerst)
+ * Sortiert Buckets nach dem neuesten Element in jedem Bucket (absteigend).
+ *
+ * @param {IMediaItem[]} items - Array von Medienelementen.
+ * @returns {string[]} Sortierte Bucket-Namen (neueste zuerst).
  */
 
 export const getBucketsSortedByNewest = (items: IMediaItem[]): string[] => {
@@ -44,10 +45,11 @@ export const getBucketsSortedByNewest = (items: IMediaItem[]): string[] => {
 };
 
 /**
- * Findet das erste Element eines bestimmten Buckets für die Vorschau
- * @private
- * @param {string} bucket - Der Bucket-Name
- * @returns {IMediaItem|undefined} Das erste Element des Buckets oder undefined
+ * Findet das erste Element eines bestimmten Buckets für die Vorschau.
+ *
+ * @param {IMediaItem[]} items - Liste aller Medienelemente.
+ * @param {string} bucket - Der Bucket-Name.
+ * @returns {IMediaItem|undefined} Das erste Element des Buckets oder undefined.
  */
 export const getBucketPreview = (
   items: IMediaItem[],
@@ -67,10 +69,13 @@ export const getBucketPreview = (
 };
 
 /**
- * Filtert Buckets basierend auf aktiven Filtern und Suchtext
- * Ein Bucket wird angezeigt, wenn er mindestens ein gefordertes Element enthält
- * @private
- * @returns {string[]} Array der gefilterten Bucket-Namen
+ * Filtert Buckets basierend auf aktiven Filtern und Suchtext.
+ * Ein Bucket wird angezeigt, wenn er mindestens ein passendes Element enthält.
+ *
+ * @param {string[]} buckets - Verfügbare Bucket-Namen.
+ * @param {IMediaItem[]} items - Liste aller Medienelemente.
+ * @param {object} filters - Aktive Filterkriterien für Suche und Metadaten.
+ * @returns {string[]} Array der gefilterten Bucket-Namen.
  */
 
 export const getFilteredBuckets = (
