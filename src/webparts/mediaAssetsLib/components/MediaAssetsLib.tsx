@@ -34,7 +34,7 @@ import { getLibraryPath } from "../utils/sharepointHelpers";
 import RenameBucketModal from "./RenameBucketModal";
 import { getMonthGroups, getBucketsForMonth } from "../utils/monthHelpers";
 /*******************************************************
- * MEDIA ASSETS LIB V6
+ * MEDIA ASSETS LIB V9
  * -----------------------------------------------------
  * SharePoint Medienverwaltung
  * - Upload
@@ -158,6 +158,8 @@ export interface IMediaAssetsLibState {
 
   isRenameBucketOpen: boolean;
   bucketToRename?: string;
+
+  isLoading: boolean;
 }
 
 /********************* HAUPTKOMPNENTE ******************
@@ -263,6 +265,8 @@ export default class MediaAssetsLib extends React.Component<
       newBucketName: "",
       isRenameBucketOpen: false,
       bucketToRename: undefined,
+
+      isLoading: true,
     };
   }
 
@@ -655,6 +659,8 @@ export default class MediaAssetsLib extends React.Component<
     await this.loadCategories();
     await this.loadDienste();
 
+    this.setState({ isLoading: false });
+
     const target = document.getElementById("top");
 
     if (target) {
@@ -829,7 +835,24 @@ Files/UniqueId`;
       this.state.allItems.map(async (item) => {
         const driveItemId = driveItemMap[item.name];
 
-        if (!item.name.toLowerCase().endsWith(".mp4") || !driveItemId) {
+        const videoExtensions = [
+          ".mp4",
+          ".mov",
+          ".avi",
+          ".wmv",
+          ".mkv",
+          ".webm",
+          ".m4v",
+          ".mpeg",
+          ".mpg",
+        ];
+
+        const lowerName = item.name.toLowerCase();
+        const isVideoFile = videoExtensions.some((ext) =>
+          lowerName.endsWith(ext),
+        );
+
+        if (!isVideoFile || !driveItemId) {
           return item;
         }
 
@@ -1205,17 +1228,12 @@ Files/UniqueId`;
       (x) => x.buckets.length > 0,
     );
 
-    console.log("Monate:", bucketsByMonth.length);
-    console.log("Angezeigt:", this.state.monthsToShow);
-    console.log("MONTH GROUPS", monthGroups);
     /********************* RENDER **************************/
 
     return (
       <div className={styles.container}>
         {/* **************** HEADER **************** */}
         <h2 id="top">Caritas Media Library</h2>
-
-        <div className={styles.header}></div>
 
         {/* **************** SEARCH **************** */}
         <div className={styles.filterRow}>
@@ -1296,6 +1314,11 @@ Files/UniqueId`;
           </p>
         )}
 
+        {this.state.isLoading && <p>Medien werden geladen...</p>}
+
+        {!this.state.isLoading &&
+          this.state.resultMode === "folders" &&
+          bucketsByMonthFiltered.length === 0 && <p>Keine Ordner gefunden.</p>}
         {this.state.resultMode === "folders" ? (
           <>
             {bucketsByMonthFiltered.map(({ group, buckets }) => (
@@ -1312,7 +1335,17 @@ Files/UniqueId`;
                       ?.split(".")
                       .pop()
                       ?.toLowerCase();
-                    const isVideo = fileType === "mp4" || fileType === "mov";
+                    const isVideo = [
+                      "mp4",
+                      "mov",
+                      "avi",
+                      "wmv",
+                      "mkv",
+                      "webm",
+                      "m4v",
+                      "mpeg",
+                      "mpg",
+                    ].includes(fileType || "");
                     const isAudio = [
                       "mp3",
                       "wav",
@@ -1439,61 +1472,66 @@ Files/UniqueId`;
             ))}
           </>
         ) : (
-          <div className={styles.grid}>
-            {/* **************** MEDIA GRID **************** */}
+          <>
+            {!this.state.isLoading && this.state.visibleItems.length === 0 && (
+              <p>Keine Dateien gefunden.</p>
+            )}
+            <div className={styles.grid}>
+              {/* **************** MEDIA GRID **************** */}
 
-            {this.state.visibleItems
-              .slice(0, this.state.visibleItemsCount)
-              .map((item) => (
-                <FileCard
-                  key={item.id}
-                  item={item}
-                  downloadingItemId={this.state.downloadingItemId}
-                  onPreview={() =>
-                    this.setState({
-                      isModalOpen: true,
-                      selectedItem: item,
-                    })
-                  }
-                  onEdit={() =>
-                    this.setState({
-                      isEditOpen: true,
-                      selectedItem: item,
-                      editName: item.name || "",
-                      editTags: item.tags || [],
-                      editCategory: item.category || "",
-                      editBucket: item.bucket || [],
-                      editDienst: item.dienst || "",
-                    })
-                  }
-                  onDownload={() => {
-                    this.setState({
-                      downloadingItemId: item.id,
-                    });
-
-                    const downloadUrl = `${window.location.origin}${item.fileRef}`;
-
-                    const link = document.createElement("a");
-
-                    link.href = downloadUrl;
-                    link.download = item.name;
-                    link.target = "_blank";
-
-                    document.body.appendChild(link);
-
-                    link.click();
-
-                    document.body.removeChild(link);
-
-                    setTimeout(() => {
+              {this.state.visibleItems
+                .slice(0, this.state.visibleItemsCount)
+                .map((item) => (
+                  <FileCard
+                    key={item.id}
+                    item={item}
+                    downloadingItemId={this.state.downloadingItemId}
+                    onPreview={() =>
                       this.setState({
-                        downloadingItemId: undefined,
+                        isModalOpen: true,
+                        selectedItem: item,
+                      })
+                    }
+                    onEdit={() =>
+                      this.setState({
+                        isEditOpen: true,
+                        selectedItem: item,
+                        editName: item.name || "",
+                        editTags: item.tags || [],
+                        editCategory: item.category || "",
+                        editBucket: item.bucket || [],
+                        editDienst: item.dienst || "",
+                      })
+                    }
+                    onDownload={() => {
+                      this.setState({
+                        downloadingItemId: item.id,
                       });
-                    }, 1500);
-                  }}
-                />
-              ))}
-          </div>
+
+                      const downloadUrl = `${window.location.origin}${item.fileRef}`;
+
+                      const link = document.createElement("a");
+
+                      link.href = downloadUrl;
+                      link.download = item.name;
+                      link.target = "_blank";
+
+                      document.body.appendChild(link);
+
+                      link.click();
+
+                      document.body.removeChild(link);
+
+                      setTimeout(() => {
+                        this.setState({
+                          downloadingItemId: undefined,
+                        });
+                      }, 1500);
+                    }}
+                  />
+                ))}
+            </div>
+          </>
         )}
         {/* MEHR LADEN ORDNER */}
         {this.state.resultMode === "folders" &&
