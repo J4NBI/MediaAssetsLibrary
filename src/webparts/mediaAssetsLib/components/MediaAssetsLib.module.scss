@@ -54,7 +54,7 @@ html {
 }
 
 .container {
-  padding: 20px;
+  padding: 20px 0px;
   position: relative;
 }
 
@@ -229,8 +229,8 @@ html {
 /* GRID */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
 /* BUCKET */
@@ -377,6 +377,9 @@ html {
 /* ITEM */
 .itemCard {
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 0px solid var(--accent);
   border-radius: 0;
@@ -437,6 +440,7 @@ html {
   justify-content: center;
   align-items: center;
   padding: 32px;
+  flex: 1;
 }
 
 .itemContent h3,
@@ -504,8 +508,10 @@ html {
 
 .itemActions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: auto;
+  width: 100%;
 }
 
 .downloadBtn {
@@ -851,10 +857,10 @@ html {
 }
 
 /* FLOATING UPLOAD BUTTON */
-/* FLOATING UPLOAD BUTTON */
 .floatingUploadBtn {
   position: fixed;
   bottom: 90px;
+  right: 40px;
   width: 40px;
   height: 40px;
   display: flex;
@@ -874,18 +880,7 @@ html {
   &:hover {
     transform: scale(1.1) rotate(90deg);
   }
-
-  &.visible {
-    right: 40px;
-    opacity: 1;
-  }
-
-  &.hidden {
-    right: -80px;
-    opacity: 0;
-  }
 }
-
 .preview {
   background: red !important;
 }
@@ -1082,4 +1077,48 @@ html {
 .modalActions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@media (min-width: 800px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1000px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .itemContent {
+    padding: 16px;
+  }
+
+  .itemContent h3 {
+    font-size: 0.9rem;
+  }
+
+  .itemDate {
+    font-size: 0.7rem;
+  }
+
+  .tag,
+  .bucketTag {
+    padding: 4px 8px;
+    font-size: 0.65rem;
+  }
+
+  .itemActions {
+    gap: 6px;
+  }
+
+  .downloadBtn,
+  .editBtn {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
 }

@@ -1215,15 +1215,7 @@ Files/UniqueId`;
         {/* **************** HEADER **************** */}
         <h2 id="top">Caritas Media Library</h2>
 
-        <div className={styles.header}>
-          {/* ✅ HIER FEHLT ER – EINFÜGEN */}
-          <button
-            className={styles.uploadMainBtn}
-            onClick={() => this.setState({ isUploadOpen: true })}
-          >
-            <Icon iconName="Add" className={styles.plusIcon} />
-          </button>
-        </div>
+        <div className={styles.header}></div>
 
         {/* **************** SEARCH **************** */}
         <div className={styles.filterRow}>
@@ -1618,16 +1610,14 @@ Files/UniqueId`;
           onClose={() => this.setState(this.getEmptyUploadState())}
           onUpload={() => this.uploadItem()}
         />
-        {this.state.showScrollTop && (
-          <button
-            className={`${styles.floatingUploadBtn} ${
-              this.state.showScrollTop ? styles.visible : styles.hidden
-            }`}
-            onClick={() => this.setState({ isUploadOpen: true })}
-          >
-            <Icon iconName="Add" className={styles.plusIcon} />
-          </button>
-        )}
+
+        <button
+          className={styles.floatingUploadBtn}
+          onClick={() => this.setState({ isUploadOpen: true })}
+        >
+          <Icon iconName="Add" className={styles.plusIcon} />
+        </button>
+
         {this.state.showScrollTop && (
           <a href="#top">
             <div
