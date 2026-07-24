@@ -2,6 +2,8 @@
 
 html {
   scroll-behavior: smooth;
+  margin: 0 !important;
+  padding: 0px 0px !important;
 }
 
 :root {
@@ -24,12 +26,15 @@ html {
     0 50px 100px rgba(206, 30, 27, 0.15), 0 15px 35px rgba(0, 0, 0, 0.1);
 
   overflow: hidden;
-  padding: 1em;
   color: var(--bodyText);
 
   &.teams {
     font-family: $ms-font-family-fallbacks;
   }
+}
+
+:global(.ms-SPLegacyFabricBlock) > div:first-child {
+  padding: 0 !important;
 }
 
 .welcome {
@@ -54,7 +59,7 @@ html {
 }
 
 .container {
-  padding: 20px 0px;
+  padding: 5px 0px;
   position: relative;
 }
 
@@ -229,7 +234,7 @@ html {
 /* GRID */
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -631,8 +636,9 @@ html {
 
 .modalBox {
   background: var(--surface);
-  width: 600px;
-  max-width: 90vw;
+  width: 90vw;
+  max-width: 600px;
+  box-sizing: border-box;
 
   max-height: 90vh;
   overflow-y: auto;
@@ -989,8 +995,6 @@ html {
   border-radius: 0;
   box-shadow: var(--shadow-striking);
 
-  min-width: 500px;
-
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1120,5 +1124,77 @@ html {
   .editBtn {
     padding: 8px;
     font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .modalBox {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  .modalBox select {
+    height: 57px;
+    line-height: 48px;
+    width: 100%;
+    min-height: 55px;
+    font-size: 14px;
+    padding: 12px 16px;
+    box-sizing: border-box;
+    line-height: normal;
+  }
+  .modalOverlayEdit,
+  .modalOverlayUpload {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .uploadBox {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+
+    padding: 16px;
+    box-sizing: border-box;
+
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .uploadBox select {
+    width: 100%;
+    min-height: 55px;
+
+    padding: 12px 16px;
+
+    font-size: 14px;
+    line-height: normal;
+
+    box-sizing: border-box;
+  }
+
+  .uploadBox input {
+    width: 100%;
+    min-height: 55px;
+
+    padding: 12px 16px;
+
+    font-size: 14px;
+
+    box-sizing: border-box;
+  }
+
+  .modalOverlayUpload {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 8px;
   }
 }

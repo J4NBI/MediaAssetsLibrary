@@ -1508,19 +1508,13 @@ Files/UniqueId`;
                         downloadingItemId: item.id,
                       });
 
-                      const downloadUrl = `${window.location.origin}${item.fileRef}`;
+                      const downloadUrl =
+                        `${this.props.siteUrl}/_layouts/15/download.aspx?SourceUrl=` +
+                        encodeURIComponent(
+                          `${window.location.origin}${item.fileRef}`,
+                        );
 
-                      const link = document.createElement("a");
-
-                      link.href = downloadUrl;
-                      link.download = item.name;
-                      link.target = "_blank";
-
-                      document.body.appendChild(link);
-
-                      link.click();
-
-                      document.body.removeChild(link);
+                      window.location.href = downloadUrl;
 
                       setTimeout(() => {
                         this.setState({
@@ -1656,7 +1650,7 @@ Files/UniqueId`;
           <Icon iconName="Add" className={styles.plusIcon} />
         </button>
 
-        {this.state.showScrollTop && (
+        {false && (
           <a href="#top">
             <div
               className={`${styles.scrollTop} ${

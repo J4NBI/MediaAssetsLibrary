@@ -23,7 +23,7 @@ const UploadModal: React.FC<IUploadModalProps> = ({
   return (
     <>
       {state.isUploadOpen && (
-        <div className={`${styles.modalOverlay} $${styles.modalOverlayUpload}`}>
+        <div className={`${styles.modalOverlay}`}>
           <div className={`${styles.modalBox} ${styles.uploadBox}`}>
             <h3>Upload</h3>
             {/* MODAL PREVIEW */}

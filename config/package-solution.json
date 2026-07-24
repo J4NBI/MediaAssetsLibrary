@@ -3,7 +3,7 @@
   "solution": {
     "name": "media-assets-library-client-side-solution",
     "id": "a61c11cf-d049-438d-93ba-a2f3a695c77a",
-    "version": "8.0.0.0",
+    "version": "10.0.0.0",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
@@ -30,7 +30,7 @@
         "title": "media-assets-library Feature",
         "description": "The feature that activates elements of the media-assets-library solution.",
         "id": "7e558124-228d-4f33-acdc-94b2720a3b10",
-        "version": "8.0.0.0"
+        "version": "10.0.0.0"
       }
     ]
   },

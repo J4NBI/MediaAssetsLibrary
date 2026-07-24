@@ -86,7 +86,7 @@ const EditModal: React.FC<IEditModalProps> = ({
   const isVideo = ["mp4", "mov", "webm"].includes(fileType || "");
 
   return (
-    <div className={`${styles.modalOverlay} ${styles.modalOverlayEdit}`}>
+    <div className={`${styles.modalOverlay}`}>
       <div className={styles.modalBox}>
         <h3>Element bearbeiten</h3>
 
