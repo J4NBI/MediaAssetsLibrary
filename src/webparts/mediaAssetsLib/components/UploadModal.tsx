@@ -2,6 +2,10 @@ import * as React from "react";
 import styles from "./MediaAssetsLib.module.scss";
 import BucketDropdown from "./BucketDropdown";
 import type { IMediaAssetsLibState } from "./MediaAssetsLib";
+import {
+  isRunningInTeamsMobile,
+  selectMediaFilesViaTeams,
+} from "../utils/teamsFileHelpers";
 
 interface IUploadModalProps {
   isOpen: boolean;
@@ -18,7 +22,88 @@ const UploadModal: React.FC<IUploadModalProps> = ({
   onClose,
   onUpload,
 }) => {
+  const [useFallbackPicker, setUseFallbackPicker] = React.useState(false);
   if (!isOpen) return null;
+  const isEmbeddedAndroidWebView = (): boolean => {
+    const ua = navigator.userAgent || "";
+    const isAndroid = /Android/i.test(ua);
+    if (!isAndroid) return false;
+    // Android System WebView (Basis von Teams-App & SharePoint-App) enthält "; wv)".
+    // Echtes Android-Chrome enthält das nicht.
+    return /; wv\)/i.test(ua) || /Teams/i.test(ua) || /SharePoint/i.test(ua);
+  };
+
+  const handlePickerClick = async (e: React.MouseEvent) => {
+    if (!isEmbeddedAndroidWebView()) {
+      // Desktop, Android-Chrome, iPhone -> nativer Multi-Picker funktioniert, nichts tun
+      return;
+    }
+
+    e.preventDefault(); // nur hier eingreifen, da <input multiple> nachweislich buggy ist
+
+    let inTeams = false;
+    try {
+      inTeams = await isRunningInTeamsMobile();
+    } catch {
+      inTeams = false;
+    }
+
+    if (inTeams) {
+      try {
+        const files = await selectMediaFilesViaTeams();
+        if (files.length === 0) return;
+        handleFilesSelected(files, false);
+        return;
+      } catch (err) {
+        console.error(
+          "Teams Media Picker fehlgeschlagen, nutze Fallback:",
+          err,
+        );
+      }
+    }
+
+    // SharePoint-App oder Teams-js-Fehlschlag -> Einzelauswahl-Fallback
+    setUseFallbackPicker(true);
+    document.getElementById("uploadFileInputSingle")?.click();
+  };
+  const handleFilesSelected = (newFiles: File[], append: boolean = false) => {
+    if (newFiles.length === 0) return;
+
+    const existingFiles = append ? state.uploadFiles || [] : [];
+
+    // Duplikate vermeiden (gleicher Name + gleiche Größe = vermutlich gleiche Datei)
+    const combined = [...existingFiles];
+    newFiles.forEach((f) => {
+      const isDuplicate = combined.some(
+        (existing) => existing.name === f.name && existing.size === f.size,
+      );
+      if (!isDuplicate) combined.push(f);
+    });
+
+    const firstFile = combined[0];
+    const fileName = firstFile.name;
+    const baseName = fileName.includes(".")
+      ? fileName.substring(0, fileName.lastIndexOf("."))
+      : fileName;
+
+    // Preview nur beim ersten Mal setzen, nicht bei jedem weiteren Hinzufügen überschreiben
+    const previewUrl =
+      state.uploadPreviewUrl && append
+        ? state.uploadPreviewUrl
+        : URL.createObjectURL(firstFile);
+
+    setState({
+      uploadFiles: combined,
+      uploadName: baseName,
+      uploadPreviewUrl: previewUrl,
+    });
+  };
+
+  const handleRemoveFile = (index: number) => {
+    const updated = [...(state.uploadFiles || [])];
+    updated.splice(index, 1);
+    setState({ uploadFiles: updated });
+  };
 
   return (
     <>
@@ -69,37 +154,79 @@ const UploadModal: React.FC<IUploadModalProps> = ({
                 })()}
               </div>
             )}
+            {/* Unsichtbarer Einzel-Input als Fallback (SharePoint-App / Teams-js-Fehler) */}
             <input
-              id="uploadFileInput"
+              id="uploadFileInputSingle"
               type="file"
-              multiple
+              accept="image/*,video/*,audio/*"
               style={{ display: "none" }}
               onChange={(e) => {
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
-
-                const fileArray = Array.from(files);
-
-                const firstFile = fileArray[0];
-
-                const fileName = firstFile.name;
-                const baseName = fileName.includes(".")
-                  ? fileName.substring(0, fileName.lastIndexOf("."))
-                  : fileName;
-
-                const previewUrl = URL.createObjectURL(firstFile);
-
-                setState({
-                  uploadFiles: fileArray,
-                  uploadName: baseName,
-                  uploadPreviewUrl: previewUrl,
-                });
+                handleFilesSelected(Array.from(files), true);
+                e.target.value = ""; // Reset, damit dieselbe Datei erneut wählbar bleibt
               }}
             />
-            <label htmlFor="uploadFileInput" className={styles.fileSelectBtn}>
+
+            {/* Normaler Multi-Input für Desktop/Browser-Kontext */}
+            <input
+              id="uploadFileInput"
+              type="file"
+              multiple={true}
+              accept="image/*,video/*,audio/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                handleFilesSelected(Array.from(files), false);
+              }}
+            />
+
+            <label
+              htmlFor="uploadFileInput"
+              className={styles.fileSelectBtn}
+              onClick={handlePickerClick}
+            >
               Datei auswählen
             </label>
-            <div>{state.uploadFiles?.length} Dateien gewählt</div>
+
+            {useFallbackPicker &&
+              state.uploadFiles &&
+              state.uploadFiles.length > 0 && (
+                <button
+                  type="button"
+                  className={styles.fileSelectBtn}
+                  onClick={() =>
+                    document.getElementById("uploadFileInputSingle")?.click()
+                  }
+                  style={{ marginTop: 8 }}
+                >
+                  + Weitere Datei hinzufügen
+                </button>
+              )}
+
+            <div>{state.uploadFiles?.length || 0} Dateien gewählt</div>
+
+            {useFallbackPicker &&
+              state.uploadFiles &&
+              state.uploadFiles.length > 0 && (
+                <ul
+                  className={styles.tagList}
+                  style={{ listStyle: "none", padding: 0 }}
+                >
+                  {state.uploadFiles.map((f, index) => (
+                    <li key={`${f.name}-${index}`} className={styles.tag}>
+                      {f.name}
+                      <span
+                        onClick={() => handleRemoveFile(index)}
+                        className={styles.tagRemove}
+                      >
+                        ✕
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             {(!state.uploadFiles || state.uploadFiles.length <= 1) && (
               <input
                 className={styles.tagInput}

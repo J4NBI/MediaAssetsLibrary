@@ -561,6 +561,8 @@ export default class MediaAssetsLib extends React.Component<
       }
     }
 
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
     await this.reloadMedia();
 
     this.setState({
