@@ -659,6 +659,36 @@ export default class MediaAssetsLib extends React.Component<
     await this.loadCategories();
     await this.loadDienste();
 
+    const params = new URLSearchParams(window.location.search);
+
+    const bucketFromUrl = params.get("bucket");
+
+    if (bucketFromUrl) {
+      this.setState(
+        {
+          selectedBucket: bucketFromUrl,
+          viewMode: "items",
+          resultMode: "files",
+        },
+        this.applyFilters,
+      );
+    }
+
+    const itemFromUrl = params.get("item");
+
+    if (itemFromUrl) {
+      const item = this.state.allItems.find(
+        (i) => String(i.id) === itemFromUrl,
+      );
+
+      if (item) {
+        this.setState({
+          selectedItem: item,
+          isModalOpen: true,
+        });
+      }
+    }
+
     this.setState({ isLoading: false });
 
     const target = document.getElementById("top");
@@ -1459,6 +1489,35 @@ Files/UniqueId`;
                             >
                               <Icon iconName="Edit" />
                             </button>
+                            <button
+                              className={styles.bucketEditBtn}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+
+                                const shareUrl =
+                                  `${window.location.origin}${window.location.pathname}` +
+                                  `?bucket=${encodeURIComponent(bucket)}`;
+
+                                try {
+                                  if (navigator.share) {
+                                    await navigator.share({
+                                      title: "Caritas Media Library",
+                                      text: `Ordner teilen: ${bucket}`,
+                                      url: shareUrl,
+                                    });
+                                  } else {
+                                    await navigator.clipboard.writeText(
+                                      shareUrl,
+                                    );
+                                    alert("Link kopiert");
+                                  }
+                                } catch (error) {
+                                  console.error("Teilen fehlgeschlagen", error);
+                                }
+                              }}
+                            >
+                              <Icon iconName="Share" />
+                            </button>
                           </div>
 
                           <p className={styles.bucketCount}>
@@ -1509,11 +1568,7 @@ Files/UniqueId`;
                         downloadingItemId: item.id,
                       });
 
-                      const downloadUrl =
-                        `${this.props.siteUrl}/_layouts/15/download.aspx?SourceUrl=` +
-                        encodeURIComponent(
-                          `${window.location.origin}${item.fileRef}`,
-                        );
+                      const downloadUrl = `${window.location.origin}${item.fileRef}`;
 
                       window.location.href = downloadUrl;
 

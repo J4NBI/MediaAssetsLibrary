@@ -972,7 +972,15 @@ html {
 .bucketHeader {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+}
+.bucketHeader h3 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+
+  width: 100%;
+  margin: 0;
 }
 
 .bucketEditBtn {

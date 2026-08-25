@@ -1,5 +1,6 @@
 import * as React from "react";
 import styles from "./MediaAssetsLib.module.scss";
+import { Icon } from "@fluentui/react";
 
 interface IFileCardProps {
   item: {
@@ -73,6 +74,27 @@ const FileCard: React.FC<IFileCardProps> = ({
       <div className={styles.itemContent}>
         <div>
           <h3>{item.name}</h3>
+          <button
+            className={styles.bucketEditBtn}
+            onClick={async () => {
+              const shareUrl =
+                `${window.location.origin}${window.location.pathname}` +
+                `?item=${item.id}`;
+
+              if (navigator.share) {
+                await navigator.share({
+                  title: item.name,
+                  text: item.name,
+                  url: shareUrl,
+                });
+              } else {
+                await navigator.clipboard.writeText(shareUrl);
+                alert("Link kopiert");
+              }
+            }}
+          >
+            <Icon iconName="Share" />
+          </button>
 
           <p>Ersteller: {item.createdBy || "-"}</p>
 
