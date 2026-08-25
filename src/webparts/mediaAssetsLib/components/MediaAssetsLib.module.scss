@@ -315,7 +315,7 @@ html {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--accent);
+  background: grey;
   color: white;
   border: none;
   cursor: pointer;
@@ -451,6 +451,11 @@ html {
 .itemContent p {
   margin-left: 0;
   margin-right: 0;
+}
+
+.itemContent h3 {
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .tagList {
@@ -864,27 +869,55 @@ html {
 /* FLOATING UPLOAD BUTTON */
 .floatingUploadBtn {
   position: fixed;
+
   bottom: 90px;
-  right: 40px;
-  width: 40px;
-  height: 40px;
+  right: 24px;
+
+  width: 64px;
+  height: 64px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 50%;
+
   background: var(--accent);
   color: white;
-  font-size: 18px;
+
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  z-index: 9999;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(4px);
 
-  &:hover {
-    transform: scale(1.1) rotate(90deg);
+  font-size: 24px;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+  z-index: 9999;
+
+  animation: slideInRight 0.5s ease-out;
+
+  transition: transform 0.3s ease;
+}
+
+.floatingUploadBtn:hover {
+  transform: scale(1.1) rotate(90deg);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(120px);
   }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.plusIcon {
+  font-size: 18px;
+  font-weight: 900;
 }
 .preview {
   background: red !important;
@@ -1130,26 +1163,47 @@ html {
   .modalBox {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
+
     padding: 16px;
     box-sizing: border-box;
+
+    overflow-x: hidden;
   }
+
   .modalBox select {
-    height: 57px;
-    line-height: 48px;
     width: 100%;
+    max-width: 100%;
+
+    height: 55px;
     min-height: 55px;
-    font-size: 14px;
-    padding: 12px 16px;
+
+    padding: 0 40px 0 12px;
+
     box-sizing: border-box;
-    line-height: normal;
+
+    font-size: 16px; // iOS Fix
+    line-height: 55px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    -webkit-appearance: none;
+    appearance: none;
   }
+
+  .modalBox select option {
+    font-size: 16px;
+  }
+
   .modalOverlayEdit,
   .modalOverlayUpload {
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 8px;
     align-items: flex-start;
+
+    padding: 8px;
+
     overflow-y: auto;
   }
 }
@@ -1195,5 +1249,43 @@ html {
     align-items: center;
 
     padding: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .filterRow {
+    display: flex;
+    flex-wrap: nowrap;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    gap: 8px;
+
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-width: none;
+  }
+
+  .filterRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filterRow select {
+    flex: 0 0 auto;
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 600px) {
+  .filterGroup {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .filterGroup select {
+    flex: 0 0 auto;
+    min-width: 180px;
   }
 }

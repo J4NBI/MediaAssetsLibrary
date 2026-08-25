@@ -33,6 +33,30 @@ export async function isRunningInTeamsMobile(): Promise<boolean> {
  * Wandelt ein Teams-Media-Objekt in ein echtes File-Objekt um,
  * damit der restliche Upload-Code (der File[] erwartet) unverändert bleibt.
  */
+function getExtensionFromMimeType(mimeType: string): string {
+  const map: { [key: string]: string } = {
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+    "video/mp4": "mp4",
+    "video/quicktime": "mov",
+    "video/webm": "webm",
+    "video/x-msvideo": "avi",
+    "video/3gpp": "3gp",
+  };
+
+  if (map[mimeType]) return map[mimeType];
+
+  // Kein exakter Treffer -> anhand des Präfixes sinnvoll raten,
+  // statt fälschlich immer "jpg" zu wählen
+  if (mimeType.startsWith("video/")) return "mp4";
+  if (mimeType.startsWith("image/")) return "jpg";
+
+  return "jpg"; // letzter Fallback, sollte praktisch nie greifen
+}
+
 async function teamsMediaToFile(
   media: microsoftTeams.media.Media,
 ): Promise<File> {
@@ -42,10 +66,16 @@ async function teamsMediaToFile(
         reject(error ?? new Error("Kein Blob erhalten"));
         return;
       }
-      const fileName = media.name || `datei_${Date.now()}`;
-      const file = new File([blob], fileName, {
-        type: media.mimeType || blob.type,
-      });
+
+      const mimeType = media.mimeType || blob.type || "image/jpeg";
+
+      let fileName = media.name;
+      if (!fileName || !fileName.includes(".")) {
+        const extension = getExtensionFromMimeType(mimeType);
+        fileName = `datei_${Date.now()}.${extension}`;
+      }
+
+      const file = new File([blob], fileName, { type: mimeType });
       resolve(file);
     });
   });

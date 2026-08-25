@@ -561,8 +561,6 @@ export default class MediaAssetsLib extends React.Component<
       }
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
     await this.reloadMedia();
 
     this.setState({
@@ -1304,17 +1302,18 @@ Files/UniqueId`;
           </div>
         </div>
 
-        {this.state.viewMode === "items" && (
-          <p>
-            Ergebnisse: {this.state.visibleItems.length}
-            {this.state.selectedBucket && (
-              <>
-                {" | "}
-                <strong>{this.state.selectedBucket}</strong>
-              </>
-            )}
-          </p>
-        )}
+        {this.state.viewMode === "items" &&
+          this.state.visibleItems.length > 0 && (
+            <p>
+              Ergebnisse: {this.state.visibleItems.length}
+              {this.state.selectedBucket && (
+                <>
+                  {" | "}
+                  <strong>{this.state.selectedBucket}</strong>
+                </>
+              )}
+            </p>
+          )}
 
         {this.state.isLoading && <p>Medien werden geladen...</p>}
 
