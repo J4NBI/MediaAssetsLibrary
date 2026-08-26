@@ -1571,20 +1571,28 @@ Files/UniqueId`;
                       });
 
                       const ua = navigator.userAgent || "";
-                      const isMobileEmbedded =
-                        /iPhone|iPad|iPod/i.test(ua) || /Android/i.test(ua);
+                      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+                      const isAndroid = /Android/i.test(ua);
+                      const isAndroidTeamsWebView =
+                        isAndroid && (/Teams/i.test(ua) || /; wv\)/i.test(ua));
 
                       try {
-                        if (isMobileEmbedded) {
-                          // iPhone / Android-Teams-App -> Blob + Share/Download,
-                          // da <a download> dort nicht zuverlässig funktioniert
+                        if (isAndroidTeamsWebView) {
+                          // Server-Header-basierter Download statt Blob/JS-Trick,
+                          // da die Teams-Android-WebView JS-basierte Downloads blockiert
+                          const downloadUrl =
+                            `${this.props.siteUrl}/_layouts/15/download.aspx?SourceUrl=` +
+                            encodeURIComponent(
+                              `${window.location.origin}${item.fileRef}`,
+                            );
+                          window.location.href = downloadUrl;
+                        } else if (isIOS || isAndroid) {
                           await downloadFileToDevice(
                             `${window.location.origin}${item.fileRef}`,
                             item.name,
                             this.props.spHttpClient,
                           );
                         } else {
-                          // Desktop-Browser -> normaler, bewährter Weg
                           const link = document.createElement("a");
                           link.href = `${window.location.origin}${item.fileRef}`;
                           link.download = item.name;

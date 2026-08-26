@@ -32,41 +32,10 @@ const UploadModal: React.FC<IUploadModalProps> = ({
     // Echtes Android-Chrome enthält das nicht.
     return /; wv\)/i.test(ua) || /Teams/i.test(ua) || /SharePoint/i.test(ua);
   };
-
-  const handlePickerClick = async (e: React.MouseEvent) => {
-    if (!isEmbeddedAndroidWebView()) {
-      // Desktop, Android-Chrome, iPhone -> nativer Multi-Picker funktioniert, nichts tun
-      return;
-    }
-
-    e.preventDefault(); // nur hier eingreifen, da <input multiple> nachweislich buggy ist
-
-    let inTeams = false;
-    try {
-      inTeams = await isRunningInTeamsMobile();
-    } catch {
-      inTeams = false;
-    }
-
-    if (inTeams) {
-      try {
-        const files = await selectMediaFilesViaTeams();
-        if (files.length === 0) return;
-        handleFilesSelected(files, false);
-        return;
-      } catch (err) {
-        console.error(
-          "Teams Media Picker fehlgeschlagen, nutze Fallback:",
-          err,
-        );
-      }
-    }
-
-    // SharePoint-App oder Teams-js-Fehlschlag -> Einzelauswahl-Fallback
-    setUseFallbackPicker(true);
-    document.getElementById("uploadFileInputSingle")?.click();
-  };
-  const handleFilesSelected = (newFiles: File[], append: boolean = false) => {
+  const handleFilesSelected = (
+    newFiles: File[],
+    append: boolean = false,
+  ): void => {
     if (newFiles.length === 0) return;
 
     const existingFiles = append ? state.uploadFiles || [] : [];
@@ -99,7 +68,41 @@ const UploadModal: React.FC<IUploadModalProps> = ({
     });
   };
 
-  const handleRemoveFile = (index: number) => {
+  const handlePickerClick = async (e: React.MouseEvent): Promise<void> => {
+    if (!isEmbeddedAndroidWebView()) {
+      // Desktop, Android-Chrome, iPhone -> nativer Multi-Picker funktioniert, nichts tun
+      return;
+    }
+
+    e.preventDefault(); // nur hier eingreifen, da <input multiple> nachweislich buggy ist
+
+    let inTeams = false;
+    try {
+      inTeams = await isRunningInTeamsMobile();
+    } catch {
+      inTeams = false;
+    }
+
+    if (inTeams) {
+      try {
+        const files = await selectMediaFilesViaTeams();
+        if (files.length === 0) return;
+        handleFilesSelected(files, false);
+        return;
+      } catch (err) {
+        console.error(
+          "Teams Media Picker fehlgeschlagen, nutze Fallback:",
+          err,
+        );
+      }
+    }
+
+    // SharePoint-App oder Teams-js-Fehlschlag -> Einzelauswahl-Fallback
+    setUseFallbackPicker(true);
+    document.getElementById("uploadFileInputSingle")?.click();
+  };
+
+  const handleRemoveFile = (index: number): void => {
     const updated = [...(state.uploadFiles || [])];
     updated.splice(index, 1);
     setState({ uploadFiles: updated });

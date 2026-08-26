@@ -1,34 +1,29 @@
 import * as microsoftTeams from "@microsoft/teams-js";
 
 let teamsInitialized = false;
-let cachedIsInTeams: boolean | null = null;
 
 /**
  * Prüft, ob die App aktuell im Teams-Mobile-Context läuft.
  * Ergebnis wird gecacht, da sich das während einer Session nicht ändert.
  */
 export async function isRunningInTeamsMobile(): Promise<boolean> {
-  if (cachedIsInTeams !== null) return cachedIsInTeams;
-
   try {
     if (!teamsInitialized) {
-      await microsoftTeams.app.initialize();
       teamsInitialized = true;
+      await microsoftTeams.app.initialize();
     }
+
     const context = await microsoftTeams.app.getContext();
     const hostClientType = context.app.host.clientType;
-    // android / ios = Teams Mobile App, sonst Desktop/Web/Browser
-    cachedIsInTeams =
+
+    return (
       hostClientType === microsoftTeams.HostClientType.android ||
-      hostClientType === microsoftTeams.HostClientType.ios;
+      hostClientType === microsoftTeams.HostClientType.ios
+    );
   } catch {
-    // Kein Teams-Context verfügbar -> normaler Browser
-    cachedIsInTeams = false;
+    return false;
   }
-
-  return cachedIsInTeams;
 }
-
 /**
  * Wandelt ein Teams-Media-Objekt in ein echtes File-Objekt um,
  * damit der restliche Upload-Code (der File[] erwartet) unverändert bleibt.
