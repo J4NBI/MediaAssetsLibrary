@@ -30,9 +30,11 @@ import {
 } from "../utils/bucketHelpers";
 
 import { getLibraryPath } from "../utils/sharepointHelpers";
+import { downloadFileToDevice } from "../utils/downloadHelpers";
 
 import RenameBucketModal from "./RenameBucketModal";
 import { getMonthGroups, getBucketsForMonth } from "../utils/monthHelpers";
+
 /*******************************************************
  * MEDIA ASSETS LIB V9
  * -----------------------------------------------------
@@ -1563,20 +1565,43 @@ Files/UniqueId`;
                         editDienst: item.dienst || "",
                       })
                     }
-                    onDownload={() => {
+                    onDownload={async () => {
                       this.setState({
                         downloadingItemId: item.id,
                       });
 
-                      const downloadUrl = `${window.location.origin}${item.fileRef}`;
+                      const ua = navigator.userAgent || "";
+                      const isMobileEmbedded =
+                        /iPhone|iPad|iPod/i.test(ua) || /Android/i.test(ua);
 
-                      window.location.href = downloadUrl;
-
-                      setTimeout(() => {
+                      try {
+                        if (isMobileEmbedded) {
+                          // iPhone / Android-Teams-App -> Blob + Share/Download,
+                          // da <a download> dort nicht zuverlässig funktioniert
+                          await downloadFileToDevice(
+                            `${window.location.origin}${item.fileRef}`,
+                            item.name,
+                            this.props.spHttpClient,
+                          );
+                        } else {
+                          // Desktop-Browser -> normaler, bewährter Weg
+                          const link = document.createElement("a");
+                          link.href = `${window.location.origin}${item.fileRef}`;
+                          link.download = item.name;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }
+                      } catch (error) {
+                        console.error("Download fehlgeschlagen:", error);
+                        alert(
+                          "Download fehlgeschlagen. Bitte erneut versuchen.",
+                        );
+                      } finally {
                         this.setState({
                           downloadingItemId: undefined,
                         });
-                      }, 1500);
+                      }
                     }}
                   />
                 ))}
@@ -1616,6 +1641,7 @@ Files/UniqueId`;
         <PreviewModal
           isOpen={this.state.isModalOpen}
           item={this.state.selectedItem}
+          spHttpClient={this.props.spHttpClient}
           onClose={() =>
             this.setState({
               isModalOpen: false,

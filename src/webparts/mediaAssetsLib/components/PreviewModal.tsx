@@ -1,5 +1,7 @@
 import * as React from "react";
 import styles from "./MediaAssetsLib.module.scss";
+import { downloadFileToDevice } from "../utils/downloadHelpers";
+import { SPHttpClient } from "@microsoft/sp-http";
 
 interface IPreviewItem {
   name: string;
@@ -10,12 +12,14 @@ interface IPreviewModalProps {
   item?: IPreviewItem;
   isOpen: boolean;
   onClose: () => void;
+  spHttpClient: SPHttpClient;
 }
 
 const PreviewModal: React.FC<IPreviewModalProps> = ({
   item,
   isOpen,
   onClose,
+  spHttpClient,
 }) => {
   if (!isOpen || !item) {
     return null;
@@ -75,18 +79,30 @@ const PreviewModal: React.FC<IPreviewModalProps> = ({
         )}
 
         <button
-          onClick={() => {
-            const link = document.createElement("a");
+          onClick={async () => {
+            const ua = navigator.userAgent || "";
 
-            link.href = fileUrl;
-            link.target = "_blank";
-            link.download = item.name;
+            const isMobileEmbedded =
+              /iPhone|iPad|iPod/i.test(ua) || /Android/i.test(ua);
 
-            document.body.appendChild(link);
+            try {
+              if (isMobileEmbedded) {
+                await downloadFileToDevice(fileUrl, item.name, spHttpClient);
+              } else {
+                const link = document.createElement("a");
 
-            link.click();
+                link.href = fileUrl;
+                link.download = item.name;
 
-            document.body.removeChild(link);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }
+            } catch (error) {
+              console.error("Download fehlgeschlagen:", error);
+
+              alert("Download fehlgeschlagen. Bitte erneut versuchen.");
+            }
           }}
           className={`${styles.downloadBtn} ${styles.modalDownload}`}
         >
