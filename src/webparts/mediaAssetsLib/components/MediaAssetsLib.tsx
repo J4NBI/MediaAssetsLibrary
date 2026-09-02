@@ -30,12 +30,10 @@ import {
 } from "../utils/bucketHelpers";
 
 import { getLibraryPath } from "../utils/sharepointHelpers";
-import { downloadFileToDevice } from "../utils/downloadHelpers";
+import { downloadItem } from "../utils/downloadHelpers";
 
 import RenameBucketModal from "./RenameBucketModal";
 import { getMonthGroups, getBucketsForMonth } from "../utils/monthHelpers";
-
-import { openInExternalBrowser } from "../utils/teamsFileHelpers";
 
 /*******************************************************
  * MEDIA ASSETS LIB V9
@@ -869,6 +867,17 @@ Files/UniqueId`;
       this.state.allItems.map(async (item) => {
         const driveItemId = driveItemMap[item.name];
 
+        if (!driveItemId) {
+          return item;
+        }
+
+        // driveId/driveItemId für ALLE Dateien speichern (nötig für Graph-Download-URLs)
+        const baseItem = {
+          ...item,
+          driveId: mediaDrive.id,
+          driveItemId,
+        };
+
         const videoExtensions = [
           ".mp4",
           ".mov",
@@ -886,8 +895,8 @@ Files/UniqueId`;
           lowerName.endsWith(ext),
         );
 
-        if (!isVideoFile || !driveItemId) {
-          return item;
+        if (!isVideoFile) {
+          return baseItem;
         }
 
         try {
@@ -897,17 +906,14 @@ Files/UniqueId`;
           );
 
           const thumbnailData = await thumbnailResponse.json();
-
           const thumbUrl = thumbnailData.value?.[0]?.medium?.url;
 
           return {
-            ...item,
-            driveId: mediaDrive.id,
-            driveItemId,
+            ...baseItem,
             thumbnailUrl: thumbUrl,
           };
         } catch {
-          return item;
+          return baseItem;
         }
       }),
     );
@@ -1572,34 +1578,12 @@ Files/UniqueId`;
                         downloadingItemId: item.id,
                       });
 
-                      const ua = navigator.userAgent || "";
-                      const isIOS = /iPhone|iPad|iPod/i.test(ua);
-                      const isAndroid = /Android/i.test(ua);
-                      const isAndroidTeamsWebView =
-                        isAndroid && (/Teams/i.test(ua) || /; wv\)/i.test(ua));
-
                       try {
-                        if (isAndroidTeamsWebView) {
-                          // Teams-Mobile-WebView unterstützt keine Datei-Downloads
-                          // (offizielle Microsoft-Einschränkung) -> im externen
-                          // System-Browser öffnen, dort funktioniert der Download
-                          await openInExternalBrowser(
-                            `${window.location.origin}${item.fileRef}`,
-                          );
-                        } else if (isIOS || isAndroid) {
-                          await downloadFileToDevice(
-                            `${window.location.origin}${item.fileRef}`,
-                            item.name,
-                            this.props.spHttpClient,
-                          );
-                        } else {
-                          const link = document.createElement("a");
-                          link.href = `${window.location.origin}${item.fileRef}`;
-                          link.download = item.name;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }
+                        await downloadItem(
+                          `${window.location.origin}${item.fileRef}`,
+                          item.name,
+                          this.props.spHttpClient,
+                        );
                       } catch (error) {
                         console.error("Download fehlgeschlagen:", error);
                         alert(

@@ -1,8 +1,7 @@
 import * as React from "react";
 import styles from "./MediaAssetsLib.module.scss";
-import { downloadFileToDevice } from "../utils/downloadHelpers";
+import { downloadItem } from "../utils/downloadHelpers";
 import { SPHttpClient } from "@microsoft/sp-http";
-import { openInExternalBrowser } from "../utils/teamsFileHelpers";
 
 interface IPreviewItem {
   name: string;
@@ -81,25 +80,8 @@ const PreviewModal: React.FC<IPreviewModalProps> = ({
 
         <button
           onClick={async () => {
-            const ua = navigator.userAgent || "";
-            const isIOS = /iPhone|iPad|iPod/i.test(ua);
-            const isAndroid = /Android/i.test(ua);
-            const isAndroidTeamsWebView =
-              isAndroid && (/Teams/i.test(ua) || /; wv\)/i.test(ua));
-
             try {
-              if (isAndroidTeamsWebView) {
-                await openInExternalBrowser(fileUrl);
-              } else if (isIOS || isAndroid) {
-                await downloadFileToDevice(fileUrl, item.name, spHttpClient);
-              } else {
-                const link = document.createElement("a");
-                link.href = fileUrl;
-                link.download = item.name;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }
+              await downloadItem(fileUrl, item.name, spHttpClient);
             } catch (error) {
               console.error("Download fehlgeschlagen:", error);
               alert("Download fehlgeschlagen. Bitte erneut versuchen.");

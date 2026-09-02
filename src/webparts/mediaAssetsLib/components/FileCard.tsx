@@ -71,11 +71,12 @@ const FileCard: React.FC<IFileCardProps> = ({
         <img src={fileUrl} className={styles.itemImg} onClick={onPreview} />
       )}
 
-      <div className={styles.itemContent}>
-        <div>
-          <h3>{item.name}</h3>
+      <div className={styles.fileCardBody}>
+        <div className={styles.fileCardHeader}>
+          <h3 className={styles.fileCardName}>{item.name}</h3>
+
           <button
-            className={styles.bucketEditBtn}
+            className={styles.fileCardShareBtn}
             onClick={async () => {
               const shareUrl =
                 `${window.location.origin}${window.location.pathname}` +
@@ -93,36 +94,37 @@ const FileCard: React.FC<IFileCardProps> = ({
               }
             }}
           >
-            <Icon iconName="Share" />
+            <Icon iconName="Share" style={{ fontSize: "22px" }} />
           </button>
-
-          <p>Ersteller: {item.createdBy || "-"}</p>
-
-          <p>Kategorie: {item.category || "-"}</p>
-
-          <p>Dienst: {item.dienst || "-"}</p>
-
-          <div className={styles.tagList}>
-            {(item.tags || []).map((tag: string, i: number) => (
-              <span key={i} className={styles.tag}>
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <p className={styles.itemDate}>
-            Erstellt am:{" "}
-            {item.created ? new Date(item.created).toLocaleDateString() : "-"}
-          </p>
         </div>
 
-        <div className={styles.itemActions}>
+        <div className={styles.fileMeta}>
+          <span className={styles.fileMetaItem}>
+            <Icon iconName="Contact" />
+            {item.createdBy || "-"}
+          </span>
+
+          <span className={styles.fileMetaItem}>
+            <Icon iconName="FolderHorizontal" />
+            {item.category || "-"}
+          </span>
+        </div>
+
+        <div className={styles.tagList}>
+          {(item.tags || []).map((tag: string, i: number) => (
+            <span key={i} className={`${styles.tag} ${styles.tagAccent}`}>
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        <div className={styles.itemActions} style={{ flexDirection: "row" }}>
           <button onClick={onDownload} className={styles.downloadBtn}>
             {downloadingItemId === item.id ? "⏳ Lädt..." : "Download"}
           </button>
 
           <button onClick={onEdit} className={styles.editBtn}>
-            Editieren
+            Bearbeiten
           </button>
         </div>
       </div>

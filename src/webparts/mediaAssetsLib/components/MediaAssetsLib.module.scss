@@ -418,6 +418,57 @@ html {
   }
 }
 
+.fileCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  flex: 1;
+}
+
+.fileCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fileCardName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.fileCardShareBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 4px;
+}
+
+.fileMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.fileMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.tagAccent {
+  background: var(--accent);
+  color: var(--surface);
+  border-color: var(--accent);
+}
+
 .itemImg {
   width: 100%;
   height: auto;
@@ -525,7 +576,9 @@ html {
 
 .downloadBtn {
   flex: 1;
-  padding: 14px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 14px 8px;
   background: var(--accent);
   color: var(--surface);
   border-radius: 0;
@@ -534,6 +587,9 @@ html {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
@@ -544,7 +600,9 @@ html {
 
 .editBtn {
   flex: 1;
-  padding: 14px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 14px 8px;
   background: var(--surface);
   color: var(--text);
   border-radius: 0;
@@ -553,6 +611,9 @@ html {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
@@ -1125,14 +1186,14 @@ html {
 
 @media (min-width: 800px) {
   .grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
 }
 
 @media (min-width: 1000px) {
   .grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
 }
