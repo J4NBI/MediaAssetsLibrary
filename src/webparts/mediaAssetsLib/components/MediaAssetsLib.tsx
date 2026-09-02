@@ -35,6 +35,8 @@ import { downloadFileToDevice } from "../utils/downloadHelpers";
 import RenameBucketModal from "./RenameBucketModal";
 import { getMonthGroups, getBucketsForMonth } from "../utils/monthHelpers";
 
+import { openInExternalBrowser } from "../utils/teamsFileHelpers";
+
 /*******************************************************
  * MEDIA ASSETS LIB V9
  * -----------------------------------------------------
@@ -1578,14 +1580,12 @@ Files/UniqueId`;
 
                       try {
                         if (isAndroidTeamsWebView) {
-                          // Server-Header-basierter Download statt Blob/JS-Trick,
-                          // da die Teams-Android-WebView JS-basierte Downloads blockiert
-                          const downloadUrl =
-                            `${this.props.siteUrl}/_layouts/15/download.aspx?SourceUrl=` +
-                            encodeURIComponent(
-                              `${window.location.origin}${item.fileRef}`,
-                            );
-                          window.location.href = downloadUrl;
+                          // Teams-Mobile-WebView unterstützt keine Datei-Downloads
+                          // (offizielle Microsoft-Einschränkung) -> im externen
+                          // System-Browser öffnen, dort funktioniert der Download
+                          await openInExternalBrowser(
+                            `${window.location.origin}${item.fileRef}`,
+                          );
                         } else if (isIOS || isAndroid) {
                           await downloadFileToDevice(
                             `${window.location.origin}${item.fileRef}`,

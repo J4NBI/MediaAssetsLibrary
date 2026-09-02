@@ -105,3 +105,18 @@ export function selectMediaFilesViaTeams(): Promise<File[]> {
     });
   });
 }
+
+/**
+ * Öffnet eine URL im externen System-Browser (z.B. Android-Chrome),
+ * da Teams-Mobile-WebViews Datei-Downloads nicht unterstützen.
+ */
+export async function openInExternalBrowser(url: string): Promise<void> {
+  try {
+    const teams = await import("@microsoft/teams-js");
+    await teams.app.initialize();
+    await teams.app.openLink(url);
+  } catch {
+    // Kein Teams-Kontext / SDK nicht verfügbar -> normaler Fallback
+    window.open(url, "_blank");
+  }
+}
