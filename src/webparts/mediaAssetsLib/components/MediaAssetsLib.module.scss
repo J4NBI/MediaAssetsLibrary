@@ -797,7 +797,7 @@ html {
   background: var(--surface);
 
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
 
   box-sizing: border-box;
 
@@ -897,10 +897,31 @@ html {
   transform: translateY(-3px);
 }
 
+.uploadCloseBtn {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 0;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    background: var(--text);
+    color: var(--surface);
+  }
+}
+
 /* SCROLL */
 .scrollTop {
   position: fixed;
-  bottom: 40px;
+  bottom: 24px;
+  right: 24px;
   width: 40px;
   height: 40px;
   display: flex;
@@ -913,17 +934,21 @@ html {
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   z-index: 9999;
-  transition: all 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
   backdrop-filter: blur(4px);
 
   &.visible {
-    right: 40px;
     opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
   }
 
   &.hidden {
-    right: -80px;
     opacity: 0;
+    transform: scale(0.6);
+    pointer-events: none;
   }
 }
 

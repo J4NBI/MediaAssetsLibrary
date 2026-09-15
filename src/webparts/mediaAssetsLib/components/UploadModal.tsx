@@ -319,7 +319,7 @@ const UploadModal: React.FC<IUploadModalProps> = ({
               />
             </div>
 
-            <button onClick={onClose} className={styles.editBtn}>
+            <button onClick={onClose} className={styles.uploadCloseBtn}>
               Schließen
             </button>
             {state.isUploading && (

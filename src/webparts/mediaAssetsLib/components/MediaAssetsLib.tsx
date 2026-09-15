@@ -31,6 +31,7 @@ import {
 
 import { getLibraryPath } from "../utils/sharepointHelpers";
 import { downloadItem } from "../utils/downloadHelpers";
+import { isRunningInTeams } from "../utils/teamsFileHelpers";
 
 import RenameBucketModal from "./RenameBucketModal";
 import { getMonthGroups, getBucketsForMonth } from "../utils/monthHelpers";
@@ -162,6 +163,7 @@ export interface IMediaAssetsLibState {
   bucketToRename?: string;
 
   isLoading: boolean;
+  isInTeams: boolean;
 }
 
 /********************* HAUPTKOMPNENTE ******************
@@ -269,6 +271,7 @@ export default class MediaAssetsLib extends React.Component<
       bucketToRename: undefined,
 
       isLoading: true,
+      isInTeams: false,
     };
   }
 
@@ -657,6 +660,9 @@ export default class MediaAssetsLib extends React.Component<
    */
 
   public async componentDidMount(): Promise<void> {
+    const isInTeams = await isRunningInTeams();
+    this.setState({ isInTeams });
+
     await this.reloadMedia();
     await this.loadCategories();
     await this.loadDienste();
@@ -698,8 +704,11 @@ export default class MediaAssetsLib extends React.Component<
     if (target) {
       this.observer = new IntersectionObserver(
         ([entry]) => {
+          const pageIsScrollable =
+            document.documentElement.scrollHeight > window.innerHeight + 200; // kleine Toleranz
+
           this.setState({
-            showScrollTop: !entry.isIntersecting,
+            showScrollTop: !entry.isIntersecting && pageIsScrollable,
           });
         },
         {
@@ -1420,7 +1429,19 @@ Files/UniqueId`;
                                 ? ""
                                 : this.state.searchText,
                             },
-                            this.applyFilters,
+                            () => {
+                              this.applyFilters();
+                              requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                  document
+                                    .getElementById("top")
+                                    ?.scrollIntoView({
+                                      behavior: "auto",
+                                      block: "start",
+                                    });
+                                });
+                              });
+                            },
                           );
                         }}
                       >
@@ -1724,16 +1745,19 @@ Files/UniqueId`;
           <Icon iconName="Add" className={styles.plusIcon} />
         </button>
 
-        {false && (
-          <a href="#top">
-            <div
-              className={`${styles.scrollTop} ${
-                this.state.showScrollTop ? styles.visible : styles.hidden
-              }`}
-            >
-              ↑
-            </div>
-          </a>
+        {!this.state.isInTeams && (
+          <div
+            onClick={() =>
+              document
+                .getElementById("top")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+            className={`${styles.scrollTop} ${
+              this.state.showScrollTop ? styles.visible : styles.hidden
+            }`}
+          >
+            ↑
+          </div>
         )}
       </div>
     );

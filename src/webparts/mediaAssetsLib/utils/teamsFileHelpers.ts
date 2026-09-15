@@ -120,3 +120,28 @@ export async function openInExternalBrowser(url: string): Promise<void> {
     window.open(url, "_blank");
   }
 }
+
+let cachedIsInTeams: boolean | null = null;
+
+/**
+ * Prüft, ob die App generell innerhalb von Teams läuft (Desktop, Mobile
+ * oder Teams-im-Browser) – unabhängig vom Gerät. Wird genutzt, um
+ * UI-Elemente auszublenden, für die Teams bereits eine eigene
+ * native Entsprechung bietet (z.B. "Nach oben scrollen").
+ */
+export async function isRunningInTeams(): Promise<boolean> {
+  if (cachedIsInTeams !== null) return cachedIsInTeams;
+
+  try {
+    const microsoftTeams = await import(
+      /* webpackChunkName: 'teams-js' */ "@microsoft/teams-js"
+    );
+    await microsoftTeams.app.initialize();
+    await microsoftTeams.app.getContext();
+    cachedIsInTeams = true;
+  } catch {
+    cachedIsInTeams = false;
+  }
+
+  return cachedIsInTeams;
+}
