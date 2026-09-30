@@ -37,7 +37,7 @@ export default class MediaAssetsLibWebPart extends BaseClientSideWebPart<IMediaA
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
         userDisplayName: this.context.pageContext.user.displayName,
         spHttpClient: this.context.spHttpClient,
-        siteUrl: "https://caritasberlin.sharepoint.com/sites/Medien_dev",
+        siteUrl: "https://caritasberlin.sharepoint.com/sites/Medienbibliothek",
       });
 
     ReactDom.render(element, this.domElement);

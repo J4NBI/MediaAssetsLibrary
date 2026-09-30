@@ -16,6 +16,20 @@ Eine SharePoint Framework (SPFx) Anwendung zur Verwaltung von Medieninhalten in 
 
 ---
 
+# SAHREPOINT
+
+- erstelle Medienbibliothek (Vorlage)
+- Spalte Format, Type Auswahl (Choice) , Bild , Video, Audio, can add values manually
+- Notizen bleibt
+- estelle Tags, Auswahl (choice), can add values manually, allow multiple selections
+- erstelle Kategorie, Auswahl,erstelle choices:
+  Feste, Jubiläen, Kampagne, Demos, Beratung, Portrait, Internes, Sonstige
+- estelle Buckets, Auswahl (choice), can add values manually, allow multiple selections
+- erstelle Ersteller, single line text
+- erstelle Dienste, auswahl (choice), choices:
+  Allgemine Soziale Berautng, Integration in Arbeit, Betreuungsverien, Ehrenamt, Kinder, Jugend- und Familienhilfe,
+  Frauenhaus, Flucht und Migration, Hospizdienst, Kleiderkammer, Schuldner- und Insolvenzberatung, Schwangerschaftsberatung, Strompar-Check,Suchthilfe, Vormundschaftsverein, Wohnungslosenhilfe, youngcaritas, CFL, Pastoraler Raum, Caritas Gesundheit, Kommunikation, Vorstand
+
 # Voraussetzungen
 
 Vor der Installation müssen folgende Komponenten installiert sein:
@@ -24,8 +38,13 @@ Vor der Installation müssen folgende Komponenten installiert sein:
 - npm
 - Gulp CLI
 - Zugriff auf die SharePoint-Zielsite
+- install git
 
 Versionen prüfen:
+
+```bash
+INSTALL NODE 18!!!!
+```
 
 ```bash
 node --version
@@ -36,7 +55,14 @@ gulp --version
 Falls Gulp noch nicht installiert ist:
 
 ```bash
+
 npm install -g gulp-cli
+```
+
+git installieren
+
+```bash
+https://git-scm.com/install/
 ```
 
 ---
@@ -54,7 +80,7 @@ Dadurch wird eine eigene Kopie des Projekts im eigenen GitHub-Account erstellt.
 ## 2. Repository klonen
 
 ```bash
-git clone https://github.com/<github-account>/MediaAssetsLibrary.git
+git clone https://github.com/J4NBI/MediaAssetsLibrary.git
 ```
 
 Anschließend in das Projektverzeichnis wechseln:
@@ -178,6 +204,14 @@ Beispiel:
 ```typescript
 private readonly libraryName = "MediaLibrary";
 ```
+
+```bash
+MediaAssetsLibWebPart.manifest.json
+```
+
+Version ändern
+
+"title": { "default": "Caritas Media Library V32" },
 
 ---
 

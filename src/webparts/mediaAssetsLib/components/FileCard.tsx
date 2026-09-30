@@ -108,6 +108,11 @@ const FileCard: React.FC<IFileCardProps> = ({
             <Icon iconName="FolderHorizontal" />
             {item.category || "-"}
           </span>
+
+          <span className={styles.fileMetaItem}>
+            <Icon iconName="Suitcase" />
+            {item.dienst || "-"}
+          </span>
         </div>
 
         <div className={styles.tagList}>
